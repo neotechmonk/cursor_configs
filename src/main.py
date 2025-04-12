@@ -1,4 +1,5 @@
 from enum import Enum, StrEnum, auto
+from typing import Optional
 
 import pandas as pd
 
@@ -29,6 +30,38 @@ def detect_direction(price_feed: pd.DataFrame) -> Direction:
     else:
         return Direction.RANGE
 
+
+def is_extreme_bar(price_feed: pd.DataFrame, trend: Direction, frame_size:Optional[int] = None)-> bool:
+
+        # guards
+        if trend not in (Direction.UP, Direction.DOWN):
+            raise ValueError("Market must trend UP or DOWN")
+       
+        price_feed_len = len(price_feed)
+
+        if  frame_size is None: 
+            frame_size = price_feed_len
+        
+        if frame_size < 1:
+            raise ValueError("Frame size must be at least 1")
+        
+        if frame_size > price_feed_len:
+            raise ValueError("Frame size is larger the bars in the `price_feed`")
+        
+        # Get current bar (most recent)
+        recent_bar = price_feed.iloc[-1]
+
+        # Get previous bars for the comparison window
+        history = price_feed.iloc[-frame_size:-1]
+
+        match trend:
+            case Direction.UP:
+                return recent_bar[PriceLabel.HIGH.value] > history[PriceLabel.HIGH.value].max()
+            case Direction.DOWN:
+                return recent_bar[PriceLabel.LOW.value] < history[PriceLabel.LOW.value].min()
+            case _:
+                return False
+            
 
 def main():
     raise NotImplementedError()

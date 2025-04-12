@@ -1,48 +1,96 @@
 
-
 import pandas as pd
 import pytest
 
-from main import Direction, PriceLabel, detect_direction
-
-
-@pytest.fixture
-def uptrending_price_feed():
-    dates = pd.date_range(start="2023-01-01", periods=5, freq="B")  # 5 business days
-    return pd.DataFrame({
-        PriceLabel.OPEN:  [95, 96, 97, 98, 99],
-        PriceLabel.HIGH:  [95, 96, 97, 98, 100],
-        PriceLabel.LOW:   [70, 81, 82, 83, 81],
-        PriceLabel.CLOSE: [70, 81, 82, 83, 84]
-    }, index=dates)
-
-
-@pytest.fixture
-def downtrending_price_feed():
-    dates = pd.date_range(start="2023-01-01", periods=5, freq="B")  # 5 business days
-    return pd.DataFrame({
-        PriceLabel.OPEN:  [105, 104, 103, 102, 101],
-        PriceLabel.HIGH:  [106, 105, 104, 103, 102],
-        PriceLabel.LOW:   [95, 94, 93, 92, 91],
-        PriceLabel.CLOSE: [96, 95, 94, 93, 92]
-    }, index=dates)
-
-
-# Fix : unrealistic data - identical highs and lows
-@pytest.fixture
-def rangebound_price_feed():
-    dates = pd.date_range(start="2023-01-01", periods=5, freq="B")  # 5 business days
-    return pd.DataFrame({
-        PriceLabel.OPEN:  [100, 101, 100, 99, 100],
-        PriceLabel.HIGH:  [105, 105, 105, 105, 105],
-        PriceLabel.LOW:   [90,  90,  90,  90,  90],
-        PriceLabel.CLOSE: [100, 100, 101, 100, 99]
-    }, index=dates)
+from main import Direction, PriceLabel, detect_direction, is_extreme_bar
 
 
 def test_100_bar_frame():...
 
-def test_100_bar_high_or_low():...
+        
+@pytest.mark.parametrize(
+    "price_feed_fixture, direction, frame_size,  expected_result",
+    [
+        ("uptrending_price_feed", Direction.UP, None, True), # defaults to len(feed)
+        ("uptrending_price_feed", Direction.UP, 5, True), # == len(feed)
+        ("uptrending_price_feed", Direction.UP, 4, True), #  len(feed) - 1
+        ("downtrending_price_feed", Direction.DOWN, None, True),# defaults to len(feed)
+        ("downtrending_price_feed", Direction.DOWN, 5, True),# == len(feed)
+        ("downtrending_price_feed", Direction.DOWN, 3, True),  #  len(feed) - 2
+        
+    ]
+)
+def test_is_extreme_bar_true(price_feed_fixture, direction, frame_size, expected_result, request):
+    price_feed = request.getfixturevalue(price_feed_fixture)
+    result = is_extreme_bar(price_feed=price_feed,trend=direction, frame_size=frame_size)
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "price_feed_fixture, direction, frame_size",
+    [
+        ("uptrending_price_feed", Direction.UP, None),
+        ("uptrending_price_feed", Direction.UP, 5),
+        ("uptrending_price_feed", Direction.UP, 4),
+        ("downtrending_price_feed", Direction.DOWN, None),
+        ("downtrending_price_feed", Direction.DOWN, 5),
+        ("downtrending_price_feed", Direction.DOWN, 3)
+    ]
+)
+def test_is_extreme_bar_false(price_feed_fixture, direction, frame_size, request):
+    price_feed = request.getfixturevalue(price_feed_fixture)
+
+    future_index = pd.to_datetime("2262-04-11")  # Max safe datetime in pandas
+
+    if direction == Direction.UP:
+        # Add a bar with a HIGH equal to or below history → not an extreme
+        new_bar = pd.DataFrame([{
+            PriceLabel.OPEN.value: 0,
+            PriceLabel.HIGH.value: 0,  # Not a new high
+            PriceLabel.LOW.value: 0,
+            PriceLabel.CLOSE.value: 0
+        }], index=[future_index])
+
+    elif direction == Direction.DOWN:
+        # Add a bar with a LOW equal to or above history → not a new low
+        new_bar = pd.DataFrame([{
+            PriceLabel.OPEN.value: 0,
+            PriceLabel.HIGH.value: 0,
+            PriceLabel.LOW.value: 1_000_000_000,  # Not a new low
+            PriceLabel.CLOSE.value: 0
+        }], index=[future_index])
+
+    price_feed = pd.concat([price_feed, new_bar])
+
+    result = is_extreme_bar(price_feed=price_feed, trend=direction, frame_size=frame_size)
+    assert not result
+
+    
+def test_is_extreme_invalid_trend(uptrending_price_feed):
+    with pytest.raises(ValueError, match="Market must trend UP or DOWN"):
+        is_extreme_bar(uptrending_price_feed, trend=Direction.RANGE)
+
+
+def test_is_extreme_larger_frame_size_raises(uptrending_price_feed):
+    with pytest.raises(ValueError, match="Frame size is larger the bars in the `price_feed`"):
+        is_extreme_bar(uptrending_price_feed, trend=Direction.UP, frame_size=1000)
+
+
+# @pytest.mark.skip()
+@pytest.mark.parametrize(
+    "price_feed_fixture, direction, frame_size",
+    [
+        ("uptrending_price_feed", Direction.UP, 0),
+        ("uptrending_price_feed", Direction.UP, -1),
+        ("downtrending_price_feed", Direction.DOWN, 0),
+        ("downtrending_price_feed", Direction.DOWN, -3 ),
+    ]
+
+)
+def test_is_extreme_invalid_frame_size_raises(price_feed_fixture, direction, frame_size, request):
+    price_feed = request.getfixturevalue(price_feed_fixture)
+    with pytest.raises(ValueError, match="Frame size must be at least 1"):
+        is_extreme_bar(price_feed, trend=direction, frame_size=frame_size)
 
 
 @pytest.mark.parametrize(
