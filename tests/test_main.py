@@ -2,12 +2,13 @@
 import pandas as pd
 import pytest
 
-from main import Direction, PriceLabel, detect_direction, is_extreme_bar
+from main import Direction, PriceLabel, get_trend, is_extreme_bar
 
 
 def test_100_bar_frame():...
 
-        
+
+# region: latest bar is a frame extreme 
 @pytest.mark.parametrize(
     "price_feed_fixture, direction, frame_size,  expected_result",
     [
@@ -93,6 +94,9 @@ def test_is_extreme_invalid_frame_size_raises(price_feed_fixture, direction, fra
         is_extreme_bar(price_feed, trend=direction, frame_size=frame_size)
 
 
+# endregion
+
+# region: Detect Direction
 @pytest.mark.parametrize(
     "price_feed_fixture, expected_direction",
     [
@@ -104,8 +108,10 @@ def test_is_extreme_invalid_frame_size_raises(price_feed_fixture, direction, fra
 )
 def test_direction(price_feed_fixture, expected_direction, request):
     price_feed = request.getfixturevalue(price_feed_fixture)
-    result = detect_direction(price_feed)
+    result = get_trend(price_feed)
     assert result == expected_direction
+
+## endregion
 
 
 # region: first pullback

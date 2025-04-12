@@ -17,7 +17,7 @@ class Direction(Enum):
     RANGE = auto()
 
 
-def detect_direction(price_feed: pd.DataFrame) -> Direction:
+def get_trend(price_feed: pd.DataFrame) -> Direction:
     """
         UP : lowest point in the frame was before the highest point
         DOWN : highest point in the frame was before the lowest point 
