@@ -56,12 +56,24 @@ def is_extreme_bar(price_feed: pd.DataFrame, trend: Direction, frame_size:Option
 
         match trend:
             case Direction.UP:
-                return recent_bar[PriceLabel.HIGH.value] > history[PriceLabel.HIGH.value].max()
+                return recent_bar[PriceLabel.HIGH] > history[PriceLabel.HIGH].max()
             case Direction.DOWN:
-                return recent_bar[PriceLabel.LOW.value] < history[PriceLabel.LOW.value].min()
+                return recent_bar[PriceLabel.LOW] < history[PriceLabel.LOW].min()
             case _:
                 return False
-            
+
+
+def is_bars_since_extreme_pivot_valid(price_feed: pd.DataFrame, major_swing_high_idx, min_bars: int, max_bars: int) -> bool:
+    price_feed_len = len(price_feed)
+
+    if max_bars is None:
+        max_bars = price_feed_len
+
+    major_idx_pos = price_feed.index.get_loc(major_swing_high_idx)
+    bars_since_swing_high = price_feed_len - major_idx_pos - 1  # Exclude swing high bar itself
+
+    return min_bars <= bars_since_swing_high <= max_bars
+
 
 def main():
     raise NotImplementedError()

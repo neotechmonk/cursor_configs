@@ -1,11 +1,36 @@
 
+from typing import Optional
+
 import pandas as pd
 import pytest
 
-from main import Direction, PriceLabel, get_trend, is_extreme_bar
+from main import (
+    Direction,
+    PriceLabel,
+    get_trend,
+    is_bars_since_extreme_pivot_valid,
+    is_extreme_bar,
+)
 
 
 def test_100_bar_frame():...
+
+# region: Detect Direction
+@pytest.mark.parametrize(
+    "price_feed_fixture, expected_direction",
+    [
+        ("uptrending_price_feed", Direction.UP),
+        ("downtrending_price_feed", Direction.DOWN),
+        ("rangebound_price_feed", Direction.RANGE),
+        
+    ]
+)
+def test_direction(price_feed_fixture, expected_direction, request):
+    price_feed = request.getfixturevalue(price_feed_fixture)
+    result = get_trend(price_feed)
+    assert result == expected_direction
+
+# endregion
 
 
 # region: latest bar is a frame extreme 
@@ -96,26 +121,37 @@ def test_is_extreme_invalid_frame_size_raises(price_feed_fixture, direction, fra
 
 # endregion
 
-# region: Detect Direction
-@pytest.mark.parametrize(
-    "price_feed_fixture, expected_direction",
-    [
-        ("uptrending_price_feed", Direction.UP),
-        ("downtrending_price_feed", Direction.DOWN),
-        ("rangebound_price_feed", Direction.RANGE),
-        
-    ]
-)
-def test_direction(price_feed_fixture, expected_direction, request):
-    price_feed = request.getfixturevalue(price_feed_fixture)
-    result = get_trend(price_feed)
-    assert result == expected_direction
-
-## endregion
-
 
 # region: first pullback
-def test_min_pullback_bars():...
+
+
+@pytest.mark.parametrize(
+    "frame_extreme_pos, min_bars, max_bars, expected_result",         #frame_extreme_pos in zero inx pos. E.g 999 is the last of df with len 1000
+    [
+        (990, 5, 10, True),   # 1000 - 990 - 1 = 9 bars since swing → in range
+        (990, 5, None, True),   # max_bars = len(df)
+        (995, 5, 10, False),   # 4 bars since extremene. max ✅  & min ❌
+        (990, 5, 8, False),   # 9 bars since extremene. max ❌  & min ✅
+        (999, 5, 10, False),  # 0 bars since swing → not enough
+    ]
+)
+def test_is_bars_since_extreme_pivot_valid(
+    frame_extreme_pos: int,
+    min_bars: Optional[int],
+    max_bars: Optional[int],
+    expected_result: bool
+):
+    bars = 1000
+    dates = pd.date_range(start="2023-01-01", periods=bars, freq="D")
+    synth_prices_df = pd.DataFrame({"high": range(bars)}, index=dates)
+
+    # Convert position to actual index label
+    frame_extreme_idx = synth_prices_df.index[frame_extreme_pos]
+    print(frame_extreme_idx)
+
+    result = is_bars_since_extreme_pivot_valid(synth_prices_df, frame_extreme_idx, min_bars, max_bars)
+    assert result == expected_result
+
 
 def test_pullback_max_70_pct():...
 
