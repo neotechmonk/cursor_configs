@@ -10,6 +10,7 @@ from main import (
     get_trend,
     is_bars_since_extreme_pivot_valid,
     is_extreme_bar,
+    is_new_impulse_extension_valid,
 )
 
 
@@ -102,7 +103,6 @@ def test_is_extreme_larger_frame_size_raises(uptrending_price_feed):
         is_extreme_bar(uptrending_price_feed, trend=Direction.UP, frame_size=1000)
 
 
-# @pytest.mark.skip()
 @pytest.mark.parametrize(
     "price_feed_fixture, direction, frame_size",
     [
@@ -119,7 +119,7 @@ def test_is_extreme_invalid_frame_size_raises(price_feed_fixture, direction, fra
         is_extreme_bar(price_feed, trend=direction, frame_size=frame_size)
 
 
-# endregion
+#endregion
 
 
 # region: first pullback
@@ -159,6 +159,8 @@ def test_pullback_min_20_pct():...
 # endregion
 
 def test_new_impulse_extension_close_max_1_875():...
+
+
 def test_new_impulse_extension_close_min_1_875():...
 
 # endregion
@@ -174,6 +176,193 @@ def test_pullback_and_new_impulse_min_bars():...
 def test_pullback_and_new_impulse_max_bars():...
 # endregion
 
+# region : New Impulse : fib extension range 
+
+@pytest.mark.parametrize(
+    "pullback_start_pos, pullback_end_pos, min_ext, max_ext, expected",
+    [
+        (1, 2, None, None, False),       # uses default min=1.35, max=1.875 → fib=2.0 → ❌
+        (1, 2, None, 2.0, True),         # uses default; fib_ext = 2.0, at upper bound, above min → ✅
+        (1, 2, 1, None, False),         # uses default; fib_ext = 2.0, under upper bound, above min → ❌
+        (1, 2, 1.0, 2.0, True),         # fib_ext = 2.0, at upper bound
+        (1, 2, 1.5, 2.0, True),         # fib_extb = 2.0, within range
+        (1, 2, 1.7, 1.9, False),        # fib_ext = 2.0, exceeds max
+        (1, 2, 2.1, 3, False),        # fib_ext = 2.0, doesnt meet mina
+    ]
+)
+def test_is_new_impulse_extension_up_trend(
+    pullback_start_pos,
+    pullback_end_pos,
+    min_ext,
+    max_ext,
+    expected, uptrending_price_feed
+    ):
+    # Setup: synthetic prices
+    dates = pd.date_range("2023-01-01", periods=5, freq="D")
+
+    # Price structure designed to create fib extension of 2.0:
+    # Pullback high = 106, pullback low = 92 → pullback = 14
+    # Current high = 120 → impulse = 28 → fib = 28 / 14 = 2.0
+
+    data = {
+        PriceLabel.OPEN:  [100, 95, 98, 110, 115],
+        PriceLabel.HIGH:  [101, 106,  99, 111, 120],  # current high is last bar
+        PriceLabel.LOW:   [94,  91,  92, 108, 109],
+        PriceLabel.CLOSE: [100, 93,  95, 110, 117],
+    }
+
+    price_feed = pd.DataFrame(data, index=dates)
+    pullback_start_idx = dates[pullback_start_pos]
+    pullback_end_idx = dates[pullback_end_pos]
+
+    kwargs = {
+        "price_feed": price_feed,
+        "trend": Direction.UP,
+        "pullback_start_idx": pullback_start_idx,
+        "pullback_end_idx": pullback_end_idx,
+    }
+
+    # Add optional params only if explicitly given
+    if min_ext is not None:
+        kwargs["min_fib_extension"] = min_ext
+    if max_ext is not None:
+        kwargs["max_fib_extension"] = max_ext
+
+    result = is_new_impulse_extension_valid(**kwargs)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "pullback_start_pos, pullback_end_pos, min_ext, max_ext, expected",
+    [
+        (1, 2, None, None, False),       # uses default min=1.35, max=1.875 → fib=2.0 → ❌
+        (1, 2, None, 2.0, True),         # default min, custom max → fib = 2.0 → ✅
+        (1, 2, 1.0, None, False),        # custom min, default max → fib = 2.0 → ❌
+        (1, 2, 1.0, 2.0, True),          # fib = 2.0, upper bound → ✅
+        (1, 2, 1.5, 2.0, True),          # fib = 2.0, within range → ✅
+        (1, 2, 1.7, 1.9, False),         # fib = 2.0, exceeds max → ❌
+        (1, 2, 2.1, 3.0, False),         # fib = 2.0, below min → ❌
+    ]
+)
+def test_is_new_impulse_extension_down_trend(
+    pullback_start_pos,
+    pullback_end_pos,
+    min_ext,
+    max_ext,
+    expected
+):
+    dates = pd.date_range("2023-01-01", periods=5, freq="D")
+
+    # DOWN trend structure:
+    # Pullback low = 91 at pos 1, high = 125 at pos 2 → pullback = 34
+    # Current low = 57 at pos 4 → impulse = 125 - 57 = 68 → fib = 68 / 34 = 2.0
+  
+    data = {
+        PriceLabel.OPEN:  [130, 120, 110, 105, 95],
+        PriceLabel.HIGH:  [132, 123, 125, 108, 105],  # pullback high = 125
+        PriceLabel.LOW:   [100, 91,  105, 89, 57],    # pullback low = 91, current low = 57
+        PriceLabel.CLOSE: [129, 93,  110, 91, 60],
+    }
+    price_feed = pd.DataFrame(data, index=dates)
+
+    pullback_start_idx = dates[pullback_start_pos]
+    pullback_end_idx = dates[pullback_end_pos]
+
+    kwargs = {
+        "price_feed": price_feed,
+        "trend": Direction.DOWN,
+        "pullback_start_idx": pullback_start_idx,
+        "pullback_end_idx": pullback_end_idx,
+    }
+
+    if min_ext is not None:
+        kwargs["min_fib_extension"] = min_ext
+    if max_ext is not None:
+        kwargs["max_fib_extension"] = max_ext
+
+    result = is_new_impulse_extension_valid(**kwargs)
+    assert result == expected
+
+
+# ❌ Invalid trend
+def test_guard_invalid_trend_raises_value_error(uptrending_price_feed):
+    start_idx = uptrending_price_feed.index[1]
+    end_idx = uptrending_price_feed.index[2]
+
+    with pytest.raises(ValueError, match="Unsupported trend"):
+        is_new_impulse_extension_valid(
+            price_feed=uptrending_price_feed,
+            trend=Direction.RANGE,  # Invalid trend
+            pullback_start_idx=start_idx,
+            pullback_end_idx=end_idx
+        )
+
+
+# ❌ Invalid min/max types
+@pytest.mark.parametrize("min_ext, max_ext", [
+    (None, 1.8),
+    (1.3, None),
+    ("low", 1.8),
+    (1.3, "high"),
+])
+def test_guard_invalid_min_max_types_raises_type_error(uptrending_price_feed, min_ext, max_ext):
+    start_idx = uptrending_price_feed.index[1]
+    end_idx = uptrending_price_feed.index[2]
+
+    with pytest.raises(TypeError, match="min_fib_extension and max_fib_extension must be numeric"):
+        is_new_impulse_extension_valid(
+            price_feed=uptrending_price_feed,
+            trend=Direction.UP,
+            pullback_start_idx=start_idx,
+            pullback_end_idx=end_idx,
+            min_fib_extension=min_ext,
+            max_fib_extension=max_ext
+        )
+
+
+# ❌ Invalid index order (start >= end)
+@pytest.mark.parametrize("start_pos, end_pos", [
+    (2, 2),  # equal
+    (3, 2),  # reversed
+    # (3, 5),  # control
+])
+def test_guard_invalid_index_order_raises_value_error(uptrending_price_feed, start_pos, end_pos):
+    start_idx = uptrending_price_feed.index[start_pos]
+    end_idx = uptrending_price_feed.index[end_pos]
+
+    with pytest.raises(ValueError, match="start=.*must be before end"):
+        is_new_impulse_extension_valid(
+            price_feed=uptrending_price_feed,
+            trend=Direction.UP,
+            pullback_start_idx=start_idx,
+            pullback_end_idx=end_idx
+        )
+
+
+# ❌ Zero pullback distance (identical high and low)
+def test_guard_zero_pullback_distance_raises_value_error():
+    # Create a DataFrame where all highs and lows are equal across the frame
+    dates = pd.date_range(start="2023-01-01", periods=5, freq="B")
+    price_feed = pd.DataFrame({
+        PriceLabel.OPEN:  [100, 100, 100, 100, 100],
+        PriceLabel.HIGH:  [105, 90, 90, 105, 105],  # fake high 90 for index 1, 2
+        PriceLabel.LOW:   [90,  90,  90,  90,  90],  # fake low 90 for index 1, 2
+        PriceLabel.CLOSE: [95,  95,  95,  95,  95]
+    }, index=dates)
+
+    # Choose any start and end index (they’re both flat)
+    start_idx = price_feed.index[1]
+    end_idx = price_feed.index[2]
+
+    with pytest.raises(ValueError, match="zero distance"):
+        is_new_impulse_extension_valid(
+            price_feed=price_feed,
+            trend=Direction.UP,
+            pullback_start_idx=start_idx,
+            pullback_end_idx=end_idx
+        )
+
+# endregion 
 
 # region: Setup
 """
