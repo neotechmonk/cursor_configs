@@ -13,6 +13,7 @@ from main import (
     get_trend,
     is_bars_since_extreme_pivot_valid,
     is_extreme_bar,
+    is_last_bar_within_bars_count,
     is_within_fib_extension,
 )
 
@@ -376,6 +377,81 @@ def test_guard_zero_pullback_distance_raises_value_error():
 
 # endregion 
 
+# region : swing size - reaction to entry
+@pytest.mark.parametrize(
+    "ref_idx, searched_idx, min_bars, max_bars, expected",
+    [
+        (0, 4, 4, 4, True),     # Exactly 4 bars between 0 and 4
+        (1, 3, 1, 3, True),     # 2 bars between index 1 and 3
+        (2, 4, 1, 2, True),     # 2 bars between 2 and 4
+        (1, 4, 3, 3, True),     # 3 bars between 1 and 4
+        (3, 4, 1, 1, True),     # 1 bar between 3 and 4
+        (0, 4, 1, 3, False),    # 4 bars not within range
+        (2, 3, 2, 3, False),    # Only 1 bar between 2 and 3
+    ]
+)
+def test_is_last_bar_within_bars_count(
+    uptrending_price_feed,
+    ref_idx,
+    searched_idx,
+    min_bars,
+    max_bars,
+    expected
+):
+    df = uptrending_price_feed
+    ref_bar = df.index[ref_idx]
+    searched_bar = df.index[searched_idx]
+
+    result = is_last_bar_within_bars_count(
+        price_feed=df,
+        ref_bar_idx=ref_bar,
+        searched_bar_idx=searched_bar,
+        min_bars=min_bars,
+        max_bars=max_bars
+    )
+
+    assert result is expected
+
+
+def test_is_last_bar_within_bars_count_guard_invalid_min_max_types(uptrending_price_feed):
+    df = uptrending_price_feed
+    ref_bar = df.index[0]
+    searched_bar = df.index[1]
+
+    with pytest.raises(TypeError, match="min_bars and max_bars must be integers"):
+        is_last_bar_within_bars_count(df, ref_bar, searched_bar, min_bars="two", max_bars=5)
+
+    with pytest.raises(TypeError, match="min_bars and max_bars must be integers"):
+        is_last_bar_within_bars_count(df, ref_bar, searched_bar, min_bars=1, max_bars=5.0)
+
+
+def test_is_last_bar_within_bars_count_guard_ref_bar_not_in_index(uptrending_price_feed):
+    df = uptrending_price_feed
+    fake_ref = pd.Timestamp("1999-01-01")
+    searched_bar = df.index[-1]
+
+    with pytest.raises(ValueError, match="Reference index .* not in price feed"):
+        is_last_bar_within_bars_count(df, fake_ref, searched_bar, min_bars=1, max_bars=5)
+
+
+def test_is_last_bar_within_bars_count__guard_searched_bar_not_in_index(uptrending_price_feed):
+    df = uptrending_price_feed
+    ref_bar = df.index[0]
+    fake_searched = pd.Timestamp("2099-01-01")
+
+    with pytest.raises(ValueError, match="Searched index .* not in price feed"):
+        is_last_bar_within_bars_count(df, ref_bar, fake_searched, min_bars=1, max_bars=5)
+
+
+def test_is_last_bar_within_bars_count__guard_searched_bar_precedes_ref_bar(uptrending_price_feed):
+    df = uptrending_price_feed
+    ref_bar = df.index[3]
+    searched_bar = df.index[1]
+
+    with pytest.raises(ValueError, match="Reference index .* should precede searched index .*"):
+        is_last_bar_within_bars_count(df, ref_bar, searched_bar, min_bars=1, max_bars=5)
+
+# endregion
 
 # region: Setup
 """

@@ -130,7 +130,44 @@ def is_within_fib_extension(
     return min_fib_extension <= fib_extension <= max_fib_extension
 
 
-#     return min_bars <= bars_since_ref <= max_bars
+def is_last_bar_within_bars_count(
+    price_feed: pd.DataFrame,
+    ref_bar_idx: pd.Timestamp,
+    searched_bar_idx: Optional[pd.Timestamp] = None,
+    min_bars: int = None,
+    max_bars: int = None,
+) -> bool:
+    # --- Guards ---
+    if not isinstance(min_bars, int) or not isinstance(max_bars, int):
+        raise TypeError("min_bars and max_bars must be integers.")
+    
+    if ref_bar_idx not in price_feed.index:
+        raise ValueError(f"Reference index {ref_bar_idx} not in price feed.")
+
+    # Default to last bar if searched_bar_idx is not provided
+    if searched_bar_idx is None:
+        searched_bar_idx = price_feed.index[-1]
+
+    if searched_bar_idx not in price_feed.index:
+        raise ValueError(f"Searched index {searched_bar_idx} not in price feed.")
+    
+    if searched_bar_idx < ref_bar_idx:
+        raise ValueError(f"Reference index {ref_bar_idx} should precede searched index {searched_bar_idx}.")
+    
+    try:
+        ref_idx_pos = price_feed.index.get_loc(ref_bar_idx)
+    except KeyError:
+        raise ValueError(f"Reference index {ref_bar_idx} not in price feed.")
+
+    try:
+        ser_idx_pos = price_feed.index.get_loc(searched_bar_idx)
+    except KeyError:
+        raise ValueError(f"Searched index {searched_bar_idx} not in price feed.")
+
+    bars_since_ref = ser_idx_pos - ref_idx_pos
+
+    return min_bars <= bars_since_ref <= max_bars
+
 
 def main():
     raise NotImplementedError()
