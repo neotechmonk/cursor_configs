@@ -140,16 +140,11 @@ def is_last_bar_within_bars_count(
     # --- Guards ---
     if not isinstance(min_bars, int) or not isinstance(max_bars, int):
         raise TypeError("min_bars and max_bars must be integers.")
-    
-    if ref_bar_idx not in price_feed.index:
-        raise ValueError(f"Reference index {ref_bar_idx} not in price feed.")
 
     # Default to last bar if searched_bar_idx is not provided
     if searched_bar_idx is None:
         searched_bar_idx = price_feed.index[-1]
 
-    if searched_bar_idx not in price_feed.index:
-        raise ValueError(f"Searched index {searched_bar_idx} not in price feed.")
     
     if searched_bar_idx < ref_bar_idx:
         raise ValueError(f"Reference index {ref_bar_idx} should precede searched index {searched_bar_idx}.")
