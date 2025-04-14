@@ -63,6 +63,7 @@ def is_extreme_bar(price_feed: pd.DataFrame, trend: Direction, frame_size:Option
                 return False
 
 
+# TODO : Refactor this to be a generic function that confirms number of bars since reference index
 def is_bars_since_extreme_pivot_valid(price_feed: pd.DataFrame, major_swing_high_idx, min_bars: int, max_bars: int) -> bool:
     price_feed_len = len(price_feed)
 
@@ -75,11 +76,11 @@ def is_bars_since_extreme_pivot_valid(price_feed: pd.DataFrame, major_swing_high
     return min_bars <= bars_since_swing_high <= max_bars
 
 
-def is_new_impulse_extension_valid(
+def is_within_fib_extension(
     price_feed: pd.DataFrame,
     trend: Direction,
-    pullback_start_idx: pd.Timestamp,
-    pullback_end_idx: pd.Timestamp,
+    ref_swing_start_idx: pd.Timestamp,
+    ref_swing_end_idx: pd.Timestamp,
     min_fib_extension: float = 1.35,
     max_fib_extension: float = 1.875
 ) -> bool:
@@ -91,16 +92,16 @@ def is_new_impulse_extension_valid(
     if not isinstance(min_fib_extension, (int, float)) or not isinstance(max_fib_extension, (int, float)):
         raise TypeError("min_fib_extension and max_fib_extension must be numeric (int or float).")
     
-    if pullback_start_idx >= pullback_end_idx:
+    if ref_swing_start_idx >= ref_swing_end_idx:
         raise ValueError(
-            f"Invalid pullback indices: start={pullback_start_idx} must be before end={pullback_end_idx}."
+            f"Invalid pullback indices: start={ref_swing_start_idx} must be before end={ref_swing_end_idx}."
         )
 
     match trend:
         case Direction.UP:
             current_high = price_feed.iloc[-1][PriceLabel.HIGH]
-            pullback_high = price_feed.at[pullback_start_idx, PriceLabel.HIGH]
-            pullback_low = price_feed.at[pullback_end_idx, PriceLabel.LOW]
+            pullback_high = price_feed.at[ref_swing_start_idx, PriceLabel.HIGH]
+            pullback_low = price_feed.at[ref_swing_end_idx, PriceLabel.LOW]
 
             pullback_distance = pullback_high - pullback_low
             if pullback_distance == 0:
@@ -111,8 +112,8 @@ def is_new_impulse_extension_valid(
 
         case Direction.DOWN:
             current_low = price_feed.iloc[-1][PriceLabel.LOW]
-            pullback_low = price_feed.at[pullback_start_idx, PriceLabel.LOW]
-            pullback_high = price_feed.at[pullback_end_idx, PriceLabel.HIGH]
+            pullback_low = price_feed.at[ref_swing_start_idx, PriceLabel.LOW]
+            pullback_high = price_feed.at[ref_swing_end_idx, PriceLabel.HIGH]
 
             pullback_distance = pullback_high - pullback_low
             if pullback_distance == 0:
@@ -128,6 +129,8 @@ def is_new_impulse_extension_valid(
 
     return min_fib_extension <= fib_extension <= max_fib_extension
 
+
+#     return min_bars <= bars_since_ref <= max_bars
 
 def main():
     raise NotImplementedError()

@@ -1,5 +1,8 @@
 
-from typing import Optional
+from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
+from typing import List, Optional, TypedDict
 
 import pandas as pd
 import pytest
@@ -10,10 +13,11 @@ from main import (
     get_trend,
     is_bars_since_extreme_pivot_valid,
     is_extreme_bar,
-    is_new_impulse_extension_valid,
+    is_within_fib_extension,
 )
 
 
+@pytest.mark.skip("Non implemented")
 def test_100_bar_frame():...
 
 # region: Detect Direction
@@ -153,14 +157,18 @@ def test_is_bars_since_extreme_pivot_valid(
     assert result == expected_result
 
 
+@pytest.mark.skip("Non implemented")
 def test_pullback_max_70_pct():...
 
+@pytest.mark.skip("Non implemented")
 def test_pullback_min_20_pct():...
 # endregion
 
+@pytest.mark.skip("Non implemented")
 def test_new_impulse_extension_close_max_1_875():...
 
 
+@pytest.mark.skip("Non implemented")
 def test_new_impulse_extension_close_min_1_875():...
 
 # endregion
@@ -172,7 +180,10 @@ we dont want to get jacked up or play in larger pattern blocking the funds
 """
 
 
+@pytest.mark.skip("Non implemented")
 def test_pullback_and_new_impulse_min_bars():...
+
+@pytest.mark.skip("Non implemented")
 def test_pullback_and_new_impulse_max_bars():...
 # endregion
 
@@ -218,8 +229,8 @@ def test_is_new_impulse_extension_up_trend(
     kwargs = {
         "price_feed": price_feed,
         "trend": Direction.UP,
-        "pullback_start_idx": pullback_start_idx,
-        "pullback_end_idx": pullback_end_idx,
+        "ref_swing_start_idx": pullback_start_idx,
+        "ref_swing_end_idx": pullback_end_idx,
     }
 
     # Add optional params only if explicitly given
@@ -228,7 +239,7 @@ def test_is_new_impulse_extension_up_trend(
     if max_ext is not None:
         kwargs["max_fib_extension"] = max_ext
 
-    result = is_new_impulse_extension_valid(**kwargs)
+    result = is_within_fib_extension(**kwargs)
     assert result == expected
 
 
@@ -271,8 +282,8 @@ def test_is_new_impulse_extension_down_trend(
     kwargs = {
         "price_feed": price_feed,
         "trend": Direction.DOWN,
-        "pullback_start_idx": pullback_start_idx,
-        "pullback_end_idx": pullback_end_idx,
+        "ref_swing_start_idx": pullback_start_idx,
+        "ref_swing_end_idx": pullback_end_idx,
     }
 
     if min_ext is not None:
@@ -280,7 +291,7 @@ def test_is_new_impulse_extension_down_trend(
     if max_ext is not None:
         kwargs["max_fib_extension"] = max_ext
 
-    result = is_new_impulse_extension_valid(**kwargs)
+    result = is_within_fib_extension(**kwargs)
     assert result == expected
 
 
@@ -290,11 +301,11 @@ def test_guard_invalid_trend_raises_value_error(uptrending_price_feed):
     end_idx = uptrending_price_feed.index[2]
 
     with pytest.raises(ValueError, match="Unsupported trend"):
-        is_new_impulse_extension_valid(
+        is_within_fib_extension(
             price_feed=uptrending_price_feed,
             trend=Direction.RANGE,  # Invalid trend
-            pullback_start_idx=start_idx,
-            pullback_end_idx=end_idx
+            ref_swing_start_idx=start_idx,
+            ref_swing_end_idx=end_idx
         )
 
 
@@ -310,11 +321,11 @@ def test_guard_invalid_min_max_types_raises_type_error(uptrending_price_feed, mi
     end_idx = uptrending_price_feed.index[2]
 
     with pytest.raises(TypeError, match="min_fib_extension and max_fib_extension must be numeric"):
-        is_new_impulse_extension_valid(
+        is_within_fib_extension(
             price_feed=uptrending_price_feed,
             trend=Direction.UP,
-            pullback_start_idx=start_idx,
-            pullback_end_idx=end_idx,
+            ref_swing_start_idx=start_idx,
+            ref_swing_end_idx=end_idx,
             min_fib_extension=min_ext,
             max_fib_extension=max_ext
         )
@@ -331,11 +342,11 @@ def test_guard_invalid_index_order_raises_value_error(uptrending_price_feed, sta
     end_idx = uptrending_price_feed.index[end_pos]
 
     with pytest.raises(ValueError, match="start=.*must be before end"):
-        is_new_impulse_extension_valid(
+        is_within_fib_extension(
             price_feed=uptrending_price_feed,
             trend=Direction.UP,
-            pullback_start_idx=start_idx,
-            pullback_end_idx=end_idx
+            ref_swing_start_idx=start_idx,
+            ref_swing_end_idx=end_idx
         )
 
 
@@ -355,14 +366,16 @@ def test_guard_zero_pullback_distance_raises_value_error():
     end_idx = price_feed.index[2]
 
     with pytest.raises(ValueError, match="zero distance"):
-        is_new_impulse_extension_valid(
+        is_within_fib_extension(
             price_feed=price_feed,
             trend=Direction.UP,
-            pullback_start_idx=start_idx,
-            pullback_end_idx=end_idx
+            ref_swing_start_idx=start_idx,
+            ref_swing_end_idx=end_idx
         )
 
+
 # endregion 
+
 
 # region: Setup
 """
@@ -370,12 +383,53 @@ we dont want to get jacked up or play in larger pattern blocking the funds
 """
 
 
+@pytest.mark.skip("Non implemented")
 def test_setup_stop_25_pct():...
+
+@pytest.mark.skip("Non implemented")
 def test_setup_entry_25_pct():...
 
 
+@pytest.mark.skip("Non implemented")
 def test_setup_target():
     """target is part of management - agnostic of strategy"""
     pass
 # endregion
 
+# region : Process bar for the Strategy
+
+"""
+For a each new Bar
+- keep track of steps
+- need to know if a prior steps need to be revalidated
+- transient info for future needs
+"""
+
+
+class StrategyStatus (StrEnum):
+    NA = "NEW"
+    WIP = "IN PROGRESS"
+    CANCELLED = "CANCELLED"
+
+
+@dataclass
+class StrategyStepEvaluationResult:
+    eval_time : datetime
+    result : Optional [any]
+
+
+@dataclass
+class StrategyStep:
+    evaluation_Fn : callable
+    last_eval_time : datetime
+    eval_results : List[StrategyStepEvaluationResult]
+    isReevaluated: bool
+
+
+class StrategyTracker(TypedDict):
+    Status : StrategyStatus
+    Steps: List[StrategyStep]
+
+
+
+# endregion
