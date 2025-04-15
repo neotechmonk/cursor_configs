@@ -1,9 +1,6 @@
-from pathlib import Path
 
-import pytest
-import yaml
 
-from strategy import StrategyConfig, StrategyStep, load_strategy_config
+from strategy import StrategyConfig, load_strategy_config
 
 
 def mock_get_trend():
@@ -24,8 +21,6 @@ def mock_is_bars_since_extreme_pivot_valid(min_bars, max_bars):
 def mock_is_within_fib_extension():
     """Mock function for testing"""
     pass
-
-
 
 
 def test_load_strategy_config_basic(sample_strategy_config):

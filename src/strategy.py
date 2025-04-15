@@ -10,9 +10,8 @@ from datetime import datetime
 from enum import StrEnum
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, TypedDict
+from typing import Any, Callable, Dict, List, Optional
 
-import pandas as pd
 import yaml
 
 
@@ -107,7 +106,7 @@ def load_strategy_config(strategy_name: str, config_dir: str = "configs/strategi
             name=step_data["name"],
             description=step_data["description"],
             evaluation_fn=evaluation_fn,
-            config=step_data.get("config", {}),
+            config=step_data.get("step_config", {}),
             isReevaluated=step_data.get("is_reevaluated", False)
         )
         steps.append(step)
