@@ -1,4 +1,5 @@
 
+from dataclasses import dataclass
 from enum import Enum, StrEnum, auto
 
 
@@ -13,3 +14,5 @@ class Direction(Enum):
     UP = auto()
     DOWN = auto()
     RANGE = auto()
+
+
