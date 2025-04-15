@@ -26,58 +26,6 @@ def mock_is_within_fib_extension():
     pass
 
 
-@pytest.fixture
-def sample_strategy_config(tmp_path):
-    """Create a temporary strategy config file for testing"""
-    config_dir = tmp_path / "configs" / "strategies"
-    config_dir.mkdir(parents=True)
-    
-    config_data = {
-        "name": "Test Strategy",
-        "steps": [
-            {
-                "name": "Detect Trend",
-                "description": "Determine market trend direction",
-                "evaluation_fn": "test_strategy.mock_get_trend",
-                "config": {},  # No config needed for trend detection
-                "is_reevaluated": False
-            },
-            {
-                "name": "Find Extreme Bar",
-                "description": "Check if current bar is an extreme",
-                "evaluation_fn": "test_strategy.mock_is_extreme_bar",
-                "config": {
-                    "frame_size": 5  # Number of bars to look back
-                },
-                "is_reevaluated": False
-            },
-            {
-                "name": "Validate Pullback",
-                "description": "Ensure pullback has enough bars",
-                "evaluation_fn": "test_strategy.mock_is_bars_since_extreme_pivot_valid",
-                "config": {
-                    "min_bars": 3,  # Minimum bars required
-                    "max_bars": 10  # Maximum bars allowed
-                },
-                "is_reevaluated": False
-            },
-            {
-                "name": "Check Fibonacci Extension",
-                "description": "Verify Fibonacci extension criteria",
-                "evaluation_fn": "test_strategy.mock_is_within_fib_extension",
-                "config": {
-                    "min_extension": 1.35,  # Minimum Fibonacci extension
-                    "max_extension": 1.875  # Maximum Fibonacci extension
-                },
-                "is_reevaluated": False
-            }
-        ]
-    }
-    
-    config_file = config_dir / "test_strategy.yaml"
-    config_file.write_text(yaml.dump(config_data))
-    
-    return config_dir
 
 
 def test_load_strategy_config_basic(sample_strategy_config):
