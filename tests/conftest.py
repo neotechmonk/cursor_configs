@@ -2,6 +2,14 @@ import pandas as pd
 import pytest
 import yaml
 
+# Update import path for the wrapper functions
+from mocks.mock_step_functions import (
+    mock_check_fib_wrapper,
+    mock_detect_trend_wrapper,
+    mock_find_extreme_wrapper,
+    mock_validate_pullback_wrapper,
+)
+
 from utils import PriceLabel
 
 
@@ -41,10 +49,12 @@ def rangebound_price_feed():
 
 @pytest.fixture
 def sample_strategy_config(tmp_path):
-    """Create a temporary strategy config file for testing"""
+    """Create a temporary strategy config file for testing with dynamic function paths"""
     config_dir = tmp_path / "configs" / "strategies"
     config_dir.mkdir(parents=True)
     
+    # The dynamic path generation using .__module__ should now correctly resolve to
+    # "tests.mocks.mock_step_functions.<function_name>"
     config_data = {
         "name": "Test Strategy",
         "steps": [
@@ -52,17 +62,17 @@ def sample_strategy_config(tmp_path):
                 "id": "detect_trend",
                 "name": "Detect Trend",
                 "description": "Determine market trend direction",
-                "evaluation_fn": "test_strategy.mock_get_trend",
-                "config": {},  # No config needed for trend detection
+                "evaluation_fn": f"{mock_detect_trend_wrapper.__module__}.{mock_detect_trend_wrapper.__name__}",
+                "config": {},  
                 "reevaluates": {}
             },
             {
                 "id": "find_extreme",
                 "name": "Find Extreme Bar",
                 "description": "Check if current bar is an extreme",
-                "evaluation_fn": "test_strategy.mock_is_extreme_bar",
+                "evaluation_fn": f"{mock_find_extreme_wrapper.__module__}.{mock_find_extreme_wrapper.__name__}",
                 "config": {
-                    "frame_size": 5  # Number of bars to look back
+                    "frame_size": 5  
                 },
                 "reevaluates": {}
             },
@@ -70,10 +80,10 @@ def sample_strategy_config(tmp_path):
                 "id": "validate_pullback",
                 "name": "Validate Pullback",
                 "description": "Ensure pullback has enough bars",
-                "evaluation_fn": "test_strategy.mock_is_bars_since_extreme_pivot_valid",
+                "evaluation_fn": f"{mock_validate_pullback_wrapper.__module__}.{mock_validate_pullback_wrapper.__name__}",
                 "config": {
-                    "min_bars": 3,  # Minimum bars required
-                    "max_bars": 10  # Maximum bars allowed
+                    "min_bars": 3,  
+                    "max_bars": 10  
                 },
                 "reevaluates": {}
             },
@@ -81,13 +91,13 @@ def sample_strategy_config(tmp_path):
                 "id": "check_fib",
                 "name": "Check Fibonacci Extension",
                 "description": "Verify Fibonacci extension criteria",
-                "evaluation_fn": "test_strategy.mock_is_within_fib_extension",
+                "evaluation_fn": f"{mock_check_fib_wrapper.__module__}.{mock_check_fib_wrapper.__name__}",
                 "config": {
-                    "min_extension": 1.35,  # Minimum Fibonacci extension
-                    "max_extension": 1.875  # Maximum Fibonacci extension
+                    "min_extension": 1.35,  
+                    "max_extension": 1.875  
                 },
                 "reevaluates": {
-                    "validate_pullback": True  # Reference step ID
+                    "validate_pullback": True  
                 }
             }
         ]
