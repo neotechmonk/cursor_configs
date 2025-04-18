@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pandas as pd  # Keep pandas if needed by fixtures/tests
 import pytest
 from mocks.mock_step_functions import (
     mock_check_fib_wrapper,
@@ -8,9 +9,13 @@ from mocks.mock_step_functions import (
     mock_validate_pullback_wrapper,
 )
 
-from strategy import StrategyConfig, load_strategy_config
-
-# from mock_step_functions import mock_detect_trend_wrapper
+from strategy import (  # Keep these for tests
+    StrategStepEvaluationResult,
+    StrategyConfig,
+    StrategyExecutionContext,
+    StrategyStep,
+    load_strategy_config,
+)
 
 
 #
@@ -66,93 +71,65 @@ def test_load_strategy_config_basic(sample_strategy_config, monkeypatch):
     assert fib_step.evaluation_fn.__name__ == "mock_check_fib_wrapper"
 
 # --- Tests for StrategyExecutionContext ---
+# Moved to tests/test_strategy_context.py
 
-import pandas as pd  # Keep pandas if needed by fixtures/tests
+# Remove fixtures that were moved
+# @pytest.fixture
+# def step1() -> StrategyStep:
+#     ...
 
-from strategy import (  # Keep these for tests
-    StrategStepEvaluationResult,
-    StrategyExecutionContext,
-    StrategyStep,
-)
+# @pytest.fixture
+# def step2() -> StrategyStep:
+#     ...
 
+# @pytest.fixture
+# def step3() -> StrategyStep:
+#     ...
 
-@pytest.fixture
-def step1() -> StrategyStep:
-    # If these tests need specific mock functions, they should be imported from tests.mocks.strategy_mocks
-    # Example: from tests.mocks.strategy_mocks import mock_get_trend
-    # return StrategyStep(id="step1", name="Step One", ..., evaluation_fn=mock_get_trend, ...)
-    # For now, using lambda as it seems sufficient
-    return StrategyStep(id="step1", name="Step One", description="", evaluation_fn=lambda p,c,**kw: None, config={}, reevaluates=[])
+# @pytest.fixture
+# def ts1() -> pd.Timestamp:
+#     ...
 
+# @pytest.fixture
+# def ts2() -> pd.Timestamp:
+#     ...
 
-@pytest.fixture
-def step2() -> StrategyStep:
-    return StrategyStep(id="step2", name="Step Two", description="", evaluation_fn=lambda p,c,**kw: None, config={}, reevaluates=[])
+# @pytest.fixture
+# def ts3() -> pd.Timestamp:
+#     ...
 
-
-@pytest.fixture
-def step3() -> StrategyStep:
-    return StrategyStep(id="step3", name="Step Three", description="", evaluation_fn=lambda p,c,**kw: None, config={}, reevaluates=[])
-
-
-@pytest.fixture
-def ts1() -> pd.Timestamp:
-    return pd.Timestamp("2023-01-01 10:00:00")
+# @pytest.fixture
+# def ts4() -> pd.Timestamp:
+#     ...
 
 
-@pytest.fixture
-def ts2() -> pd.Timestamp:
-    return pd.Timestamp("2023-01-01 10:01:00")
+# --- REMOVE MOVED Context Tests --- 
+# def test_add_result_initial(step1, ts1):
+#     ...
 
+# def test_add_result_multiple(step1, step2, ts1, ts2):
+#     ...
 
-@pytest.fixture
-def ts3() -> pd.Timestamp:
-    return pd.Timestamp("2023-01-01 10:02:00")
+# Keep other context tests if they exist
+# def test_add_result_no_data(step1, step2, ts1, ts2):
+#     ...
+# def test_add_result_duplicate_data_different_steps_raises(step1, step2, ts1, ts2):
+#     ...
+# def test_add_result_duplicate_data_same_step_allowed(step1, ts1, ts2):
+#     ...
+# def test_find_latest_successful_data_empty():
+#     ...
+# def test_find_latest_successful_data_not_found(step1, ts1):
+#     ...
+# def test_find_latest_successful_data_single_success(step1, ts1):
+#     ...
+# def test_find_latest_successful_data_multiple_one_success(step1, step2, ts1, ts2):
+#     ...
+# def test_find_latest_successful_data_multiple_success_returns_latest(step1, step2, step3, ts1, ts2, ts3):
+#     ...
+# def test_find_latest_successful_data_latest_failed(step1, step2, ts1, ts2):
+#     ...
 
-
-@pytest.fixture
-def ts4() -> pd.Timestamp:
-    return pd.Timestamp("2023-01-01 10:03:00")
-
-
-# --- Context Tests --- 
-# (These tests should remain unchanged as they use the fixtures above)
-
-def test_add_result_initial(step1, ts1):
-    """Test adding the first result to an empty context."""
-    context = StrategyExecutionContext()
-    result = StrategStepEvaluationResult(success=True, message="OK", data={"key1": "value1"})
-    new_context = context.add_result(ts1, step1, result)
-    assert new_context is not context
-    assert len(new_context.result_history) == 1
-    assert ts1 in new_context.result_history
-    assert new_context.result_history[ts1] == (step1, result)
-    assert len(context.result_history) == 0
-
-
-def test_add_result_multiple(step1, step2, ts1, ts2):
-    """Test adding multiple distinct results."""
-    context = StrategyExecutionContext()
-    result1 = StrategStepEvaluationResult(success=True, message="OK1", data={"key1": "value1"})
-    result2 = StrategStepEvaluationResult(success=True, message="OK2", data={"key2": "value2"})
-    context1 = context.add_result(ts1, step1, result1)
-    context2 = context1.add_result(ts2, step2, result2)
-    assert len(context2.result_history) == 2
-    assert ts1 in context2.result_history
-    assert ts2 in context2.result_history
-    assert context2.result_history[ts1] == (step1, result1)
-    assert context2.result_history[ts2] == (step2, result2)
-    assert len(context1.result_history) == 1
-
-# ... other context tests ...
-
-
-def test_find_latest_successful_data_latest_failed(step1, step2, ts1, ts2):
-    """Test finding data when the latest step with the key failed."""
-    context = StrategyExecutionContext()
-    result1 = StrategStepEvaluationResult(success=True, message="OK1", data={"key1": "value1_ok"})
-    result2 = StrategStepEvaluationResult(success=False, message="Fail2", data={"key1": "value2_fail"})
-    context = context.add_result(ts1, step1, result1)
-    context = context.add_result(ts2, step2, result2)
-    found_data = context.find_latest_successful_data("key1")
-    assert found_data == "value1_ok"
+# Remove imports only needed by moved tests/fixtures if they aren't used by remaining tests
+# from dataclasses import dataclass
+# import pandas as pd 
