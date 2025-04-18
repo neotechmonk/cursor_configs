@@ -11,16 +11,15 @@ from mocks.mock_step_functions import (
     mock_validate_pullback_wrapper,
 )
 
-from src.models import (
-    StrategStepEvaluationResult,
-    StrategyExecutionContext,
-    StrategyStep,
-)
-from src.strategy import (
-    StrategyConfig,  # Import StrategyConfig
-    run_strategy,  # load_strategy_config, # No longer needed for this specific test
-)
+from src.models import StrategyConfig, StrategyExecutionContext, StrategyStep
 
+# Import run_strategy from the new runner module
+from src.strategy_runner import run_strategy
+
+# Remove run_strategy from the old import block if it exists
+# from src.strategy import (
+#    ... run_strategy ...
+#)
 
 # @pytest.mark.skip() # Keep test active
 def test_run_strategy_happy_path_with_context(uptrending_price_feed):
