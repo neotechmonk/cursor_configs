@@ -7,14 +7,13 @@ import pytest
 
 # Imports from strategy module needed for tests
 # Update import for StrategStepEvaluationResult
-from src.models import (
+from models import (
     StrategStepEvaluationResult,
     StrategyExecutionContext,
     StrategyStep,
 )
 
 # from dataclasses import dataclass # Not needed if only using fixtures
-
 
 
 @pytest.fixture
