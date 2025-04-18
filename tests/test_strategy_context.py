@@ -2,38 +2,40 @@
 
 """Tests specifically for the StrategyExecutionContext class."""
 
-from dataclasses import dataclass
-
 import pandas as pd
 import pytest
 
 # Imports from strategy module needed for tests
-from src.strategy import (
-    StrategStepEvaluationResult,
-    StrategyExecutionContext,
-    StrategyStep,
-)
+# Update import for StrategStepEvaluationResult
+from src.models import StrategStepEvaluationResult
+from src.strategy import StrategyExecutionContext, StrategyStep
 
-# --- Fixtures moved from test_strategy.py --- 
+# from dataclasses import dataclass # Not needed if only using fixtures
+
+
 
 @pytest.fixture
 def step1() -> StrategyStep:
     # Using lambda as it seems sufficient for these tests
     return StrategyStep(id="step1", name="Step One", description="", evaluation_fn=lambda p,c,**kw: None, config={}, reevaluates=[])
 
+
 @pytest.fixture
 def step2() -> StrategyStep:
     return StrategyStep(id="step2", name="Step Two", description="", evaluation_fn=lambda p,c,**kw: None, config={}, reevaluates=[])
 
+
 @pytest.fixture
 def ts1() -> pd.Timestamp:
     return pd.Timestamp("2023-01-01 10:00:00")
+
 
 @pytest.fixture
 def ts2() -> pd.Timestamp:
     return pd.Timestamp("2023-01-01 10:01:00")
 
 # --- Moved Tests --- 
+
 
 def test_add_result_initial(step1, ts1):
     """Test adding the first result to an empty context."""
@@ -45,6 +47,7 @@ def test_add_result_initial(step1, ts1):
     assert ts1 in new_context.result_history
     assert new_context.result_history[ts1] == (step1, result)
     assert len(context.result_history) == 0
+
 
 def test_add_result_multiple(step1, step2, ts1, ts2):
     """Test adding multiple distinct results."""
@@ -59,6 +62,7 @@ def test_add_result_multiple(step1, step2, ts1, ts2):
     assert context2.result_history[ts1] == (step1, result1)
     assert context2.result_history[ts2] == (step2, result2)
     assert len(context1.result_history) == 1
+
 
 def test_find_latest_successful_data_latest_failed(step1, step2, ts1, ts2):
     """Test finding data when the latest step with the key failed."""

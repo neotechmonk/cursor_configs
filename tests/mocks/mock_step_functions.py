@@ -5,7 +5,9 @@ from typing import Any, Dict
 import pandas as pd
 
 # Adjust import path if strategy module is not in src/
-from src.strategy import StrategStepEvaluationResult, StrategyExecutionContext
+# Update import for StrategStepEvaluationResult
+from src.models import StrategStepEvaluationResult
+from src.strategy import StrategyExecutionContext
 
 # Import the "pure" mock functions to be wrapped
 # Use relative import as it's now in the same directory
