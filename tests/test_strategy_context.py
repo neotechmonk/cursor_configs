@@ -36,62 +36,70 @@ def ts2() -> pd.Timestamp:
 
 
 def test_add_result_initial(step1, ts1):
-    """Test adding the first result to an empty context."""
+    """Test adding the first result to an empty context (mutable)."""
     context = StrategyExecutionContext()
     result = StrategStepEvaluationResult(success=True, message="OK", data={"key1": "value1"})
-    new_context = context.add_result(ts1, step1, result)
-    assert new_context is not context
-    assert len(new_context.result_history) == 1
-    assert ts1 in new_context.result_history
-    assert new_context.result_history[ts1] == (step1, result)
-    assert len(context.result_history) == 0
+    
+    # Call add_result (modifies context in-place, returns None)
+    return_value = context.add_result(ts1, step1, result)
+    
+    # Assert modification happened in place
+    assert return_value is None # Check return value is None as per mutable implementation
+    assert len(context.result_history) == 1
+    assert ts1 in context.result_history
+    assert context.result_history[ts1] == (step1, result)
 
 
 def test_add_result_multiple(step1, step2, ts1, ts2):
-    """Test adding multiple distinct results."""
+    """Test adding multiple distinct results (mutable)."""
     context = StrategyExecutionContext()
     result1 = StrategStepEvaluationResult(success=True, message="OK1", data={"key1": "value1"})
     result2 = StrategStepEvaluationResult(success=True, message="OK2", data={"key2": "value2"})
-    context1 = context.add_result(ts1, step1, result1)
-    context2 = context1.add_result(ts2, step2, result2)
-    assert len(context2.result_history) == 2
-    assert ts1 in context2.result_history
-    assert ts2 in context2.result_history
-    assert context2.result_history[ts1] == (step1, result1)
-    assert context2.result_history[ts2] == (step2, result2)
-    assert len(context1.result_history) == 1
+    
+    # Add first result
+    context.add_result(ts1, step1, result1)
+    assert len(context.result_history) == 1 # Check immediate effect
+    
+    # Add second result
+    context.add_result(ts2, step2, result2)
+    
+    # Assert final state
+    assert len(context.result_history) == 2
+    assert ts1 in context.result_history
+    assert ts2 in context.result_history
+    assert context.result_history[ts1] == (step1, result1)
+    assert context.result_history[ts2] == (step2, result2)
 
 
 def test_find_latest_successful_data_latest_failed(step1, step2, ts1, ts2):
-    """Test finding data when the latest step with the key failed."""
+    """Test finding data when the latest step with the key failed (mutable)."""
     context = StrategyExecutionContext()
     result1 = StrategStepEvaluationResult(success=True, message="OK1", data={"key1": "value1_ok"})
     result2 = StrategStepEvaluationResult(success=False, message="Fail2", data={"key1": "value2_fail"})
-    context = context.add_result(ts1, step1, result1)
-    context = context.add_result(ts2, step2, result2)
+    
+    context.add_result(ts1, step1, result1)
+    context.add_result(ts2, step2, result2)
+    
     found_data = context.find_latest_successful_data("key1")
     assert found_data == "value1_ok"
 
 
 def test_strategy_execution_context_add_result_duplicate_data():
-    """Tests that adding a result with duplicate data raises ValueError."""
-    
+    """Tests that adding a result with duplicate data raises ValueError (mutable)."""
     dummy_strategy_step = StrategyStep(
-        id="step2", 
-        name="Step2",
-        description="Test Step 2",
+        id="step_dup_1", 
+        name="StepDup1",
+        description="Test Step Dup 1",
         evaluation_fn=lambda df, ctx, cfg: None,
         config={}
     )
-
     dummy_strategy_step_2 = StrategyStep(
-        id="step1",
-        name="Step1",
-        description="Test Step 1",
+        id="step_dup_2",
+        name="StepDup2",
+        description="Test Step Dup 2",
         evaluation_fn=lambda df, ctx, cfg: None,
         config={}
     )
-
     timestamp1 = pd.Timestamp("2023-01-01 10:00:00")
     timestamp2 = pd.Timestamp("2023-01-01 10:05:00")
     data_payload = {"key1": "value1", "key2": 123} # same for both StrategySteps
@@ -104,15 +112,21 @@ def test_strategy_execution_context_add_result_duplicate_data():
     )
 
     context = StrategyExecutionContext()
-    context = context.add_result(timestamp1, dummy_strategy_step, result1)
+    # Add first result successfully
+    context.add_result(timestamp1, dummy_strategy_step, result1)
 
     # Adding the same data payload from a *different* step should raise error
     with pytest.raises(ValueError, match="Duplicate result data payload found"):
         context.add_result(timestamp2, dummy_strategy_step_2, result2)
+        
+    # Verify context was not modified by the failed call
+    assert len(context.result_history) == 1
+    assert timestamp1 in context.result_history
+    assert timestamp2 not in context.result_history 
 
 
 def test_strategy_execution_context_add_result_duplicate_data_same_step():
-    """Tests that adding a result with duplicate data from the *same* step is allowed."""
+    """Tests adding duplicate data from the *same* step is allowed (mutable)."""
     step_id = "step_same_data"
     step = StrategyStep(id=step_id, name="SameDataStep", description="Desc", evaluation_fn=lambda df, ctx, cfg: None, config={})
     timestamp1 = pd.Timestamp("2023-01-01 10:00:00")
@@ -127,15 +141,16 @@ def test_strategy_execution_context_add_result_duplicate_data_same_step():
     )
 
     context = StrategyExecutionContext()
-    context = context.add_result(timestamp1, step, result1)
+    # Add first result
+    context.add_result(timestamp1, step, result1)
 
     # Adding the same data payload from the *same* step ID should be allowed
     try:
-        context = context.add_result(timestamp2, step, result2)
+        context.add_result(timestamp2, step, result2)
     except ValueError as e:
         pytest.fail(f"Adding duplicate data from the same step raised an unexpected ValueError: {e}")
 
-    # Check history contains both entries
+    # Check history contains both entries (context modified in place)
     assert len(context.result_history) == 2
     assert timestamp1 in context.result_history
     assert timestamp2 in context.result_history

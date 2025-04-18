@@ -45,9 +45,9 @@ class StrategyStep:
     reevaluates: List['StrategyStep'] = field(default_factory=list)
 
 
-@dataclass(frozen=True)
+@dataclass()
 class StrategyExecutionContext:
-    """Immutable context holding results history for a strategy run."""
+    """Mutable context holding results history for a strategy run."""
     # Stores the (step, result) tuple keyed by timestamp encountered so far in this run
     result_history: Dict[pd.Timestamp, Tuple[StrategyStep, StrategStepEvaluationResult]] = field(default_factory=dict)
 
@@ -72,8 +72,8 @@ class StrategyExecutionContext:
 
         return None
 
-    def add_result(self, price_data_index : pd.Timestamp, step: StrategyStep, result: StrategStepEvaluationResult) -> 'StrategyExecutionContext':
-        """Creates a NEW context with the added result, keyed by timestamp, after validation."""
+    def add_result(self, price_data_index : pd.Timestamp, step: StrategyStep, result: StrategStepEvaluationResult) -> None:
+        """Adds the result to the context's history IN-PLACE, keyed by timestamp, after validation."""
         # Data Duplication Validation 
         if result.data:
             for existing_timestamp, (existing_step, existing_result) in self.result_history.items():
@@ -86,9 +86,9 @@ class StrategyExecutionContext:
                         f"Step '{existing_step.name}' (ID: {existing_step.id}) at {existing_timestamp}."
                     )
 
-        new_history = self.result_history.copy()
-        new_history[price_data_index] = (step, result) 
-        return StrategyExecutionContext(result_history=new_history)
+        # Modify history in place
+        self.result_history[price_data_index] = (step, result) 
+        # No return needed (or return self if preferred, but None is typical for in-place modification)
 
 
 # Add other shared data models here in the future
