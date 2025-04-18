@@ -94,3 +94,7 @@ class StrategyExecutionContext:
 # Add other shared data models here in the future
 
 
+@dataclass
+class StrategyConfig:
+    name: str
+    steps: List[StrategyStep]
