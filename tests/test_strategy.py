@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pandas as pd  # Keep pandas if needed by fixtures/tests
-import pytest
 from mocks.mock_step_functions import (
     mock_check_fib_wrapper,
     mock_detect_trend_wrapper,
@@ -10,10 +8,7 @@ from mocks.mock_step_functions import (
 )
 
 from strategy import (  # Keep these for tests
-    StrategStepEvaluationResult,
     StrategyConfig,
-    StrategyExecutionContext,
-    StrategyStep,
     load_strategy_config,
 )
 
@@ -69,67 +64,3 @@ def test_load_strategy_config_basic(sample_strategy_config, monkeypatch):
     assert extreme_step.evaluation_fn.__name__ == "mock_find_extreme_wrapper"
     assert pullback_step.evaluation_fn.__name__ == "mock_validate_pullback_wrapper"
     assert fib_step.evaluation_fn.__name__ == "mock_check_fib_wrapper"
-
-# --- Tests for StrategyExecutionContext ---
-# Moved to tests/test_strategy_context.py
-
-# Remove fixtures that were moved
-# @pytest.fixture
-# def step1() -> StrategyStep:
-#     ...
-
-# @pytest.fixture
-# def step2() -> StrategyStep:
-#     ...
-
-# @pytest.fixture
-# def step3() -> StrategyStep:
-#     ...
-
-# @pytest.fixture
-# def ts1() -> pd.Timestamp:
-#     ...
-
-# @pytest.fixture
-# def ts2() -> pd.Timestamp:
-#     ...
-
-# @pytest.fixture
-# def ts3() -> pd.Timestamp:
-#     ...
-
-# @pytest.fixture
-# def ts4() -> pd.Timestamp:
-#     ...
-
-
-# --- REMOVE MOVED Context Tests --- 
-# def test_add_result_initial(step1, ts1):
-#     ...
-
-# def test_add_result_multiple(step1, step2, ts1, ts2):
-#     ...
-
-# Keep other context tests if they exist
-# def test_add_result_no_data(step1, step2, ts1, ts2):
-#     ...
-# def test_add_result_duplicate_data_different_steps_raises(step1, step2, ts1, ts2):
-#     ...
-# def test_add_result_duplicate_data_same_step_allowed(step1, ts1, ts2):
-#     ...
-# def test_find_latest_successful_data_empty():
-#     ...
-# def test_find_latest_successful_data_not_found(step1, ts1):
-#     ...
-# def test_find_latest_successful_data_single_success(step1, ts1):
-#     ...
-# def test_find_latest_successful_data_multiple_one_success(step1, step2, ts1, ts2):
-#     ...
-# def test_find_latest_successful_data_multiple_success_returns_latest(step1, step2, step3, ts1, ts2, ts3):
-#     ...
-# def test_find_latest_successful_data_latest_failed(step1, step2, ts1, ts2):
-#     ...
-
-# Remove imports only needed by moved tests/fixtures if they aren't used by remaining tests
-# from dataclasses import dataclass
-# import pandas as pd 
