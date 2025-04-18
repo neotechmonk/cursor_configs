@@ -9,13 +9,18 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd  # Add pandas import
 import yaml
 
-# Import the moved model
-from .models import StrategStepEvaluationResult
+# Import the moved models and types
+from .models import (
+    StrategStepEvaluationResult,
+    StrategyExecutionContext,
+    StrategyStep,
+    StrategyStepFn,
+)
 
 
 class StrategyStatus (StrEnum):
@@ -30,74 +35,74 @@ class StrategyStatus (StrEnum):
 # Define the expected signature for evaluation functions (wrappers)
 # This must be defined before StrategyStep which uses it.
 # Ensure it uses the imported StrategStepEvaluationResult
-StrategyStepFn = Callable[
-    [pd.DataFrame, 'StrategyExecutionContext', Dict[str, Any]], 
-    StrategStepEvaluationResult
-]
+# StrategyStepFn = Callable[
+#     [pd.DataFrame, 'StrategyExecutionContext', Dict[str, Any]], 
+#     StrategStepEvaluationResult
+# ]
 
 
-@dataclass
-class StrategyStep:
-    id: str  # Add unique identifier
-    name: str
-    description: str
-    evaluation_fn: StrategyStepFn # Use simple Protocol
-    config: Dict[str, Any]
-    reevaluates: List['StrategyStep'] = field(default_factory=list)  # List of steps to reevaluate if this step fails
+# @dataclass
+# class StrategyStep:
+#     id: str  # Add unique identifier
+#     name: str
+#     description: str
+#     evaluation_fn: StrategyStepFn # Use simple Protocol
+#     config: Dict[str, Any]
+#     reevaluates: List['StrategyStep'] = field(default_factory=list)  # List of steps to reevaluate if this step fails
 
 
-@dataclass(frozen=True)
-class StrategyExecutionContext:
-    """Immutable context holding the LATEST (step, result) tuple for each step ID encountered."""
-    # Stores the latest (step, result) tuple for each step ID encountered so far
-    # Corrected Type Hint:
-    result_history: Dict[str, Tuple[StrategyStep, StrategStepEvaluationResult]] = field(default_factory=dict)
-
-    def find_latest_successful_data(self, data_key: str) -> Optional[Tuple[str, Any]]:
-        """Finds the latest successful result containing the data_key.
-        
-        Searches the LATEST results of all steps encountered so far in reverse
-        chronological order (based on typical execution/insertion order).
-        Returns a tuple of (producing_step_id, data_value) or None.
-        """
-        # Iterate through the step IDs in reverse insertion order
-        # First filter results that have the data_key, then get the latest one
-        matching_results = [
-            (index, result) 
-            for index, (step, result) in self.result_history.items()
-            if result.success and result.data and data_key in result.data
-        ]
-        if matching_results:
-            # Sort by step_id (which is the price_data_index) and get the latest
-            latest_result = max(matching_results, key=lambda x: x[0])
-            return latest_result[1].data[data_key]
-        return None # Data key not found in any successful latest result
-
-    def add_result(self, price_data_index : pd.Timestamp, step: StrategyStep, result: StrategStepEvaluationResult) -> 'StrategyExecutionContext':
-        """Creates a NEW context with the added/updated LATEST (step, result) tuple for the given step,
-        after validating against data duplication from other steps.
-        """
-        # --- Data Duplication Validation ---
-        if result.data: # Only check if the new result actually has data
-            for existing_step_id, (existing_step, existing_result) in self.result_history.items():
-                # Don't compare a step's result data with itself
-                if existing_step_id == step.id:
-                    continue
-                # Check if the existing result also has data and if it's identical
-                if existing_result.data and existing_result.data == result.data:
-                    raise ValueError(
-                        f"Duplicate result data payload found for key(s) '{list(result.data.keys())}'. "
-                        f"Step '{step.name}' (ID: {step.id}) produced the same data as the latest result of "
-                        f"Step ID '{existing_step_id}'."
-                    )
-        # --- End Validation ---
-
-        # Create a copy of the current dictionary
-        new_latest = self.result_history.copy()
-        # Update the dictionary using step.id as the key, storing the tuple
-        new_latest[price_data_index] = (step, result) 
-        # Return a new StrategyExecutionContext instance with the updated dictionary
-        return StrategyExecutionContext(result_history=new_latest)
+# @dataclass(frozen=True)
+# class StrategyExecutionContext:
+#     """Immutable context holding the LATEST (step, result) tuple for each step ID encountered."""
+#     # Stores the latest (step, result) tuple for each step ID encountered so far
+#     # Corrected Type Hint:
+#     result_history: Dict[str, Tuple[StrategyStep, StrategStepEvaluationResult]] = field(default_factory=dict)
+#
+#     def find_latest_successful_data(self, data_key: str) -> Optional[Tuple[str, Any]]:
+#         """Finds the latest successful result containing the data_key.
+#         
+#         Searches the LATEST results of all steps encountered so far in reverse
+#         chronological order (based on typical execution/insertion order).
+#         Returns a tuple of (producing_step_id, data_value) or None.
+#         """
+#         # Iterate through the step IDs in reverse insertion order
+#         # First filter results that have the data_key, then get the latest one
+#         matching_results = [
+#             (index, result) 
+#             for index, (step, result) in self.result_history.items()
+#             if result.success and result.data and data_key in result.data
+#         ]
+#         if matching_results:
+#             # Sort by step_id (which is the price_data_index) and get the latest
+#             latest_result = max(matching_results, key=lambda x: x[0])
+#             return latest_result[1].data[data_key]
+#         return None # Data key not found in any successful latest result
+#
+#     def add_result(self, price_data_index : pd.Timestamp, step: StrategyStep, result: StrategStepEvaluationResult) -> 'StrategyExecutionContext':
+#         """Creates a NEW context with the added/updated LATEST (step, result) tuple for the given step,
+#         after validating against data duplication from other steps.
+#         """
+#         # --- Data Duplication Validation ---
+#         if result.data: # Only check if the new result actually has data
+#             for existing_step_id, (existing_step, existing_result) in self.result_history.items():
+#                 # Don't compare a step's result data with itself
+#                 if existing_step_id == step.id:
+#                     continue
+#                 # Check if the existing result also has data and if it's identical
+#                 if existing_result.data and existing_result.data == result.data:
+#                     raise ValueError(
+#                         f"Duplicate result data payload found for key(s) '{list(result.data.keys())}'. "
+#                         f"Step '{step.name}' (ID: {step.id}) produced the same data as the latest result of "
+#                         f"Step ID '{existing_step_id}'."
+#                     )
+#         # --- End Validation ---
+#
+#         # Create a copy of the current dictionary
+#         new_latest = self.result_history.copy()
+#         # Update the dictionary using step.id as the key, storing the tuple
+#         new_latest[price_data_index] = (step, result) 
+#         # Return a new StrategyExecutionContext instance with the updated dictionary
+#         return StrategyExecutionContext(result_history=new_latest)
 
 
 @dataclass
@@ -199,7 +204,7 @@ def _execute_strategy_step(
     context: StrategyExecutionContext 
 ) -> StrategStepEvaluationResult:
     """Executes a single strategy step using the provided context."""
-    print(f"    Context Before: {list(context.result_history.keys())}") # Debug print
+    print(f"    Context Before: {list(context.result_history.keys()) if hasattr(context, 'result_history') else 'N/A'}") # Debug print
     try:
         # Expected wrapper signature: 
         # (price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult

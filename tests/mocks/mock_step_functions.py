@@ -4,10 +4,8 @@ from typing import Any, Dict
 
 import pandas as pd
 
-# Adjust import path if strategy module is not in src/
-# Update import for StrategStepEvaluationResult
-from src.models import StrategStepEvaluationResult
-from src.strategy import StrategyExecutionContext
+# Update imports from src
+from src.models import StrategStepEvaluationResult, StrategyExecutionContext
 
 # Import the "pure" mock functions to be wrapped
 # Use relative import as it's now in the same directory
@@ -18,6 +16,9 @@ from .mock_pure_logic import (
     mock_pure_is_within_fib_extension,
 )
 
+# from src.strategy import StrategyExecutionContext # Remove old import
+
+
 # --- Agreed upon Data Keys ---
 EXTREME_BAR_INDEX_KEY = "extreme_bar_index_data"
 
@@ -26,7 +27,7 @@ EXTREME_BAR_INDEX_KEY = "extreme_bar_index_data"
 
 def mock_detect_trend_wrapper(
     price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext, 
+    context: StrategyExecutionContext, # Uses imported type
     **config: Dict[str, Any]
 ) -> StrategStepEvaluationResult:
     """Wrapper for mock_pure_get_trend."""
@@ -39,7 +40,7 @@ def mock_detect_trend_wrapper(
 
 def mock_find_extreme_wrapper(
     price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext, 
+    context: StrategyExecutionContext, # Uses imported type
     **config: Dict[str, Any]
 ) -> StrategStepEvaluationResult:
     """Wrapper for mock_pure_is_extreme_bar. Outputs extreme_bar_index_data."""
@@ -61,7 +62,7 @@ def mock_find_extreme_wrapper(
 
 def mock_validate_pullback_wrapper(
     price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext, 
+    context: StrategyExecutionContext, # Uses imported type
     **config: Dict[str, Any]
 ) -> StrategStepEvaluationResult:
     """Wrapper for mock_pure_is_bars_since_extreme_pivot_valid. Needs EXTREME_BAR_INDEX_KEY."""
@@ -97,7 +98,7 @@ def mock_validate_pullback_wrapper(
 
 def mock_check_fib_wrapper(
     price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext, 
+    context: StrategyExecutionContext, # Uses imported type
     **config: Dict[str, Any]
 ) -> StrategStepEvaluationResult:
     """Wrapper for mock_pure_is_within_fib_extension."""
