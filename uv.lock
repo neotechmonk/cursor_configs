@@ -110,6 +110,12 @@ wheels = [
 ]
 
 [[package]]
+name = "prettyprint"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/13/9c/495a32e19f94fdd402bffc1c90abd84f2f604595ab480a3087dd77a94502/prettyprint-0.1.5.tar.gz", hash = "sha256:7423210b62adfb3777677914cd25db4919f1c2b0afba0454365ffbfa3f7e3731", size = 2119 }
+
+[[package]]
 name = "pytest"
 version = "8.3.5"
 source = { registry = "https://pypi.org/simple" }
@@ -191,6 +197,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "prettyprint" },
     { name = "pytest" },
 ]
 
@@ -201,7 +208,10 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.3.5" }]
+dev = [
+    { name = "prettyprint", specifier = ">=0.1.5" },
+    { name = "pytest", specifier = ">=8.3.5" },
+]
 
 [[package]]
 name = "tzdata"

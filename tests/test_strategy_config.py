@@ -1,13 +1,12 @@
 from pathlib import Path
 
-from mocks.mock_step_functions import (
+from strategy_config import StrategyConfig, load_strategy_config
+from tests.mocks.mock_strategy_step_functions import (
     mock_check_fib_wrapper,
     mock_detect_trend_wrapper,
     mock_find_extreme_wrapper,
     mock_validate_pullback_wrapper,
 )
-
-from strategy_config import StrategyConfig, load_strategy_config
 
 
 #

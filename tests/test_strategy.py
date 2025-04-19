@@ -1,15 +1,13 @@
 from pathlib import Path
 
-from mocks.mock_step_functions import (
+from strategy import load_strategy_config
+
+from strategy_config import StrategyConfig
+from tests.mocks.mock_strategy_step_functions import (
     mock_check_fib_wrapper,
     mock_detect_trend_wrapper,
     mock_find_extreme_wrapper,
     mock_validate_pullback_wrapper,
-)
-
-from strategy import (  # Keep these for tests
-    StrategyConfig,
-    load_strategy_config,
 )
 
 
@@ -64,3 +62,5 @@ def test_load_strategy_config_basic(sample_strategy_config, monkeypatch):
     assert extreme_step.evaluation_fn.__name__ == "mock_find_extreme_wrapper"
     assert pullback_step.evaluation_fn.__name__ == "mock_validate_pullback_wrapper"
     assert fib_step.evaluation_fn.__name__ == "mock_check_fib_wrapper"
+
+# Context tests are in test_strategy_context.py

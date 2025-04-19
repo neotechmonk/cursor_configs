@@ -1,0 +1,35 @@
+name: "Trend Following Strategy"
+steps:
+  - id: detect_trend
+    name: "Detect Trend"
+    description: "Determine if market is trending up, down, or ranging"
+    evaluation_fn: "utils.get_trend"
+    config: {}
+    reevaluates: {}
+
+  - id: find_extreme
+    name: "Find Extreme Bar"
+    description: "Check if current bar is an extreme in the current trend"
+    evaluation_fn: "utils.is_extreme_bar"
+    config:
+      frame_size: 5
+    reevaluates: {}
+
+  - id: validate_pullback
+    name: "Validate Pullback"
+    description: "Ensure pullback has enough bars to be valid"
+    evaluation_fn: "utils.is_bars_since_extreme_pivot_valid"
+    config:
+      min_bars: 3
+      max_bars: 10
+    reevaluates: {}
+
+  - id: check_fib
+    name: "Check Fibonacci Extension"
+    description: "Verify if price action meets Fibonacci extension criteria"
+    evaluation_fn: "utils.is_within_fib_extension"
+    config:
+      min_extension: 1.35
+      max_extension: 1.875
+    reevaluates:
+      validate_pullback: true 

@@ -3,13 +3,12 @@ import pytest
 import yaml
 
 # Update import path for the wrapper functions
-from mocks.mock_step_functions import (
+from tests.mocks.mock_strategy_step_functions import (
     mock_check_fib_wrapper,
     mock_detect_trend_wrapper,
     mock_find_extreme_wrapper,
     mock_validate_pullback_wrapper,
 )
-
 from utils import PriceLabel
 
 
