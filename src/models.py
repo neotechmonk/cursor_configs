@@ -32,7 +32,7 @@ class StrategStepEvaluationResult:
     step_output: Optional[Dict[str, Any]] = field(default_factory=dict) # side effect data after StrategyStepFn execution
 
 
-# Forward reference for StrategyExecutionContext needed in StrategyStepFn
+# Method signature for `StrategyStep.evaluation_fn`
 StrategyStepFn = Callable[
     [pd.DataFrame, 'StrategyExecutionContext', Dict[str, Any]], 
     StrategStepEvaluationResult
