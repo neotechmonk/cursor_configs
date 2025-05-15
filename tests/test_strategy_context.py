@@ -36,7 +36,7 @@ def ts2() -> pd.Timestamp:
 def test_add_result_initial_v2(step1, ts1):
     """Test adding the first result to an empty context (V2)."""
     context = StrategyExecutionContext() # Use V2
-    result = StrategStepEvaluationResult(success=True, message="OK", data={"key1": "value1"})
+    result = StrategStepEvaluationResult(is_success=True, message="OK", step_output={"key1": "value1"})
     
     # Call add_result (modifies context in-place, returns None)
     return_value = context.add_result(ts1, step1, result)
@@ -52,8 +52,8 @@ def test_add_result_initial_v2(step1, ts1):
 def test_add_result_multiple_v2(step1, step2, ts1, ts2):
     """Test adding multiple distinct results (V2)."""
     context = StrategyExecutionContext() # Use V2
-    result1 = StrategStepEvaluationResult(success=True, message="OK1", data={"key1": "value1"})
-    result2 = StrategStepEvaluationResult(success=True, message="OK2", data={"key2": "value2"})
+    result1 = StrategStepEvaluationResult(is_success=True, message="OK1", step_output={"key1": "value1"})
+    result2 = StrategStepEvaluationResult(is_success=True, message="OK2", step_output={"key2": "value2"})
     
     # Add first result
     context.add_result(ts1, step1, result1)
@@ -78,8 +78,8 @@ def test_find_latest_successful_data_latest_failed_v2(step1, step2, ts1, ts2):
     NOTE: This test assumes the *intended* logic of find_latest_successful_data.
     """
     context = StrategyExecutionContext() # Use V2
-    result1 = StrategStepEvaluationResult(success=True, message="OK1", data={"key1": "value1_ok"})
-    result2 = StrategStepEvaluationResult(success=False, message="Fail2", data={"key1": "value2_fail"})
+    result1 = StrategStepEvaluationResult(is_success=True, message="OK1", step_output={"key1": "value1_ok"})
+    result2 = StrategStepEvaluationResult(is_success=False, message="Fail2", step_output={"key1": "value2_fail"})
     
     context.add_result(ts1, step1, result1)
     context.add_result(ts2, step2, result2)
@@ -124,13 +124,13 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
     data_payload_3 = {"keyA": "valueA"} # Different payload
 
     result1 = StrategStepEvaluationResult(
-        success=True, message="Step 1 ok", data=data_payload_1
+        is_success=True, message="Step 1 ok", step_output=data_payload_1
     )
     result2 = StrategStepEvaluationResult(
-        success=True, message="Step 2 ok", data=data_payload_2  # Same data payload
+        is_success=True, message="Step 2 ok", step_output=data_payload_2  # Same data payload
     )
     result3_diff_name = StrategStepEvaluationResult(
-        success=True, message="Step 1 diff name ok", data=data_payload_3
+        is_success=True, message="Step 1 diff name ok", step_output=data_payload_3
     )
 
     context = StrategyExecutionContext() # Use V2
@@ -170,10 +170,10 @@ def test_strategy_execution_context_add_result_duplicate_data_same_step_v2():
     data_payload = {"key1": "value1", "key2": 123}
 
     result1 = StrategStepEvaluationResult(
-        success=True, message="Step 1 ok", data=data_payload
+        is_success=True, message="Step 1 ok", step_output=data_payload
     )
     result2 = StrategStepEvaluationResult(
-        success=True, message="Step 2 ok", data=data_payload  # Same data
+        is_success=True, message="Step 2 ok", step_output=data_payload  # Same data
     )
 
     context = StrategyExecutionContext() # Use V2
@@ -194,5 +194,5 @@ def test_strategy_execution_context_add_result_duplicate_data_same_step_v2():
     assert key1 in context.result_history
     assert key2 in context.result_history
     # In V2, the key contains the step object, the value is just the result
-    assert context.result_history[key1].data == data_payload
-    assert context.result_history[key2].data == data_payload 
+    assert context.result_history[key1].step_output == data_payload
+    assert context.result_history[key2].step_output == data_payload 

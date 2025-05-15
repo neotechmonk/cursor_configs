@@ -39,9 +39,9 @@ def mock_detect_trend_wrapper(
     latest_timestamp = _get_latest_timestamp(price_feed)
     try:
         result_data = mock_pure_get_trend(price_feed, **config)
-        return StrategStepEvaluationResult(success=True, message="Trend detected", data=result_data, timestamp=latest_timestamp)
+        return StrategStepEvaluationResult(is_success=True, message="Trend detected", step_output=result_data, timestamp=latest_timestamp)
     except Exception as e:
-        return StrategStepEvaluationResult(success=False, message=f"Error in mock_detect_trend_wrapper: {e}", timestamp=latest_timestamp)
+        return StrategStepEvaluationResult(is_success=False, message=f"Error in mock_detect_trend_wrapper: {e}", timestamp=latest_timestamp)
 
 
 def mock_find_extreme_wrapper(
@@ -54,13 +54,13 @@ def mock_find_extreme_wrapper(
     try:
         result_data = mock_pure_is_extreme_bar(price_feed, **config)
         return StrategStepEvaluationResult(
-            success=True, 
+            is_success=True, 
             message="Extreme bar detected", 
-            data=result_data, 
+            step_output=result_data, 
             timestamp=latest_timestamp
         )
     except Exception as e:
-        return StrategStepEvaluationResult(success=False, message=f"Error in mock_find_extreme_wrapper: {e}", timestamp=latest_timestamp)
+        return StrategStepEvaluationResult(is_success=False, message=f"Error in mock_find_extreme_wrapper: {e}", timestamp=latest_timestamp)
 
 
 def mock_validate_pullback_wrapper(
@@ -75,13 +75,13 @@ def mock_validate_pullback_wrapper(
     try:
         result_data = mock_pure_is_bars_since_extreme_pivot_valid(price_feed=price_feed, extreme_bar_index = extreme_bar_index, **config)
         return StrategStepEvaluationResult(
-            success=True, 
+            is_success=True, 
             message="Pullback valid", 
-            data={'bars_valid': True}, # TODO: Fix manually overriden payload
+            step_output={'bars_valid': True}, # TODO: Fix manually overriden payload
             timestamp=latest_timestamp
         )
     except Exception as e:
-        return StrategStepEvaluationResult(success=False, message=f"Error in mock_validate_pullback_wrapper: {e}", timestamp=latest_timestamp)
+        return StrategStepEvaluationResult(is_success=False, message=f"Error in mock_validate_pullback_wrapper: {e}", timestamp=latest_timestamp)
 
 
 def mock_check_fib_wrapper(
@@ -94,10 +94,10 @@ def mock_check_fib_wrapper(
     try:
         result_data = mock_pure_is_within_fib_extension(price_feed, **config)
         return StrategStepEvaluationResult(
-            success=True, 
+            is_success=True, 
             message="Fib valid", 
-            data=result_data, 
+            step_output=result_data, 
             timestamp=latest_timestamp
         )
     except Exception as e:
-        return StrategStepEvaluationResult(success=False, message=f"Error in mock_check_fib_wrapper: {e}", timestamp=latest_timestamp) 
+        return StrategStepEvaluationResult(is_success=False, message=f"Error in mock_check_fib_wrapper: {e}", timestamp=latest_timestamp) 

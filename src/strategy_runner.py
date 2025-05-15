@@ -31,13 +31,13 @@ def _execute_strategy_step(
         )
     except Exception as e:
         # Catch errors during the wrapper execution itself
-        return StrategStepEvaluationResult(success=False, message=f"Error executing step '{step.name}' wrapper: {e}")
+        return StrategStepEvaluationResult(is_success=False, message=f"Error executing step '{step.name}' wrapper: {e}")
 
     # Guard: Ensure the wrapper returned the correct type 
        
     if not isinstance(result, StrategStepEvaluationResult):
         return StrategStepEvaluationResult(
-            success=False, 
+            is_success=False, 
             message=f"Step '{step.name}' evaluation function returned {type(result).__name__}, expected StrategStepEvaluationResult"
         )
     return result
@@ -92,8 +92,8 @@ def run_strategy(
             print("  Stopping step processing for this call due to validation error.")
             break # Stop processing further steps for this call
         
-        if result.success:
-            print(f"    Success: {result.message or ''} {result.data or ''}")
+        if result.is_success:
+            print(f"    Success: {result.message or ''} {result.step_output or ''}")
         else:
             print(f"    Failed: {result.message or 'No message'}")
             print("  Stopping step processing for this call due to step failure.")

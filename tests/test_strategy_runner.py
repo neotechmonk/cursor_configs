@@ -31,17 +31,17 @@ def mock_eval_step_result_success(price_feed: pd.DataFrame, exp_ret_data: Dict[s
         raise ValueError(f"Expected return data for step {step_id}")
     
     return StrategStepEvaluationResult(
-        success=True,
+        is_success=True,
         timestamp=price_feed.index[-1],
         message=f"Succesful result for {step_id}",
-        data=exp_ret_data)
+        step_output=exp_ret_data)
 
     
 def mock_eval_step_result_failure(price_feed: pd.DataFrame,  step_id: str) -> StrategStepEvaluationResult:  # noqa: F821
     
     return StrategStepEvaluationResult(
             timestamp=price_feed.index[-1],
-            success=False,
+            is_success=False,
             message=f"Failed result for {step_id}",
         )
     
@@ -207,7 +207,7 @@ def test_run_strategy_happy_path_with_context(uptrending_price_feed):
     results_map = {}
     for (timestamp, step), result in final_context.result_history.items():
         assert result is not None
-        assert result.success, f"Step '{step.name}' (ID: {step.id}) failed unexpectedly: {result.message}"
+        assert result.is_success, f"Step '{step.name}' (ID: {step.id}) failed unexpectedly: {result.message}"
         results_map[step.id] = result
     
     # Verify all steps from config were processed

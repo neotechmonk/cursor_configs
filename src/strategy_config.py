@@ -135,11 +135,11 @@ def _execute_strategy_step(
         )
     except Exception as e:
         # Catch errors during the wrapper execution itself
-        return StrategStepEvaluationResult(success=False, message=f"Error executing step '{step.name}' wrapper: {e}")
+        return StrategStepEvaluationResult(is_success=False, message=f"Error executing step '{step.name}' wrapper: {e}")
 
     # Guard: Ensure the wrapper returned the correct type 
     if not isinstance(result, StrategStepEvaluationResult):
-            return StrategStepEvaluationResult(success=False, message=f"Step '{step.name}' wrapper function did not return a StrategStepEvaluationResult object.")
+            return StrategStepEvaluationResult(is_success=False, message=f"Step '{step.name}' wrapper function did not return a StrategStepEvaluationResult object.")
     
     return result
 
@@ -181,8 +181,8 @@ def run_strategy(strategy: StrategyConfig, price_feed: pd.DataFrame) -> Tuple[St
             next_context = current_context.add_result(result.timestamp, step, result) # Corrected call
             current_context = next_context # Move to the next state
             
-            if result.success:
-                print(f"    Success: {result.message or ''} {result.data or ''}")
+            if result.is_success:
+                print(f"    Success: {result.message or ''} {result.step_output or ''}")
             else:
                 print(f"    Failed: {result.message or 'No message'}")
                 print("  Strategy execution stopped due to step failure or error.")
