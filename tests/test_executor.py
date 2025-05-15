@@ -1,8 +1,9 @@
 
 # Use the existing fixture from conftest.py
-from executor import StrategyExecutor
+# from executor import StrategyExecutor
+from strategy_config import load_strategy_config
 
-from strategy import load_strategy_config
+# from strategy import load_strategy_config
 
 
 def test_executor_happy_path(sample_strategy_config, uptrending_price_feed):

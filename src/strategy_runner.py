@@ -19,7 +19,7 @@ def _execute_strategy_step(
     context: StrategyExecutionContext
 ) -> StrategStepEvaluationResult:
     """Executes a single strategy step using the provided context."""
-    print(f"    Context Before Keys: {list(context.result_history.keys()) if hasattr(context, 'result_history') else 'N/A'}")
+    # print(f"    Context Before Keys: {str(context)}")
     try:
         # Expected wrapper signature: 
         # (price_feed: pd.DataFrame, context: ?, **config) -> StrategStepEvaluationResult
@@ -62,7 +62,7 @@ def run_strategy(
         The updated StrategyExecutionContext after processing the steps for this call.
         Stops processing steps for this call upon the first failure or validation error.
     """
-    print(f"Running strategy: {strategy.name} with existing context")
+    print(f"Running strategy: {strategy.name} with existing bar index {price_feed.index[-1]}")
 
     if context is None:
         context = StrategyExecutionContext()
@@ -77,17 +77,18 @@ def run_strategy(
     # Get the index of the latest bar *safely*
     latest_bar_index = price_feed.index[-1]
 
-    for i, step in enumerate(strategy.steps):
-        print(f"  Executing step {i+1}: {step.name} (ID: {step.id}) using context")
+    for i in range(1, len(price_feed) + 1):  # start at 1, include last bar
+        incremental_price_feed = price_feed.iloc[:i]  # Now first slice will have one row
+        print(f"  Executing step {i}: {strategy.steps[i-1].name} (ID: {strategy.steps[i-1].id}) using context")
         
         # Execute step with the context as it is *at the start of this call*
-        result: StrategStepEvaluationResult = _execute_strategy_step(step, price_feed, context=context)
+        result: StrategStepEvaluationResult = _execute_strategy_step(strategy.steps[i-1], incremental_price_feed, context=context)
 
         # Add result to context using the latest bar's index
         try:
-            context.add_result(latest_bar_index, step, result)
+            context.add_result(latest_bar_index, strategy.steps[i-1], result)
         except ValueError as ve: # Catch potential validation errors from add_result
-            print(f"  Validation Error during add_result for step '{step.name}': {ve}")
+            print(f"  Validation Error during add_result for step '{strategy.steps[i-1].name}': {ve}")
             print("  Stopping step processing for this call due to validation error.")
             break # Stop processing further steps for this call
         

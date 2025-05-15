@@ -1,8 +1,7 @@
 from pathlib import Path
 
-from strategy import load_strategy_config
-
-from strategy_config import StrategyConfig
+# from strategy import load_strategy_config
+from strategy_config import StrategyConfig, load_strategy_config
 from tests.mocks.mock_strategy_step_functions import (
     mock_check_fib_wrapper,
     mock_detect_trend_wrapper,

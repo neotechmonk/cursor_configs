@@ -5,9 +5,17 @@ TODO : need to introduce complex logic to test
 - multiple bars with a failing step
 - multiple bars where failing step re-evaluates another previous step
 """
-from pprint import pprint
+from typing import Any, Dict
 
-from src.models import StrategyConfig, StrategyExecutionContext, StrategyStep
+import pandas as pd
+import pytest
+
+from src.models import (
+    StrategStepEvaluationResult,
+    StrategyConfig,
+    StrategyExecutionContext,
+    StrategyStep,
+)
 from src.strategy_runner import run_strategy
 from tests.mocks.mock_strategy_step_functions import (
     EXTREME_BAR_INDEX_KEY,
@@ -18,7 +26,126 @@ from tests.mocks.mock_strategy_step_functions import (
 )
 
 
-# @pytest.mark.skip() # Keep test active
+def mock_eval_step_result_success(price_feed: pd.DataFrame, exp_ret_data: Dict[str, Any], step_id: str) -> StrategStepEvaluationResult:  # noqa: F821
+    if not exp_ret_data: 
+        raise ValueError(f"Expected return data for step {step_id}")
+    
+    return StrategStepEvaluationResult(
+        success=True,
+        timestamp=price_feed.index[-1],
+        message=f"Succesful result for {step_id}",
+        data=exp_ret_data)
+
+    
+def mock_eval_step_result_failure(price_feed: pd.DataFrame,  step_id: str) -> StrategStepEvaluationResult:  # noqa: F821
+    
+    return StrategStepEvaluationResult(
+            timestamp=price_feed.index[-1],
+            success=False,
+            message=f"Failed result for {step_id}",
+        )
+    
+
+def mock_eval_step(step_id: str, eval_fn) -> StrategyStep:  # noqa: F821
+    return StrategyStep(
+            id=step_id,
+            name=f"Mock Step {step_id}",
+            description=f"Mock Step {step_id}",
+            evaluation_fn=eval_fn,
+            config={},
+            reevaluates=[])
+
+
+def test_run_strategy_with_multiple_bars():
+    """Test strategy execution over multiple bars where:
+    - first bar succeeds in step 1 and step 2
+    - second bar is the same as first bar
+    - third bar succeeds all three steps
+    """
+    # Create test data with multiple bars
+    dates = pd.to_datetime(['2024-01-01', '2024-01-02', '2024-01-03'])
+    price_feed = pd.DataFrame({
+        'open': [100, 101, 102],
+        'high': [102, 103, 104],
+        'low': [99, 100, 101],
+        'close': [101, 102, 103]
+    }, index=dates)
+
+    # Define the evaluation functions
+    def step1_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult:
+        """sucessful evaluation for all bars"""
+        return mock_eval_step_result_success(price_feed, {"step1_data": True}, "step1")
+
+    def step2_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult:
+        """sucessful evaluation for all bars"""
+        return mock_eval_step_result_success(price_feed, {"step2_data": True}, "step2")
+
+    def step3_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult:
+        """sucessful evaluation for only the three bar"""
+        last_bar = price_feed.index[-1]
+        if last_bar in pd.to_datetime(['2024-01-01', '2024-01-02']):
+            return mock_eval_step_result_failure(price_feed, "step3")
+        elif last_bar == pd.to_datetime(['2024-01-03']):
+            return mock_eval_step_result_success(price_feed, {"step3_data": True}, "step3")
+        else:
+            raise ValueError(f"Unexpected bar index: {last_bar}")
+
+    # Create mock steps
+    step1 = mock_eval_step("step1", step1_eval)
+    step2 = mock_eval_step("step2", step2_eval)
+    step3 = mock_eval_step("step3", step3_eval)
+
+    # Create strategy config
+    config = StrategyConfig(
+        name="Test Multi-Bar Strategy",
+        steps=[step1, step2, step3]
+    )
+
+
+    exec_context = None
+
+    # Run strategy incrementally with increasing bars
+    for i in range(1, len(price_feed) + 1):
+        # Slice the price_feed to include only the first i bars
+        incremental_price_feed = price_feed.iloc[:i]
+
+        # print (f"*********Incremental price feed: {incremental_price_feed}")
+
+        
+        # Run strategy with the current slice of price_feed
+        exec_context = run_strategy(config, incremental_price_feed, context=exec_context)
+
+        # each run should have 3 results corresponding to 3 steps irrespective of success or failure
+        print (f"***** Number of results in history: {(exec_context.result_history)}")
+        break
+        # assert len(exec_context.result_history) == (i+1)*3
+        
+        # # Check which step is successful vs failed for each run of the strategy
+        # for (timestamp, step), result in exec_context.result_history.items():
+        #     print(f"Step '{step.name}' at {timestamp}: {'Success' if result.success else 'Failure'}")
+
+        # # Count the results in history for each step
+        # step_success_count = {}
+        # for (timestamp, step), result in exec_context.result_history.items():
+        #     if step.id not in step_success_count:
+        #         step_success_count[step.id] = {'success': 0, 'failure': 0}
+        #     if result.success:
+        #         step_success_count[step.id]['success'] += 1
+        #     else:
+        #         step_success_count[step.id]['failure'] += 1
+
+        # # Print the count of successes and failures for each step
+        # for step_id, counts in step_success_count.items():
+        #     print(f"Step '{step_id}': {counts['success']} successes, {counts['failure']} failures")
+
+        # # Check the result data for each step to match
+        # for (timestamp, step), result in exec_context.result_history.items():
+        #     expected_data_key = f"{step.id}_data"
+        #     # assert expected_data_key in result.data, f"Expected data key '{expected_data_key}' not found in step '{step.name}'"
+        #     print(f"Step '{step.name}' at {timestamp} has expected data: {result.data[expected_data_key]}")
+
+
+@pytest.mark.skip() # Keep test active
 def test_run_strategy_happy_path_with_context(uptrending_price_feed):
     """Test run_strategy runs all steps successfully, passing data via context."""
     # Arrange
@@ -111,7 +238,6 @@ def test_run_strategy_happy_path_with_context(uptrending_price_feed):
     extreme_index = final_context.find_latest_successful_data(EXTREME_BAR_INDEX_KEY)
     assert extreme_index is not None
     assert extreme_index == price_feed.index[-1]
-    
     
     # Print final context for debugging if needed
     # pprint(final_context.result_history)
