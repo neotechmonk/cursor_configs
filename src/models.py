@@ -22,10 +22,14 @@ class Direction(StrEnum):
 
 @dataclass(frozen=True)
 class StrategStepEvaluationResult:
-    success: bool
-    message: str
-    timestamp: Optional[pd.Timestamp] = None
-    data: Optional[Dict[str, Any]] = field(default_factory=dict)
+    """
+        Used in StrategyExecutionContext to store the result of each step.
+        Contains additional data crated by a given step.
+    """
+    is_success: bool = field(default=False)
+    message: str = field(default=None) 
+    timestamp: Optional[pd.Timestamp] = field(default=None) # FIX : determine if this the time of the result or Timestamp in the price data
+    step_output: Optional[Dict[str, Any]] = field(default_factory=dict) # side effect data after StrategyStepFn execution
 
 
 # Forward reference for StrategyExecutionContext needed in StrategyStepFn
@@ -65,13 +69,13 @@ class StrategyExecutionContext:
 
         # Iterate through (timestamp, step_object), result pairs
         for (timestamp, step_object), result in self.result_history.items():
-             if result.success and result.data and data_key in result.data:
+             if result.is_success and result.step_output and data_key in result.step_output:
                  if timestamp > latest_timestamp:
                      latest_timestamp = timestamp
                      latest_matching_result = result # Store the result itself
 
         if latest_matching_result:
-             return latest_matching_result.data[data_key]
+             return latest_matching_result.step_output[data_key]
 
         return None
 
@@ -85,17 +89,17 @@ class StrategyExecutionContext:
         # regardless of timestamp, *except* for results from the *exact same step object*.
         # Note: Since step object equality now depends on id, name, description, this 
         # implicitly handles the user's desired check for config mismatches.
-        if result.data:
+        if result.step_output:
             # Iterate over (existing_ts, existing_step_object), existing_result
             for (existing_timestamp, existing_step), existing_result in self.result_history.items(): 
                 # Skip results from the exact same step object (or steps considered equal)
                 if existing_step == step: 
                     continue 
                 # Check if data payload is identical to another *different* step's result data
-                if existing_result.data and existing_result.data == result.data:
+                if existing_result.step_output and existing_result.step_output == result.step_output:
                      # Now we can use existing_step.name and existing_step.id directly
                      raise ValueError(
-                         f"Duplicate result data payload found for key(s) '{list(result.data.keys())}'. "
+                         f"Duplicate result data payload found for key(s) '{list(result.step_output.keys())}'. "
                          f"Step '{step.name}' (ID: {step.id}) at {price_data_index} produced same data as "
                          f"Step '{existing_step.name}' (ID: {existing_step.id}) at {existing_timestamp}."
                      )
