@@ -27,7 +27,7 @@ class StrategStepEvaluationResult:
         Contains additional data crated by a given step.
     """
     is_success: bool = field(default=False)
-    message: str = field(default=None) 
+    message: str = field(default=None) # FIX : need for this message field?
     timestamp: Optional[pd.Timestamp] = field(default=None) # FIX : determine if this the time of the result or Timestamp in the price data
     step_output: Optional[Dict[str, Any]] = field(default_factory=dict) # side effect data after StrategyStepFn execution
 
