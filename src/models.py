@@ -1,7 +1,7 @@
 """Data models for the strategy execution framework."""
 
 from dataclasses import dataclass, field
-from enum import Enum, StrEnum, auto
+from enum import StrEnum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -14,10 +14,10 @@ class PriceLabel(StrEnum):
     CLOSE = "Close"
 
 
-class Direction(Enum):
-    UP = auto()
-    DOWN = auto()
-    RANGE = auto()
+class Direction(StrEnum):
+    UP = "UP"
+    DOWN = "DOWN"
+    RANGE = "RANGE"
 
 
 @dataclass(frozen=True)
