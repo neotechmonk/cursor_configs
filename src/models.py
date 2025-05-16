@@ -42,17 +42,18 @@ StrategyStepFn = Callable[
 @dataclass(frozen=True)
 class StrategyStep:
     """A step in a trading strategy execution pipeline.
-        Defined in ./config/strategies/[strategy_name].yaml
+    Defined in ./config/strategies/[strategy_name].yaml
 
+    `id` and `name` are mandatory
         E.g. 
         name: "Trend Following Strategy"
-            steps:
-            - id: detect_trend
-                name: "Detect Trend"
-                description: "Determine if market is trending up, down, or ranging"
-                evaluation_fn: "utils.get_trend"
-                config: {}  
-                reevaluates: {}
+        steps:
+          - id: detect_trend
+            name: "Detect Trend"
+            description: "Determine if market is trending up, down, or ranging"
+            evaluation_fn: "utils.get_trend"
+            config: {}
+            reevaluates: []
     """
     id: str
     name: str
@@ -65,8 +66,12 @@ class StrategyStep:
     # Rationale : ensure prior steps are still valid before evaluating this step
     reevaluates: List['StrategyStep'] = field(default_factory=list, hash=False) 
 
+@dataclass
+class StrategyConfig:
+    name: str
+    steps: List[StrategyStep]
 
-@dataclass()
+@dataclass
 class StrategyExecutionContext:
     """Mutable context holding results history for a strategy run.
     Uses (price_data_index, step) tuple as key and result as value."""
@@ -124,7 +129,3 @@ class StrategyExecutionContext:
         self.result_history[current_key] = result 
 
 
-@dataclass
-class StrategyConfig:
-    name: str
-    steps: List[StrategyStep]

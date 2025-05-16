@@ -5,7 +5,7 @@ steps:
     description: "Determine if market is trending up, down, or ranging"
     evaluation_fn: "utils.get_trend"
     config: {}
-    reevaluates: {}
+    reevaluates: []
 
   - id: find_extreme
     name: "Find Extreme Bar"
@@ -13,7 +13,7 @@ steps:
     evaluation_fn: "utils.is_extreme_bar"
     config:
       frame_size: 5
-    reevaluates: {}
+    reevaluates: []
 
   - id: validate_pullback
     name: "Validate Pullback"
@@ -22,7 +22,7 @@ steps:
     config:
       min_bars: 3
       max_bars: 10
-    reevaluates: {}
+    reevaluates: []
 
   - id: check_fib
     name: "Check Fibonacci Extension"
@@ -32,4 +32,4 @@ steps:
       min_extension: 1.35
       max_extension: 1.875
     reevaluates:
-      validate_pullback: true 
+      - validate_pullback: true 
