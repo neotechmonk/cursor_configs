@@ -8,6 +8,7 @@ import pandas as pd
 
 
 class PriceLabel(StrEnum):
+    # Values must match the column names in the price data
     OPEN = "Open"
     HIGH = "High"
     LOW = "Low"
@@ -66,10 +67,12 @@ class StrategyStep:
     # Rationale : ensure prior steps are still valid before evaluating this step
     reevaluates: List['StrategyStep'] = field(default_factory=list, hash=False) 
 
+
 @dataclass
 class StrategyConfig:
     name: str
     steps: List[StrategyStep]
+
 
 @dataclass
 class StrategyExecutionContext:
