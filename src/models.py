@@ -41,13 +41,29 @@ StrategyStepFn = Callable[
 
 @dataclass(frozen=True)
 class StrategyStep:
-    id: str  # Unique identifier
+    """A step in a trading strategy execution pipeline.
+        Defined in ./config/strategies/[strategy_name].yaml
+
+        E.g. 
+        name: "Trend Following Strategy"
+            steps:
+            - id: detect_trend
+                name: "Detect Trend"
+                description: "Determine if market is trending up, down, or ranging"
+                evaluation_fn: "utils.get_trend"
+                config: {}  
+                reevaluates: {}
+    """
+    id: str
     name: str
-    description: str
-    # Exclude non-hashable or complex types from hash calculation
+    description: Optional[str] = None
+    
     evaluation_fn: StrategyStepFn = field(hash=False)
-    config: Dict[str, Any] = field(hash=False)
-    reevaluates: List['StrategyStep'] = field(default_factory=list, hash=False)
+    config: Dict[str, Any] = field(hash=False) # parameters for `evaluation_fn`
+
+    # steps that must re-run before this step can 
+    # Rationale : ensure prior steps are still valid before evaluating this step
+    reevaluates: List['StrategyStep'] = field(default_factory=list, hash=False) 
 
 
 @dataclass()
