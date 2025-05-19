@@ -145,18 +145,18 @@ class StrategyExecutionContext:
         if result.is_success and result.step_output:
             self._latest_results_cache.update(result.step_output)
 
-    # TODO : YAGNI
-    def get_data_producers(self, data_key: str) -> Set[str]:
-        """Get IDs of steps that have produced this data key."""
-        return {step.id for (_, step), result in self._strategy_steps_results.items() 
-                if result.step_output and data_key in result.step_output}
+    # # TODO : YAGNI
+    # def get_data_producers(self, data_key: str) -> Set[str]:
+    #     """Get IDs of steps that have produced this data key."""
+    #     return {step.id for (_, step), result in self._strategy_steps_results.items() 
+    #             if result.step_output and data_key in result.step_output}
 
-    # TODO : YAGNI
-    def get_data_timeline(self, data_key: str) -> List[pd.Timestamp]:
-        """Get ordered price data timestamp of when data key was produced/modified.
-        Note: this is not the system time of StrategyStep execution.
-        """
-        return sorted(timestamp for (timestamp, _), result in self._strategy_steps_results.items() 
-                     if result.step_output and data_key in result.step_output)
+    # # TODO : YAGNI
+    # def get_data_timeline(self, data_key: str) -> List[pd.Timestamp]:
+    #     """Get ordered price data timestamp of when data key was produced/modified.
+    #     Note: this is not the system time of StrategyStep execution.
+    #     """
+    #     return sorted(timestamp for (timestamp, _), result in self._strategy_steps_results.items() 
+    #                  if result.step_output and data_key in result.step_output)
 
 
