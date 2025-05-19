@@ -317,7 +317,7 @@ def test_reject_duplicate_output_from_different_steps():
         "step1_output": {"key": "value"},
         "step2_output": {"key": "value"},
         "same_step": True,
-        "should_raise": False,
+        "should_raise": True,
         "error_message": None
     }
 ])
@@ -353,9 +353,9 @@ def test_validate_step_outputs_for_duplicate_results(test_case):
     if test_case["should_raise"]:
         with pytest.raises(ValueError) as exc_info:
             context._validate_no_duplicate_outputs_by_different_steps(
-                step1,
-                result1,
-                {(None, step2): result2}
+                cur_step=step1,
+                cur_step_result=result1,
+                prev_results={(None, step2): result2}
             )
         if test_case["error_message"]:
             assert test_case["error_message"] in str(exc_info.value)
@@ -364,9 +364,9 @@ def test_validate_step_outputs_for_duplicate_results(test_case):
     else:
         # This should not raise an exception
         context._validate_no_duplicate_outputs_by_different_steps(
-            step1,
-            result1,
-            {(None, step2): result2}
+            cur_step=step1,
+            cur_step_result=result1,
+            prev_results={(None, step2): result2}
         )
 
 
@@ -447,6 +447,45 @@ def test_validate_step_output_keys_and_values(test_case):
     else:
         # This should not raise an exception
         context._validate_step_output_keys_and_values(step, result)
+
+
+def test_validate_identical_output_by_different_steps():
+    """Test that _validate_identical_output_by_different_steps correctly prevents different steps from producing identical outputs."""
+    context = StrategyExecutionContext()
+    
+    # Create two different steps
+    step1 = StrategyStep(
+        id="step1",
+        name="Step One",
+        evaluation_fn=lambda x, y, z: None
+    )
+    
+    step2 = StrategyStep(
+        id="step2",
+        name="Step Two",
+        evaluation_fn=lambda x, y, z: None
+    )
+    
+    # Create a result with some output
+    result = StrategStepEvaluationResult(
+        is_success=True,
+        step_output={"key": "value"}
+    )
+    
+    # First step adds output successfully
+    context.add_result(pd.Timestamp("2023-01-01"), step1, result)
+    
+    # Second step tries to add identical output - should raise ValueError
+    with pytest.raises(ValueError) as exc_info:
+        context.add_result(pd.Timestamp("2023-01-01"), step2, result)
+    
+    # Verify error message
+    assert str(exc_info.value) == "Steps 'Step Two' and 'Step One' produced identical output: ['key']. Two StrategySteps cannot produce the same output."
+    
+    # Verify context was not modified by the failed attempt
+    assert len(context._strategy_steps_results) == 1
+    assert len(context._latest_results_cache) == 1
+    assert context._latest_results_cache["key"] == "value"
 
 #endregion
 

@@ -1,9 +1,8 @@
 """Data models for the strategy execution framework."""
 
-import bisect
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -108,10 +107,56 @@ class StrategyExecutionContext:
                 and existing_result.step_output 
                 and existing_result.step_output == cur_step_result.step_output):
                 raise ValueError(
-                    f"Steps '{cur_step.name}' and '{existing_step.name}' \
-                        produced identical output: {list(cur_step_result.step_output.keys())}.\
-                            Two StrategySteps cannot produce the same output."
-                        )
+                    f"Steps '{cur_step.name}' and '{existing_step.name}' "
+                    f"produced identical output: {list(cur_step_result.step_output.keys())}. "
+                    "Two StrategySteps cannot produce the same output."
+                )
+    def _validate_identical_output_by_different_steps(
+        self,
+        cur_step: StrategyStep,
+        cur_step_result: StrategStepEvaluationResult,
+        prev_results: Dict[Tuple[pd.Timestamp, StrategyStep], StrategStepEvaluationResult]
+        ) -> None:
+        """
+            Ensure that different StrategySteps do not produce identical outputs.
+
+            If two different steps produce the same output, it indicates a bug - error out.
+        """
+        if not cur_step_result.step_output:
+            return
+            
+        for (_, existing_step), existing_result in prev_results.items():
+            if (existing_step != cur_step 
+                and existing_result.step_output 
+                and existing_result.step_output == cur_step_result.step_output):
+                raise ValueError(
+                    f"Steps '{cur_step.name}' and '{existing_step.name}' "
+                    f"produced identical output: {list(cur_step_result.step_output.keys())}. "
+                    "Two different StrategySteps cannot produce the same output."
+                )
+
+    def _validate_step_output_keys_and_values(
+        self,
+        step: StrategyStep,
+        result: StrategStepEvaluationResult
+    ) -> None:
+        """Validate that step output keys and values are non-empty.
+        
+        Args:
+            step: The strategy step being validated
+            result: The result containing the output to validate
+            
+        Raises:
+            ValueError: If any key or value in the output is empty
+        """
+        if not result.step_output:
+            return
+            
+        for key, value in result.step_output.items():
+            if not key or not key.strip():
+                raise ValueError(f"Step '{step.name}' produced output with empty key")
+            if value is None or (isinstance(value, str) and not value.strip()):
+                raise ValueError(f"Step '{step.name}' produced output with empty value for key '{key}'")
             
     def get_latest_strategey_step_output_result(self, lookup_key: str) -> Optional[Any]:
         """Find the latest successful data value for a given key in the cache.
@@ -135,8 +180,18 @@ class StrategyExecutionContext:
         """Add new result to context with validation."""
         current_key = (price_data_index, step)
 
-        #Validations
-        self._validate_no_duplicate_outputs_by_different_steps(step, result, self._strategy_steps_results)
+        # Validations
+        self._validate_step_output_keys_and_values(step, result) 
+        self._validate_no_duplicate_outputs_by_different_steps(
+            cur_step=step, 
+            cur_step_result=result, 
+            prev_results=self._strategy_steps_results
+        )
+        self._validate_identical_output_by_different_steps(
+            cur_step=step, 
+            cur_step_result=result, 
+            prev_results=self._strategy_steps_results
+        )
 
         # Add to results history and the add/update cache
         self._strategy_steps_results[current_key] = result
