@@ -76,7 +76,7 @@ def test_add_multiple_unique_results(step1, step2, ts1, ts2):
     assert context.strategy_steps_results[key2] == result2
 
 
-def test_add_oveerwriting_result(step1, ts1, ts2):
+def test_add_overwriting_result(step1, ts1, ts2):
     """Test that adding a new result from the same step overwrites the previous value in cache."""
     context = StrategyExecutionContext()
     
