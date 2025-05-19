@@ -310,6 +310,62 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         "error_message": "produced identical output"
     },
     {
+        "name": "identical_outputs_different_order_fail",
+        "step1_output": {"key1": "value1", "key2": "value2"},
+        "step2_output": {"key2": "value2", "key1": "value1"},
+        "should_raise": True,
+        "error_message": "produced identical output"
+    },
+    {
+        "name": "identical_outputs_nested_dict_fail",
+        "step1_output": {"key": {"nested": "value"}},
+        "step2_output": {"key": {"nested": "value"}},
+        "should_raise": True,
+        "error_message": "produced identical output"
+    },
+    {
+        "name": "different_nested_dicts_pass",
+        "step1_output": {"key": {"nested1": "value1"}},
+        "step2_output": {"key": {"nested2": "value2"}},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "different_nested_lists_pass",
+        "step1_output": {"key": [1, 2, 3]},
+        "step2_output": {"key": [4, 5, 6]},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "different_nested_mixed_pass",
+        "step1_output": {"key": {"nested": [1, 2, 3]}},
+        "step2_output": {"key": {"nested": [4, 5, 6]}},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "different_nested_structure_pass",
+        "step1_output": {"key": {"nested": "value"}},
+        "step2_output": {"key": ["value"]},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "identical_outputs_list_fail",
+        "step1_output": {"key": [1, 2, 3]},
+        "step2_output": {"key": [1, 2, 3]},
+        "should_raise": True,
+        "error_message": "produced identical output"
+    },
+    {
+        "name": "identical_outputs_mixed_types_fail",
+        "step1_output": {"key1": 123, "key2": "value", "key3": True},
+        "step2_output": {"key1": 123, "key2": "value", "key3": True},
+        "should_raise": True,
+        "error_message": "produced identical output"
+    },
+    {
         "name": "empty_outputs_pass",
         "step1_output": {}, # empty dict is outside of this validation logic
         "step2_output": {"key": "value"},
@@ -320,6 +376,13 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         "name": "none_outputs_pass",
         "step1_output": None,
         "step2_output": {"key": "value"},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "partial_match_pass",
+        "step1_output": {"key1": "value1", "key2": "value2"},
+        "step2_output": {"key1": "value1", "key3": "value3"},
         "should_raise": False,
         "error_message": None
     }
