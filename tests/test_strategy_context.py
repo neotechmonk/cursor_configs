@@ -76,7 +76,7 @@ def test_add_multiple_unique_results(step1, step2, ts1, ts2):
     assert context.strategy_steps_results[key2] == result2
 
 
-def test_add_overwriting_result(step1, ts1, ts2):
+def test_add_oveerwriting_result(step1, ts1, ts2):
     """Test that adding a new result from the same step overwrites the previous value in cache."""
     context = StrategyExecutionContext()
     
@@ -98,7 +98,7 @@ def test_add_overwriting_result(step1, ts1, ts2):
     context.add_result(ts1, step1, result1)
     assert len(context.strategy_steps_results) == 1
     assert len(context._latest_results_cache) == 1
-    assert context._latest_results_cache["trend"] == "UP"
+    assert context._latest_results_cache["trend"] == "UP"  # Check cache after first result
     
     # Add second result from same step
     context.add_result(ts2, step1, result2)
@@ -108,13 +108,13 @@ def test_add_overwriting_result(step1, ts1, ts2):
     
     # Cache should still have one entry but with updated value
     assert len(context._latest_results_cache) == 1
-    assert context._latest_results_cache["trend"] == "DOWN"
+    assert context._latest_results_cache["trend"] == "DOWN"  # Check cache after second result
     
     # Both results should be in history
     key1 = (ts1, step1)
     key2 = (ts2, step1)
     assert context.strategy_steps_results[key1] == result1
-    assert context.strategy_steps_results[key2] == result2 
+    assert context.strategy_steps_results[key2] == result2
 
 #endregion
 
