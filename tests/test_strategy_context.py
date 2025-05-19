@@ -372,6 +372,85 @@ def test_validate_step_outputs_for_duplicate_results(test_case):
             {(None, step2): result2}
         )
 
+
+@pytest.mark.parametrize("test_case", [
+    {
+        "name": "valid_outputs_pass",
+        "step_output": {"key1": "value1", "key2": 123, "key3": True},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "empty_key_fails",
+        "step_output": {"": "value1"},
+        "should_raise": True,
+        "error_message": "produced output with empty key"
+    },
+    {
+        "name": "whitespace_key_fails",
+        "step_output": {"   ": "value1"},
+        "should_raise": True,
+        "error_message": "produced output with empty key"
+    },
+    {
+        "name": "none_value_fails",
+        "step_output": {"key1": None},
+        "should_raise": True,
+        "error_message": "produced output with empty value for key 'key1'"
+    },
+    {
+        "name": "empty_string_value_fails",
+        "step_output": {"key1": ""},
+        "should_raise": True,
+        "error_message": "produced output with empty value for key 'key1'"
+    },
+    {
+        "name": "whitespace_string_value_fails",
+        "step_output": {"key1": "   "},
+        "should_raise": True,
+        "error_message": "produced output with empty value for key 'key1'"
+    },
+    {
+        "name": "none_output_pass",
+        "step_output": None,
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "empty_dict_output_pass",
+        "step_output": {},
+        "should_raise": False,
+        "error_message": None
+    }
+])
+def test_validate_step_output_keys_and_values(test_case):
+    """Test validation of step output keys and values with different scenarios."""
+    context = StrategyExecutionContext()
+    
+    # Create a test step
+    step = StrategyStep(
+        id="test_step",
+        name="Test Step",
+        evaluation_fn=lambda x, y, z: None
+    )
+    
+    # Create result with specified output
+    result = StrategStepEvaluationResult(
+        is_success=True,
+        step_output=test_case["step_output"]
+    )
+    
+    # Test validation
+    if test_case["should_raise"]:
+        with pytest.raises(ValueError) as exc_info:
+            context._validate_step_output_keys_and_values(step, result)
+        if test_case["error_message"]:
+            assert test_case["error_message"] in str(exc_info.value)
+            assert "Test Step" in str(exc_info.value)
+    else:
+        # This should not raise an exception
+        context._validate_step_output_keys_and_values(step, result)
+
 #endregion
 
 
