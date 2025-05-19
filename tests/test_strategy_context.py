@@ -278,7 +278,7 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         context.add_result(timestamp3, strategy_step_1_duplicate, step2_result)
     except ValueError as e:
         pytest.fail(f"Adding result from step with different name/desc but same ID raised unexpected ValueError: {e}")
-    assert key3_diff_name in context._strategy_steps_results # Verify it was added
+    assert key_step1_duplicate in context._strategy_steps_results # Verify it was added
     assert len(context._strategy_steps_results) == 2
 
     # Adding the same data payload from a *different* step (different ID) should raise error
@@ -288,9 +288,9 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         
     # Verify context was not modified by the failed call
     assert len(context._strategy_steps_results) == 2 # Still 2 entries
-    assert key1 in context._strategy_steps_results
-    assert key3_diff_name in context._strategy_steps_results
-    assert key2 not in context._strategy_steps_results # Check the second key wasn't added
+    assert key_step1_original in context._strategy_steps_results
+    assert key_step1_duplicate in context._strategy_steps_results
+    assert key_step2 not in context._strategy_steps_results # Check the second key wasn't added
 
 # region validation
 
@@ -311,7 +311,7 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
     },
     {
         "name": "empty_outputs_pass",
-        "step1_output": {},
+        "step1_output": {}, # empty dict is outside of this validation logic
         "step2_output": {"key": "value"},
         "should_raise": False,
         "error_message": None
@@ -324,7 +324,7 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         "error_message": None
     }
 ])
-def test_validate_step_outputs(test_case):
+def test_validate_step_outputs_for_duplicate_results(test_case):
     """Test validation of step outputs with different scenarios."""
     context = StrategyExecutionContext()
     
