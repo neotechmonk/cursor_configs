@@ -219,7 +219,7 @@ def test_reject_duplicate_output_from_different_steps():
 #endregion
 
 
-@pytest.mark.skip(reason="Temporarily skipped during refactoring")
+@pytest.mark.skip(reason="same as test_reject_duplicate_output_from_different_steps()")
 def test_strategy_execution_context_add_result_duplicate_data_v2():
     """Tests that adding a result with duplicate data raises ValueError (V2).
     NOTE: The validation logic in V2 now uses step object equality.
@@ -292,168 +292,86 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
     assert key3_diff_name in context._strategy_steps_results
     assert key2 not in context._strategy_steps_results # Check the second key wasn't added
 
+# region validation
 
-@pytest.mark.skip(reason="Temporarily skipped during refactoring")
-def test_strategy_execution_context_add_result_duplicate_data_same_step_v2():
-    """Tests adding duplicate data from the *same* step is allowed (V2)."""
-    step_id = "step_same_data"
-    step = StrategyStep(id=step_id, name="SameDataStep", description="Desc", evaluation_fn=lambda df, ctx, cfg: None, config={})
-    timestamp1 = pd.Timestamp("2023-01-01 10:00:00")
-    timestamp2 = pd.Timestamp("2023-01-01 10:05:00")
-    data_payload = {"key1": "value1", "key2": 123}
-
-    result1 = StrategStepEvaluationResult(
-        is_success=True, message="Step 1 ok", step_output=data_payload
-    )
-    result2 = StrategStepEvaluationResult(
-        is_success=True, message="Step 2 ok", step_output=data_payload  # Same data
-    )
-
-    context = StrategyExecutionContext() # Use V2
-    key1 = (timestamp1, step) # Use step object
-    key2 = (timestamp2, step) # Use step object
-
-    # Add first result
-    context.add_result(timestamp1, step, result1)
-
-    # Adding the same data payload from the *same* step object should be allowed
-    try:
-        context.add_result(timestamp2, step, result2) # Use the same step object
-    except ValueError as e:
-        pytest.fail(f"Adding duplicate data from the same step raised an unexpected ValueError: {e}")
-
-    # Check history contains both entries (context modified in place)
-    assert len(context._strategy_steps_results) == 2
-    assert key1 in context._strategy_steps_results
-    assert key2 in context._strategy_steps_results
-    # In V2, the key contains the step object, the value is just the result
-    assert context._strategy_steps_results[key1].step_output == data_payload
-    assert context._strategy_steps_results[key2].step_output == data_payload 
-
-@pytest.mark.skip(reason="Temporarily skipped during refactoring")
-def test_validate_no_duplicate_outputs_success():
-    """Test that different steps with different outputs pass validation"""
+@pytest.mark.parametrize("test_case", [
+    {
+        "name": "different_outputs_pass",
+        "step1_output": {"key1": "value1"},
+        "step2_output": {"key2": "value2"},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "identical_outputs_fail",
+        "step1_output": {"key": "value"},
+        "step2_output": {"key": "value"},
+        "should_raise": True,
+        "error_message": "produced identical output"
+    },
+    {
+        "name": "empty_outputs_pass",
+        "step1_output": {},
+        "step2_output": {"key": "value"},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "none_outputs_pass",
+        "step1_output": None,
+        "step2_output": {"key": "value"},
+        "should_raise": False,
+        "error_message": None
+    }
+])
+def test_validate_step_outputs(test_case):
+    """Test validation of step outputs with different scenarios."""
     context = StrategyExecutionContext()
     
     # Create two different steps
     step1 = StrategyStep(
         id="step1",
         name="Step 1",
-        evaluation_fn=lambda x, y, z: None  # dummy function
+        evaluation_fn=lambda x, y, z: None
     )
     
     step2 = StrategyStep(
         id="step2",
         name="Step 2",
-        evaluation_fn=lambda x, y, z: None  # dummy function
+        evaluation_fn=lambda x, y, z: None
     )
     
-    # Create results with different outputs
+    # Create results with specified outputs
     result1 = StrategStepEvaluationResult(
         is_success=True,
-        step_output={"key1": "value1"}
+        step_output=test_case["step1_output"]
     )
     
     result2 = StrategStepEvaluationResult(
         is_success=True,
-        step_output={"key2": "value2"}
+        step_output=test_case["step2_output"]
     )
     
-    # This should not raise an exception
-    context._validate_no_duplicate_outputs_by_different_steps(
-        step1,
-        result1,
-        {(None, step2): result2}
-    )
-
-@pytest.mark.skip(reason="Temporarily skipped during refactoring")
-def test_validate_no_duplicate_outputs_failure():
-    """Test that different steps with identical outputs raise ValueError"""
-    context = StrategyExecutionContext()
-    
-    # Create two different steps
-    step1 = StrategyStep(
-        id="step1",
-        name="Step 1",
-        evaluation_fn=lambda x, y, z: None  # dummy function
-    )
-    
-    step2 = StrategyStep(
-        id="step2",
-        name="Step 2",
-        evaluation_fn=lambda x, y, z: None  # dummy function
-    )
-    
-    # Create results with identical outputs
-    same_output = {"key": "value"}
-    result1 = StrategStepEvaluationResult(
-        is_success=True,
-        step_output=same_output
-    )
-    
-    result2 = StrategStepEvaluationResult(
-        is_success=True,
-        step_output=same_output
-    )
-    
-    # This should raise a ValueError
-    with pytest.raises(ValueError) as exc_info:
+    # Test validation
+    if test_case["should_raise"]:
+        with pytest.raises(ValueError) as exc_info:
+            context._validate_no_duplicate_outputs_by_different_steps(
+                step1,
+                result1,
+                {(None, step2): result2}
+            )
+        if test_case["error_message"]:
+            assert test_case["error_message"] in str(exc_info.value)
+            assert "Step 1" in str(exc_info.value)
+            assert "Step 2" in str(exc_info.value)
+    else:
+        # This should not raise an exception
         context._validate_no_duplicate_outputs_by_different_steps(
             step1,
             result1,
             {(None, step2): result2}
         )
-    
-    # Verify the error message
-    assert "produced identical output" in str(exc_info.value)
-    assert "Step 1" in str(exc_info.value)
-    assert "Step 2" in str(exc_info.value)
 
-@pytest.mark.skip(reason="Temporarily skipped during refactoring")
-def test_validate_no_duplicate_outputs_empty():
-    """Test that steps with empty outputs pass validation"""
-    context = StrategyExecutionContext()
-    
-    step = StrategyStep(
-        id="step1",
-        name="Step 1",
-        evaluation_fn=lambda x, y, z: None  # dummy function
-    )
-    
-    # Create result with empty output
-    result = StrategStepEvaluationResult(
-        is_success=True,
-        step_output={}
-    )
-    
-    # This should not raise an exception
-    context._validate_no_duplicate_outputs_by_different_steps(
-        step,
-        result,
-        {}  # empty previous results
-    )
+#endregion
 
-@pytest.mark.skip(reason="Temporarily skipped during refactoring")
-def test_validate_no_duplicate_outputs_none():
-    """Test that steps with None outputs pass validation"""
-    context = StrategyExecutionContext()
-    
-    step = StrategyStep(
-        id="step1",
-        name="Step 1",
-        evaluation_fn=lambda x, y, z: None  # dummy function
-    )
-    
-    # Create result with None output
-    result = StrategStepEvaluationResult(
-        is_success=True,
-        step_output=None
-    )
-    
-    # This should not raise an exception
-    context._validate_no_duplicate_outputs_by_different_steps(
-        step,
-        result,
-        {}  # empty previous results
-    )
 
