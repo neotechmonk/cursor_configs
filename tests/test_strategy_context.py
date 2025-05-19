@@ -31,6 +31,7 @@ def ts2() -> pd.Timestamp:
     return pd.Timestamp("2023-01-01 10:01:00")
 
 
+#region Adding results
 def test_add_single_result(step1, ts1):
     context = StrategyExecutionContext() 
     result = StrategStepEvaluationResult(is_success=True, message="OK", step_output={"key1": "value1"})
@@ -74,6 +75,48 @@ def test_add_multiple_unique_results(step1, step2, ts1, ts2):
     assert context.strategy_steps_results[key1] == result1
     assert context.strategy_steps_results[key2] == result2
 
+
+def test_add_oveerwriting_result(step1, ts1, ts2):
+    """Test that adding a new result from the same step overwrites the previous value in cache."""
+    context = StrategyExecutionContext()
+    
+    # First result from step1
+    result1 = StrategStepEvaluationResult(
+        is_success=True, 
+        message="First run", 
+        step_output={"trend": "UP"}
+    )
+    
+    # Second result from same step (step1) with different output
+    result2 = StrategStepEvaluationResult(
+        is_success=True, 
+        message="Second run", 
+        step_output={"trend": "DOWN"}
+    )
+    
+    # Add first result
+    context.add_result(ts1, step1, result1)
+    assert len(context.strategy_steps_results) == 1
+    assert len(context._latest_results_cache) == 1
+    assert context._latest_results_cache["trend"] == "UP"
+    
+    # Add second result from same step
+    context.add_result(ts2, step1, result2)
+    
+    # History should have both results
+    assert len(context.strategy_steps_results) == 2
+    
+    # Cache should still have one entry but with updated value
+    assert len(context._latest_results_cache) == 1
+    assert context._latest_results_cache["trend"] == "DOWN"
+    
+    # Both results should be in history
+    key1 = (ts1, step1)
+    key2 = (ts2, step1)
+    assert context.strategy_steps_results[key1] == result1
+    assert context.strategy_steps_results[key2] == result2 
+
+#endregion
 
 @pytest.mark.skip(reason="Temporarily skipped during refactoring")
 def test_find_latest_successful_data_latest_failed_v2(step1, step2, ts1, ts2):
@@ -327,4 +370,5 @@ def test_validate_no_duplicate_outputs_none():
         step,
         result,
         {}  # empty previous results
-    ) 
+    )
+
