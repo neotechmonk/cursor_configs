@@ -161,8 +161,62 @@ def test_preserve_successful_result_upon_sebsequent_failure(step1, ts1, ts2):
     latest_result = context.get_latest_strategey_step_output_result("trend")
     assert latest_result == "UP"  # The cache should still hold the successful result
 
-#endregion
 
+def test_reject_duplicate_output_from_different_steps():
+    """Test that adding the same output from different steps raises ValueError."""
+    # Create two different steps
+    step1 = StrategyStep(
+        id="step1",
+        name="Step One",
+        description="First step",
+        evaluation_fn=lambda df, ctx, cfg: None,
+        config={}
+    )
+    
+    step2 = StrategyStep(
+        id="step2",
+        name="Step Two",
+        description="Second step",
+        config={},
+        evaluation_fn=lambda df, ctx, cfg: None
+    )
+    
+    # Create timestamps
+    ts1 = pd.Timestamp("2023-01-01 10:00:00")
+    ts2 = pd.Timestamp("2023-01-01 10:01:00")
+    
+    # Create results with identical output
+    same_output = {"trend": "UP", "strength": "HIGH"}
+    result1 = StrategStepEvaluationResult(
+        is_success=True,
+        message="Step 1 result",
+        step_output=same_output
+    )
+    
+    result2 = StrategStepEvaluationResult(
+        is_success=True,
+        message="Step 2 result",
+        step_output=same_output  # Same output as step1
+    )
+    
+    context = StrategyExecutionContext()
+    
+    # Add first result successfully
+    context.add_result(ts1, step1, result1)
+    assert len(context._strategy_steps_results) == 1
+    assert len(context._latest_results_cache) == 2  # Two keys in output
+    
+    # Attempting to add same output from different step should raise ValueError
+    with pytest.raises(ValueError, match="cannot produce the same output"):
+        context.add_result(ts2, step2, result2)
+    
+    # Verify context was not modified by the failed call
+    assert len(context._strategy_steps_results) == 1
+    assert len(context._latest_results_cache) == 2
+    assert (ts1, step1) in context._strategy_steps_results
+    assert (ts2, step2) not in context._strategy_steps_results
+
+#endregion
 
 
 @pytest.mark.skip(reason="Temporarily skipped during refactoring")
@@ -170,7 +224,7 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
     """Tests that adding a result with duplicate data raises ValueError (V2).
     NOTE: The validation logic in V2 now uses step object equality.
     """
-    dummy_strategy_step = StrategyStep(
+    strategy_step_1 = StrategyStep(
         id="step_dup_1", 
         name="StepDup1",
         description="Test Step Dup 1",
@@ -178,7 +232,7 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         config={}
     )
     # Create a step that differs only in name/desc (but same ID) - should NOT cause collision
-    dummy_strategy_step_diff_name = StrategyStep(
+    strategy_step_1_duplicate = StrategyStep(
         id="step_dup_1", 
         name="StepDup1 Different Name", 
         description="Test Step Dup 1",
@@ -186,41 +240,42 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         config={}
     )
     # Create a truly different step
-    dummy_strategy_step_2 = StrategyStep(
-        id="step_dup_2",
-        name="StepDup2",
-        description="Test Step Dup 2",
+    strategy_step_2 = StrategyStep(
+        id="step2",
+        name="Step2",
+        description="Test Step  2",
         evaluation_fn=lambda df, ctx, cfg: None,
         config={}
     )
     timestamp1 = pd.Timestamp("2023-01-01 10:00:00")
     timestamp2 = pd.Timestamp("2023-01-01 10:05:00")
     timestamp3 = pd.Timestamp("2023-01-01 10:10:00") # For step_diff_name
-    data_payload_1 = {"key1": "value1", "key2": 123}
-    data_payload_2 = {"key1": "value1", "key2": 123} # Identical payload
-    data_payload_3 = {"keyA": "valueA"} # Different payload
+    step1_payload = {"key1": "value1", "key2": 123}
+    dupe_step1_payload = {"key1": "value1", "key2": 123} # Identical payload
+    step2_payload = {"keyA": "valueA"} # Different payload
 
-    result1 = StrategStepEvaluationResult(
-        is_success=True, message="Step 1 ok", step_output=data_payload_1
+    step1_result = StrategStepEvaluationResult(
+        is_success=True, message="Step 1 ok", step_output=step1_payload
     )
-    result2 = StrategStepEvaluationResult(
-        is_success=True, message="Step 2 ok", step_output=data_payload_2  # Same data payload
+    dupe_step1_result = StrategStepEvaluationResult(
+        is_success=True, message="Step 2 ok", step_output=dupe_step1_payload  # Same data payload
     )
-    result3_diff_name = StrategStepEvaluationResult(
-        is_success=True, message="Step 1 diff name ok", step_output=data_payload_3
+    step2_result = StrategStepEvaluationResult(
+        is_success=True, message="Step 1 diff name ok", step_output=step2_payload
     )
 
     context = StrategyExecutionContext() # Use V2
-    key1 = (timestamp1, dummy_strategy_step)
-    key2 = (timestamp2, dummy_strategy_step_2)
-    key3_diff_name = (timestamp3, dummy_strategy_step_diff_name)
+    key_step1_original = (timestamp1, strategy_step_1)
+    key_step1_duplicate = (timestamp3, strategy_step_1_duplicate)
+    key_step2 = (timestamp2, strategy_step_2)
+
     
     # Add first result successfully
-    context.add_result(timestamp1, dummy_strategy_step, result1)
+    context.add_result(timestamp1, strategy_step_1, step1_result)
     
     # Add result from step with different name/desc but same ID (should be OK)
     try:
-        context.add_result(timestamp3, dummy_strategy_step_diff_name, result3_diff_name)
+        context.add_result(timestamp3, strategy_step_1_duplicate, step2_result)
     except ValueError as e:
         pytest.fail(f"Adding result from step with different name/desc but same ID raised unexpected ValueError: {e}")
     assert key3_diff_name in context._strategy_steps_results # Verify it was added
@@ -228,8 +283,8 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
 
     # Adding the same data payload from a *different* step (different ID) should raise error
     # Match against the error message format which now uses step name/id
-    with pytest.raises(ValueError, match=rf"Step '{dummy_strategy_step.name}' \(ID: {dummy_strategy_step.id}\)"):
-        context.add_result(timestamp2, dummy_strategy_step_2, result2)
+    with pytest.raises(ValueError, match=rf"Step '{strategy_step_1.name}' \(ID: {strategy_step_1.id}\)"):
+        context.add_result(timestamp2, strategy_step_2, dupe_step1_result)
         
     # Verify context was not modified by the failed call
     assert len(context._strategy_steps_results) == 2 # Still 2 entries
