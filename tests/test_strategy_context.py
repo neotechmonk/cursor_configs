@@ -31,8 +31,7 @@ def ts2() -> pd.Timestamp:
     return pd.Timestamp("2023-01-01 10:01:00")
 
 
-def test_add_sing_result(step1, ts1):
-    """Test adding the first result to an empty context (V2)."""
+def test_add_single_result(step1, ts1):
     context = StrategyExecutionContext() 
     result = StrategStepEvaluationResult(is_success=True, message="OK", step_output={"key1": "value1"})
     key = (ts1, step1)
@@ -49,27 +48,29 @@ def test_add_sing_result(step1, ts1):
     assert context.strategy_steps_results[key] == result 
 
 
-@pytest.mark.skip(reason="Temporarily skipped during refactoring")
-def test_add_result_multiple_v2(step1, step2, ts1, ts2):
-    """Test adding multiple distinct results (V2)."""
+def test_add_multiple_unique_results(step1, step2, ts1, ts2):
     context = StrategyExecutionContext() # Use V2
     result1 = StrategStepEvaluationResult(is_success=True, message="OK1", step_output={"key1": "value1"})
     result2 = StrategStepEvaluationResult(is_success=True, message="OK2", step_output={"key2": "value2"})
     
+    key1 = (ts1, step1)
+    key2 = (ts2, step2) 
+
     # Add first result
     context.add_result(ts1, step1, result1)
-    assert len(context.strategy_steps_results) == 1 # Check immediate effect
+    assert len(context.strategy_steps_results) == 1 
+    assert len(context._latest_results_cache) == 1 
     
     # Add second result
     context.add_result(ts2, step2, result2)
-    
-    key1 = (ts1, step1) # V2 uses (timestamp, step object) as key
-    key2 = (ts2, step2) # V2 uses (timestamp, step object) as key
-    
+
     # Assert final state
     assert len(context.strategy_steps_results) == 2
+    assert len(context._latest_results_cache) == 2
+
     assert key1 in context.strategy_steps_results
     assert key2 in context.strategy_steps_results
+    
     assert context.strategy_steps_results[key1] == result1
     assert context.strategy_steps_results[key2] == result2
 

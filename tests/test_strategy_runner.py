@@ -116,7 +116,7 @@ def test_run_strategy_with_multiple_bars():
         exec_context = run_strategy(config, incremental_price_feed, context=exec_context)
 
         # each run should have 3 results corresponding to 3 steps irrespective of success or failure
-        print (f"***** Number of results in history: {(exec_context.result_history)}")
+        print (f"***** Number of results in history: {(exec_context.strategy_steps_results)}")
         break
         # assert len(exec_context.result_history) == (i+1)*3
         
@@ -201,11 +201,11 @@ def test_run_strategy_happy_path_with_context(uptrending_price_feed):
     assert isinstance(final_context, StrategyExecutionContext)
 
     # Verify all steps were executed and added to context
-    assert len(final_context.result_history) == 4
+    assert len(final_context.strategy_steps_results) == 4
     
     # Create a map of results by step for easier verification
     results_map = {}
-    for (timestamp, step), result in final_context.result_history.items():
+    for (timestamp, step), result in final_context.strategy_steps_results.items():
         assert result is not None
         assert result.is_success, f"Step '{step.name}' (ID: {step.id}) failed unexpectedly: {result.message}"
         results_map[step.id] = result
@@ -235,7 +235,7 @@ def test_run_strategy_happy_path_with_context(uptrending_price_feed):
     
     # Verify context's data retrieval functionality
     # Test finding latest successful data
-    extreme_index = final_context.find_latest_successful_data(EXTREME_BAR_INDEX_KEY)
+    extreme_index = final_context.get_latest_strategey_step_output_result(EXTREME_BAR_INDEX_KEY)
     assert extreme_index is not None
     assert extreme_index == price_feed.index[-1]
     

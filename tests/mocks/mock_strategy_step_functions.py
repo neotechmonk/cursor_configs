@@ -71,7 +71,7 @@ def mock_validate_pullback_wrapper(
     """Wrapper for mock_pure_is_bars_since_extreme_pivot_valid."""
     latest_timestamp = _get_latest_timestamp(price_feed)
 
-    extreme_bar_index = context.find_latest_successful_data(EXTREME_BAR_INDEX_KEY)
+    extreme_bar_index = context.get_latest_strategey_step_output_result(EXTREME_BAR_INDEX_KEY)
     try:
         result_data = mock_pure_is_bars_since_extreme_pivot_valid(price_feed=price_feed, extreme_bar_index = extreme_bar_index, **config)
         return StrategStepEvaluationResult(
