@@ -218,80 +218,6 @@ def test_reject_duplicate_output_from_different_steps():
 
 #endregion
 
-
-@pytest.mark.skip(reason="same as test_reject_duplicate_output_from_different_steps()")
-def test_strategy_execution_context_add_result_duplicate_data_v2():
-    """Tests that adding a result with duplicate data raises ValueError (V2).
-    NOTE: The validation logic in V2 now uses step object equality.
-    """
-    strategy_step_1 = StrategyStep(
-        id="step_dup_1", 
-        name="StepDup1",
-        description="Test Step Dup 1",
-        evaluation_fn=lambda df, ctx, cfg: None,
-        config={}
-    )
-    # Create a step that differs only in name/desc (but same ID) - should NOT cause collision
-    strategy_step_1_duplicate = StrategyStep(
-        id="step_dup_1", 
-        name="StepDup1 Different Name", 
-        description="Test Step Dup 1",
-        evaluation_fn=lambda df, ctx, cfg: None,
-        config={}
-    )
-    # Create a truly different step
-    strategy_step_2 = StrategyStep(
-        id="step2",
-        name="Step2",
-        description="Test Step  2",
-        evaluation_fn=lambda df, ctx, cfg: None,
-        config={}
-    )
-    timestamp1 = pd.Timestamp("2023-01-01 10:00:00")
-    timestamp2 = pd.Timestamp("2023-01-01 10:05:00")
-    timestamp3 = pd.Timestamp("2023-01-01 10:10:00") # For step_diff_name
-    step1_payload = {"key1": "value1", "key2": 123}
-    dupe_step1_payload = {"key1": "value1", "key2": 123} # Identical payload
-    step2_payload = {"keyA": "valueA"} # Different payload
-
-    step1_result = StrategStepEvaluationResult(
-        is_success=True, message="Step 1 ok", step_output=step1_payload
-    )
-    dupe_step1_result = StrategStepEvaluationResult(
-        is_success=True, message="Step 2 ok", step_output=dupe_step1_payload  # Same data payload
-    )
-    step2_result = StrategStepEvaluationResult(
-        is_success=True, message="Step 1 diff name ok", step_output=step2_payload
-    )
-
-    context = StrategyExecutionContext() # Use V2
-    key_step1_original = (timestamp1, strategy_step_1)
-    key_step1_duplicate = (timestamp3, strategy_step_1_duplicate)
-    key_step2 = (timestamp2, strategy_step_2)
-
-    
-    # Add first result successfully
-    context.add_result(timestamp1, strategy_step_1, step1_result)
-    
-    # Add result from step with different name/desc but same ID (should be OK)
-    try:
-        context.add_result(timestamp3, strategy_step_1_duplicate, step2_result)
-    except ValueError as e:
-        pytest.fail(f"Adding result from step with different name/desc but same ID raised unexpected ValueError: {e}")
-    assert key_step1_duplicate in context._strategy_steps_results # Verify it was added
-    assert len(context._strategy_steps_results) == 2
-
-    # Adding the same data payload from a *different* step (different ID) should raise error
-    # Match against the error message format which now uses step name/id
-    with pytest.raises(ValueError, match=rf"Step '{strategy_step_1.name}' \(ID: {strategy_step_1.id}\)"):
-        context.add_result(timestamp2, strategy_step_2, dupe_step1_result)
-        
-    # Verify context was not modified by the failed call
-    assert len(context._strategy_steps_results) == 2 # Still 2 entries
-    assert key_step1_original in context._strategy_steps_results
-    assert key_step1_duplicate in context._strategy_steps_results
-    assert key_step2 not in context._strategy_steps_results # Check the second key wasn't added
-
 # region validation
 
 @pytest.mark.parametrize("test_case", [
@@ -383,6 +309,14 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         "name": "partial_match_pass",
         "step1_output": {"key1": "value1", "key2": "value2"},
         "step2_output": {"key1": "value1", "key3": "value3"},
+        "should_raise": False,
+        "error_message": None
+    },
+    {
+        "name": "same_step_same_output_pass",
+        "step1_output": {"key": "value"},
+        "step2_output": {"key": "value"},
+        "same_step": True,
         "should_raise": False,
         "error_message": None
     }
