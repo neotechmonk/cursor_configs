@@ -124,7 +124,7 @@ def _execute_strategy_step(
     context: StrategyExecutionContext 
 ) -> StrategStepEvaluationResult:
     """Executes a single strategy step using the provided context."""
-    print(f"    Context Before: {list(context.strategy_steps_results.keys()) if hasattr(context, 'result_history') else 'N/A'}") # Debug print
+    print(f"    Context Before: {list(context._strategy_steps_results.keys()) if hasattr(context, 'result_history') else 'N/A'}") # Debug print
     try:
         # Expected wrapper signature: 
         # (price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult

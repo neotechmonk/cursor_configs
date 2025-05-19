@@ -41,12 +41,12 @@ def test_add_single_result(step1, ts1):
     
     assert return_value is None 
     # single item in results history and cache
-    assert len(context.strategy_steps_results) == 1 
+    assert len(context._strategy_steps_results) == 1 
     assert len(context._latest_results_cache) == 1 
 
-    assert key in context.strategy_steps_results
+    assert key in context._strategy_steps_results
     
-    assert context.strategy_steps_results[key] == result 
+    assert context._strategy_steps_results[key] == result 
 
 
 def test_add_multiple_unique_results(step1, step2, ts1, ts2):
@@ -59,25 +59,25 @@ def test_add_multiple_unique_results(step1, step2, ts1, ts2):
 
     # Add first result
     context.add_result(ts1, step1, result1)
-    assert len(context.strategy_steps_results) == 1 
+    assert len(context._strategy_steps_results) == 1 
     assert len(context._latest_results_cache) == 1 
     
     # Add second result
     context.add_result(ts2, step2, result2)
 
     # Assert final state
-    assert len(context.strategy_steps_results) == 2
+    assert len(context._strategy_steps_results) == 2
     assert len(context._latest_results_cache) == 2
 
-    assert key1 in context.strategy_steps_results
-    assert key2 in context.strategy_steps_results
+    assert key1 in context._strategy_steps_results
+    assert key2 in context._strategy_steps_results
     
-    assert context.strategy_steps_results[key1] == result1
-    assert context.strategy_steps_results[key2] == result2
+    assert context._strategy_steps_results[key1] == result1
+    assert context._strategy_steps_results[key2] == result2
 
 
-def test_add_oveerwriting_result(step1, ts1, ts2):
-    """Test that adding a new result from the same step overwrites the previous value in cache."""
+def test_add_overwriting_result_upon_success(step1, ts1, ts2):
+    """Test that adding a new result from the same step overwrites the previous value in cache if the last result was successful."""
     context = StrategyExecutionContext()
     
     # First result from step1
@@ -96,7 +96,7 @@ def test_add_oveerwriting_result(step1, ts1, ts2):
     
     # Add first result
     context.add_result(ts1, step1, result1)
-    assert len(context.strategy_steps_results) == 1
+    assert len(context._strategy_steps_results) == 1
     assert len(context._latest_results_cache) == 1
     assert context._latest_results_cache["trend"] == "UP"  # Check cache after first result
     
@@ -104,7 +104,7 @@ def test_add_oveerwriting_result(step1, ts1, ts2):
     context.add_result(ts2, step1, result2)
     
     # History should have both results
-    assert len(context.strategy_steps_results) == 2
+    assert len(context._strategy_steps_results) == 2
     
     # Cache should still have one entry but with updated value
     assert len(context._latest_results_cache) == 1
@@ -113,26 +113,56 @@ def test_add_oveerwriting_result(step1, ts1, ts2):
     # Both results should be in history
     key1 = (ts1, step1)
     key2 = (ts2, step1)
-    assert context.strategy_steps_results[key1] == result1
-    assert context.strategy_steps_results[key2] == result2
+    assert context._strategy_steps_results[key1] == result1
+    assert context._strategy_steps_results[key2] == result2
+
+
+def test_preserve_successful_result_upon_sebsequent_failure(step1, ts1, ts2):
+    """Test that a failed result from the same step does not overwrite a previous successful result in cache."""
+    context = StrategyExecutionContext()
+    
+    # First result from step1 (successful)
+    result_success = StrategStepEvaluationResult(
+        is_success=True, 
+        message="First run successful", 
+        step_output={"trend": "UP"}
+    )
+    
+    # Second result from same step (step1) with failure
+    result_failure = StrategStepEvaluationResult(
+        is_success=False, 
+        message="Second run failed", 
+        step_output={"trend": "DOWN"}
+    )
+    
+    # Add first result (successful)
+    context.add_result(ts1, step1, result_success)
+    assert len(context._strategy_steps_results) == 1
+    assert len(context._latest_results_cache) == 1
+    assert context._latest_results_cache["trend"] == "UP"  # Cache has successful result
+    
+    # Add second result (failed)
+    context.add_result(ts2, step1, result_failure)
+    
+    # History should have both results
+    assert len(context._strategy_steps_results) == 2
+    
+    # Cache should still have the successful result
+    assert len(context._latest_results_cache) == 1
+    assert context._latest_results_cache["trend"] == "UP"  # Cache preserves successful result
+    
+    # Both results should be in history
+    key1 = (ts1, step1)
+    key2 = (ts2, step1)
+    assert context._strategy_steps_results[key1] == result_success
+    assert context._strategy_steps_results[key2] == result_failure
+
+    # Assert that the latest successful result is returned through the getter
+    latest_result = context.get_latest_strategey_step_output_result("trend")
+    assert latest_result == "UP"  # The cache should still hold the successful result
 
 #endregion
 
-@pytest.mark.skip(reason="Temporarily skipped during refactoring")
-def test_find_latest_successful_data_latest_failed_v2(step1, step2, ts1, ts2):
-    """Test finding data when the latest step with the key failed (V2).
-    NOTE: This test assumes the *intended* logic of find_latest_successful_data.
-    """
-    context = StrategyExecutionContext() # Use V2
-    result1 = StrategStepEvaluationResult(is_success=True, message="OK1", step_output={"key1": "value1_ok"})
-    result2 = StrategStepEvaluationResult(is_success=False, message="Fail2", step_output={"key1": "value2_fail"})
-    
-    context.add_result(ts1, step1, result1)
-    context.add_result(ts2, step2, result2)
-    
-    # The find method should still look back chronologically for the latest *successful* result
-    found_data = context.get_latest_strategey_step_output_result("key1")
-    assert found_data == "value1_ok" 
 
 
 @pytest.mark.skip(reason="Temporarily skipped during refactoring")
@@ -193,8 +223,8 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         context.add_result(timestamp3, dummy_strategy_step_diff_name, result3_diff_name)
     except ValueError as e:
         pytest.fail(f"Adding result from step with different name/desc but same ID raised unexpected ValueError: {e}")
-    assert key3_diff_name in context.strategy_steps_results # Verify it was added
-    assert len(context.strategy_steps_results) == 2
+    assert key3_diff_name in context._strategy_steps_results # Verify it was added
+    assert len(context._strategy_steps_results) == 2
 
     # Adding the same data payload from a *different* step (different ID) should raise error
     # Match against the error message format which now uses step name/id
@@ -202,10 +232,10 @@ def test_strategy_execution_context_add_result_duplicate_data_v2():
         context.add_result(timestamp2, dummy_strategy_step_2, result2)
         
     # Verify context was not modified by the failed call
-    assert len(context.strategy_steps_results) == 2 # Still 2 entries
-    assert key1 in context.strategy_steps_results
-    assert key3_diff_name in context.strategy_steps_results
-    assert key2 not in context.strategy_steps_results # Check the second key wasn't added
+    assert len(context._strategy_steps_results) == 2 # Still 2 entries
+    assert key1 in context._strategy_steps_results
+    assert key3_diff_name in context._strategy_steps_results
+    assert key2 not in context._strategy_steps_results # Check the second key wasn't added
 
 
 @pytest.mark.skip(reason="Temporarily skipped during refactoring")
@@ -238,12 +268,12 @@ def test_strategy_execution_context_add_result_duplicate_data_same_step_v2():
         pytest.fail(f"Adding duplicate data from the same step raised an unexpected ValueError: {e}")
 
     # Check history contains both entries (context modified in place)
-    assert len(context.strategy_steps_results) == 2
-    assert key1 in context.strategy_steps_results
-    assert key2 in context.strategy_steps_results
+    assert len(context._strategy_steps_results) == 2
+    assert key1 in context._strategy_steps_results
+    assert key2 in context._strategy_steps_results
     # In V2, the key contains the step object, the value is just the result
-    assert context.strategy_steps_results[key1].step_output == data_payload
-    assert context.strategy_steps_results[key2].step_output == data_payload 
+    assert context._strategy_steps_results[key1].step_output == data_payload
+    assert context._strategy_steps_results[key2].step_output == data_payload 
 
 @pytest.mark.skip(reason="Temporarily skipped during refactoring")
 def test_validate_no_duplicate_outputs_success():

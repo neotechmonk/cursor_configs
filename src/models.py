@@ -85,7 +85,7 @@ class StrategyExecutionContext:
     - A given strategy could have multiple `StrategStepEvaluationResult`s due to revaluations
     """
     # Main storage - single source of truth
-    strategy_steps_results: Dict[Tuple[pd.Timestamp, StrategyStep], StrategStepEvaluationResult] = field(default_factory=dict)
+    _strategy_steps_results: Dict[Tuple[pd.Timestamp, StrategyStep], StrategStepEvaluationResult] = field(default_factory=dict)
     # Cache for performance
     _latest_results_cache: Dict[str, Any] = field(default_factory=dict)
 
@@ -126,8 +126,8 @@ class StrategyExecutionContext:
         """Find the latest successful data value for a given key in the cache.
             `add_result()` adds to the cache.
         """
-        if lookup_key in self.strategy_steps_results:
-            return self.strategy_steps_results[lookup_key]
+        if lookup_key in self._strategy_steps_results:
+            return self._strategy_steps_results[lookup_key]
         
         return None
 
@@ -136,10 +136,10 @@ class StrategyExecutionContext:
         current_key = (price_data_index, step)
 
         #Validations
-        self._validate_no_duplicate_outputs_by_different_steps(step, result, self.strategy_steps_results)
+        self._validate_no_duplicate_outputs_by_different_steps(step, result, self._strategy_steps_results)
 
         # Add to results history and the add/update cache
-        self.strategy_steps_results[current_key] = result
+        self._strategy_steps_results[current_key] = result
         
         # only successful results are with outputs are cached
         if result.is_success and result.step_output:
@@ -148,7 +148,7 @@ class StrategyExecutionContext:
     # TODO : YAGNI
     def get_data_producers(self, data_key: str) -> Set[str]:
         """Get IDs of steps that have produced this data key."""
-        return {step.id for (_, step), result in self.strategy_steps_results.items() 
+        return {step.id for (_, step), result in self._strategy_steps_results.items() 
                 if result.step_output and data_key in result.step_output}
 
     # TODO : YAGNI
@@ -156,7 +156,7 @@ class StrategyExecutionContext:
         """Get ordered price data timestamp of when data key was produced/modified.
         Note: this is not the system time of StrategyStep execution.
         """
-        return sorted(timestamp for (timestamp, _), result in self.strategy_steps_results.items() 
+        return sorted(timestamp for (timestamp, _), result in self._strategy_steps_results.items() 
                      if result.step_output and data_key in result.step_output)
 
 
