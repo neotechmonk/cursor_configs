@@ -1,4 +1,3 @@
-
 from models import Direction, PriceLabel
 
 # Remove StrategyExecutionContext imports, moved to test_strategy_context.py
@@ -10,9 +9,9 @@ from models import Direction, PriceLabel
 
 
 def test_direction_enum():
-    assert Direction.UP.value == 1
-    assert Direction.DOWN.value == 2
-    assert Direction.RANGE.value == 3
+    assert Direction.UP.value == "UP"
+    assert Direction.DOWN.value == "DOWN"
+    assert Direction.RANGE.value == "RANGE"
 
 
 def test_price_label_enum():
