@@ -20,6 +20,9 @@ from models import (
     StrategyExecutionContext,
     StrategyStep,
 )
+from strategy_runner import (
+    _execute_strategy_step,  # Import the function from strategy_runner
+)
 
 
 class StrategyStatus (StrEnum):
@@ -118,32 +121,6 @@ def load_strategy_config(strategy_name: str, config_dir: str = "configs/strategi
     )
 
 
-def _execute_strategy_step(
-    step: StrategyStep, 
-    price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext 
-) -> StrategStepEvaluationResult:
-    """Executes a single strategy step using the provided context."""
-    print(f"    Context Before: {list(context._strategy_steps_results.keys()) if hasattr(context, 'result_history') else 'N/A'}") # Debug print
-    try:
-        # Expected wrapper signature: 
-        # (price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult
-        result : StrategStepEvaluationResult = step.evaluation_fn(
-            price_feed=price_feed,
-            context=context, # Pass the current context
-            **step.config
-        )
-    except Exception as e:
-        # Catch errors during the wrapper execution itself
-        return StrategStepEvaluationResult(is_success=False, message=f"Error executing step '{step.name}' wrapper: {e}")
-
-    # Guard: Ensure the wrapper returned the correct type 
-    if not isinstance(result, StrategStepEvaluationResult):
-            return StrategStepEvaluationResult(is_success=False, message=f"Step '{step.name}' wrapper function did not return a StrategStepEvaluationResult object.")
-    
-    return result
-
-
 def run_strategy(strategy: StrategyConfig, price_feed: pd.DataFrame) -> Tuple[StrategyExecutionContext, Dict[pd.Timestamp, Tuple[str, StrategStepEvaluationResult]], List[Tuple[StrategyStep, StrategStepEvaluationResult]]]:
     """Executes the strategy steps sequentially, managing execution context and history log.
     
@@ -162,7 +139,7 @@ def run_strategy(strategy: StrategyConfig, price_feed: pd.DataFrame) -> Tuple[St
         for i, step in enumerate(strategy.steps):
             print(f"  Executing step {i+1}: {step.name} (ID: {step.id})")
             
-            # Execute step with the *current* context
+            # Execute step with the *current* context using imported function
             result = _execute_strategy_step(step, price_feed, current_context)
             executed_results_this_run.append((step, result))
             

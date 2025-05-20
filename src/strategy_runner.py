@@ -5,7 +5,7 @@ from typing import Optional
 import pandas as pd
 
 # Import necessary types from models using absolute path from src
-from .models import (
+from src.models import (
     StrategStepEvaluationResult,
     StrategyConfig,
     StrategyExecutionContext,
