@@ -1,6 +1,5 @@
 """Tests for validation functions."""
 
-import pandas as pd
 import pytest
 
 from src.models import StrategStepEvaluationResult, StrategyStep

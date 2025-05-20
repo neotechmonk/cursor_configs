@@ -73,7 +73,7 @@ def mock_validate_pullback_wrapper(
 
     extreme_bar_index = context.get_latest_strategey_step_output_result(EXTREME_BAR_INDEX_KEY)
     try:
-        result_data = mock_pure_is_bars_since_extreme_pivot_valid(price_feed=price_feed, extreme_bar_index = extreme_bar_index, **config)
+        mock_pure_is_bars_since_extreme_pivot_valid(price_feed=price_feed, extreme_bar_index=extreme_bar_index, **config)
         return StrategStepEvaluationResult(
             is_success=True, 
             message="Pullback valid", 

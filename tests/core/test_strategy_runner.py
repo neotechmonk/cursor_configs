@@ -10,13 +10,13 @@ from typing import Any, Dict
 import pandas as pd
 import pytest
 
+from src.core.strategy_runner import run_strategy
 from src.models import (
     StrategStepEvaluationResult,
     StrategyConfig,
     StrategyExecutionContext,
     StrategyStep,
 )
-from src.core.strategy_runner import run_strategy
 from tests.mocks.mock_strategy_step_functions import (
     EXTREME_BAR_INDEX_KEY,
     mock_check_fib_wrapper,
@@ -101,7 +101,6 @@ def test_run_strategy_with_multiple_bars():
         steps=[step1, step2, step3]
     )
 
-
     exec_context = None
 
     # Run strategy incrementally with increasing bars
@@ -111,7 +110,6 @@ def test_run_strategy_with_multiple_bars():
 
         # print (f"*********Incremental price feed: {incremental_price_feed}")
 
-        
         # Run strategy with the current slice of price_feed
         exec_context = run_strategy(config, incremental_price_feed, context=exec_context)
 

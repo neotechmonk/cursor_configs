@@ -224,6 +224,7 @@ def test_reject_duplicate_output_from_different_steps():
 
 # region validation
 
+
 @pytest.mark.parametrize("test_case", [
     {
         "name": "different_outputs_pass",
@@ -327,8 +328,6 @@ def test_reject_duplicate_output_from_different_steps():
 ])
 def test_validate_step_outputs_for_duplicate_results(test_case):
     """Test validation of step outputs with different scenarios."""
-    context = StrategyExecutionContext()
-    
     # Create two different steps
     step1 = StrategyStep(
         id="step1",
@@ -426,8 +425,6 @@ def test_validate_step_outputs_for_duplicate_results(test_case):
 ])
 def test_validate_step_output_keys_and_values(test_case):
     """Test validation of step output keys and values with different scenarios."""
-    context = StrategyExecutionContext()
-    
     # Create a test step
     step = StrategyStep(
         id="test_step",

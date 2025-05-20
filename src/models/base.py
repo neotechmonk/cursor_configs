@@ -2,8 +2,6 @@
 
 from enum import StrEnum
 
-import pandas as pd
-
 
 class PriceLabel(StrEnum):
     """Price data column labels.
