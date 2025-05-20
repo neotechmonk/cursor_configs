@@ -3,6 +3,7 @@
 Documents specifics related to structure, fixtures and mocks on the test suite
 
 ## TODO
+[ ] file organisation based on sr/* files or call out where deviation exists
 ## Test Structure
 
 tests/
