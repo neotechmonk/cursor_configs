@@ -8,6 +8,10 @@ import pytest
 # Imports from strategy module needed for tests
 # Update import for StrategStepEvaluationResult and StrategyExecutionContextV2
 from models import StrategStepEvaluationResult, StrategyExecutionContext, StrategyStep
+from src.validators import (
+    validate_no_duplicate_outputs_by_different_steps,
+    validate_step_output_keys_and_values,
+)
 
 
 @pytest.fixture
@@ -352,7 +356,7 @@ def test_validate_step_outputs_for_duplicate_results(test_case):
     # Test validation
     if test_case["should_raise"]:
         with pytest.raises(ValueError) as exc_info:
-            context._validate_no_duplicate_outputs_by_different_steps(
+            validate_no_duplicate_outputs_by_different_steps(
                 cur_step=step1,
                 cur_step_result=result1,
                 prev_results={(None, step2): result2}
@@ -363,7 +367,7 @@ def test_validate_step_outputs_for_duplicate_results(test_case):
             assert "Step 2" in str(exc_info.value)
     else:
         # This should not raise an exception
-        context._validate_no_duplicate_outputs_by_different_steps(
+        validate_no_duplicate_outputs_by_different_steps(
             cur_step=step1,
             cur_step_result=result1,
             prev_results={(None, step2): result2}
@@ -440,13 +444,13 @@ def test_validate_step_output_keys_and_values(test_case):
     # Test validation
     if test_case["should_raise"]:
         with pytest.raises(ValueError) as exc_info:
-            context._validate_step_output_keys_and_values(step, result)
+            validate_step_output_keys_and_values(step, result)
         if test_case["error_message"]:
             assert test_case["error_message"] in str(exc_info.value)
             assert "Test Step" in str(exc_info.value)
     else:
         # This should not raise an exception
-        context._validate_step_output_keys_and_values(step, result)
+        validate_step_output_keys_and_values(step, result)
 
 
 def test_validate_identical_output_by_different_steps():
