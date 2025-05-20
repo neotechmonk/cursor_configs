@@ -1,6 +1,6 @@
 """Contains functions for executing a defined strategy step-by-step."""
 
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -18,23 +18,32 @@ def _execute_strategy_step(
     price_feed: pd.DataFrame, 
     context: StrategyExecutionContext
 ) -> StrategStepEvaluationResult:
-    """Executes a single strategy step using the provided context."""
-    # print(f"    Context Before Keys: {str(context)}")
+    """Executes a single strategy step using the provided context.
+    
+    Args:
+        step: The strategy step to execute
+        price_feed: The price data to use for execution
+        context: The current execution context
+        
+    Returns:
+        The result of the step execution
+        
+    Note:
+        The evaluation function is expected to have the signature:
+        (price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult
+    """
     try:
-        # Expected wrapper signature: 
-        # (price_feed: pd.DataFrame, context: ?, **config) -> StrategStepEvaluationResult
-        # The evaluation function itself might expect a specific context version.
-        result : StrategStepEvaluationResult = step.evaluation_fn(
+        result: StrategStepEvaluationResult = step.evaluation_fn(
             price_feed=price_feed,
             context=context,
             **step.config
         )
     except Exception as e:
-        # Catch errors during the wrapper execution itself
-        return StrategStepEvaluationResult(is_success=False, message=f"Error executing step '{step.name}' wrapper: {e}")
+        return StrategStepEvaluationResult(
+            is_success=False, 
+            message=f"Error executing step '{step.name}' wrapper: {e}"
+        )
 
-    # Guard: Ensure the wrapper returned the correct type 
-       
     if not isinstance(result, StrategStepEvaluationResult):
         return StrategStepEvaluationResult(
             is_success=False, 
@@ -54,13 +63,18 @@ def run_strategy(
     passing the context from the previous call to maintain state.
 
     Args:
-        strategy: The strategy configuration containing the steps.
-        price_feed: The DataFrame of price data (potentially growing over time).
-        context: The StrategyExecutionContext from the *previous* execution.
+        strategy: The strategy configuration containing the steps
+        price_feed: The DataFrame of price data (potentially growing over time)
+        context: The StrategyExecutionContext from the *previous* execution
 
     Returns:
         The updated StrategyExecutionContext after processing the steps for this call.
         Stops processing steps for this call upon the first failure or validation error.
+
+    Note:
+        - If price_feed is empty or has no valid index, returns the existing context
+        - Each step's result is added to the context using the latest bar's timestamp
+        - Processing stops on first step failure or validation error
     """
     print(f"Running strategy: {strategy.name} with existing bar index {price_feed.index[-1]}")
 
@@ -70,8 +84,6 @@ def run_strategy(
     # Check if price_feed is empty or has no valid index
     if price_feed.empty or not isinstance(price_feed.index, pd.DatetimeIndex) or len(price_feed.index) == 0:
         print("  Warning: Price feed is empty or has no valid index. Skipping execution for this call.")
-        # Decide on behavior: return existing context or raise error?
-        # Returning existing context seems safer for repeated calls.
         return context 
 
     # Get the index of the latest bar *safely*

@@ -8,24 +8,32 @@ For a each new Bar
 from enum import StrEnum
 from importlib import import_module
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd  # Add pandas import
+import pandas as pd
 import yaml
 
 # Import the moved models and types
-from models import (
+from src.models import (
     StrategStepEvaluationResult,
     StrategyConfig,
     StrategyExecutionContext,
     StrategyStep,
 )
-from strategy_runner import (
-    _execute_strategy_step,  # Import the function from strategy_runner
-)
+from src.strategy_runner import _execute_strategy_step
 
 
-class StrategyStatus (StrEnum):
+class StrategyStatus(StrEnum):
+    """Possible states of a strategy execution.
+    
+    Attributes:
+        NEW: Strategy has been created but not started
+        SETUP_WIP: Strategy is in setup phase
+        SETUP_CANCELLED: Setup phase was cancelled
+        IN_TRADE: Strategy is in an active trade
+        TRADE_WIP: Trade is being processed
+        TRADE_CLOSED: Trade has been closed
+    """
     NEW = "NEW"
     SETUP_WIP = "SETUP IN PROGRESS"
     SETUP_CANCELLED = "SETUP IN CANCELLED" 
@@ -40,8 +48,7 @@ class StrategyStatus (StrEnum):
 
 
 def load_strategy_config(strategy_name: str, config_dir: str = "configs/strategies") -> StrategyConfig:
-    """
-    Load strategy configuration from a YAML file.
+    """Load strategy configuration from a YAML file.
     
     Args:
         strategy_name: Name of the strategy to load
@@ -52,7 +59,12 @@ def load_strategy_config(strategy_name: str, config_dir: str = "configs/strategi
         
     Raises:
         FileNotFoundError: If the strategy configuration file doesn't exist
-        ValueError: If the configuration file is invalid or contains errors (missing IDs, duplicates, bad refs)
+        ValueError: If the configuration file is invalid or contains errors:
+            - Missing required fields (name, steps)
+            - Missing step IDs
+            - Duplicate step IDs
+            - Invalid reevaluation references
+            - Invalid YAML format
     """
     # Construct the full path to the config file
     config_path = Path(config_dir) / f"{strategy_name}.yaml"
@@ -121,14 +133,26 @@ def load_strategy_config(strategy_name: str, config_dir: str = "configs/strategi
     )
 
 
-def run_strategy(strategy: StrategyConfig, price_feed: pd.DataFrame) -> Tuple[StrategyExecutionContext, Dict[pd.Timestamp, Tuple[str, StrategStepEvaluationResult]], List[Tuple[StrategyStep, StrategStepEvaluationResult]]]:
+def run_strategy(
+    strategy: StrategyConfig, 
+    price_feed: pd.DataFrame
+) -> Tuple[StrategyExecutionContext, Dict[pd.Timestamp, Tuple[str, StrategStepEvaluationResult]], List[Tuple[StrategyStep, StrategStepEvaluationResult]]]:
     """Executes the strategy steps sequentially, managing execution context and history log.
     
-    Stops execution if a step fails or raises an error.
-    Returns: 
+    Args:
+        strategy: The strategy configuration to execute
+        price_feed: The price data to use for execution
+        
+    Returns:
+        Tuple containing:
         - final execution context (latest results per step)
         - full history log (timestamp keyed)
         - list of executed steps in this run (step, result)
+        
+    Note:
+        - Stops execution if a step fails or raises an error
+        - Handles timestamp collisions in the history log
+        - Validates step outputs before adding to context
     """
     executed_results_this_run: List[Tuple[StrategyStep, StrategStepEvaluationResult]] = []
     current_context = StrategyExecutionContext() # Start with empty context (latest results)
