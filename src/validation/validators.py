@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING, Dict
 import pandas as pd
 
 if TYPE_CHECKING:
-    from src.models import StrategStepEvaluationResult, StrategyStep
-
+    from src.models.strategy import StrategStepEvaluationResult, StrategyStep
 
 def validate_step_output_keys_and_values(
     step: 'StrategyStep',
@@ -29,7 +28,6 @@ def validate_step_output_keys_and_values(
             raise ValueError(f"Step '{step.name}' produced output with empty key")
         if value is None or (isinstance(value, str) and not value.strip()):
             raise ValueError(f"Step '{step.name}' produced output with empty value for key '{key}'")
-
 
 def validate_no_duplicate_outputs_by_different_steps(
     cur_step: 'StrategyStep',
@@ -58,7 +56,6 @@ def validate_no_duplicate_outputs_by_different_steps(
                 f"produced identical output: {list(cur_step_result.step_output.keys())}. "
                 "Two StrategySteps cannot produce the same output."
             )
-
 
 def validate_identical_output_by_different_steps(
     cur_step: 'StrategyStep',
@@ -90,4 +87,4 @@ def validate_identical_output_by_different_steps(
                     f"Steps '{cur_step.name}' and '{existing_step.name}' "
                     f"produced identical output keys: {list(overlapping_keys)}. "
                     "Two different StrategySteps cannot produce the same output key."
-                ) 
+                )

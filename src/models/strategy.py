@@ -14,7 +14,7 @@ StrategyStepFn = Callable[
     'StrategStepEvaluationResult'
 ]
 
-from src.validators import (
+from src.validation.validators import (
     validate_identical_output_by_different_steps,
     validate_no_duplicate_outputs_by_different_steps,
     validate_step_output_keys_and_values,

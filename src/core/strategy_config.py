@@ -20,7 +20,7 @@ from src.models import (
     StrategyExecutionContext,
     StrategyStep,
 )
-from src.strategy_runner import _execute_strategy_step
+from src.core.strategy_runner import _execute_strategy_step
 
 
 class StrategyStatus(StrEnum):

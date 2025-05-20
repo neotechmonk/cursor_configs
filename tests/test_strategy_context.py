@@ -8,7 +8,7 @@ import pytest
 # Imports from strategy module needed for tests
 # Update import for StrategStepEvaluationResult and StrategyExecutionContextV2
 from models import StrategStepEvaluationResult, StrategyExecutionContext, StrategyStep
-from src.validators import (
+from src.validation.validators import (
     validate_no_duplicate_outputs_by_different_steps,
     validate_step_output_keys_and_values,
 )

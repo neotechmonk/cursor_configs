@@ -16,7 +16,7 @@ from src.models import (
     StrategyExecutionContext,
     StrategyStep,
 )
-from src.strategy_runner import run_strategy
+from src.core.strategy_runner import run_strategy
 from tests.mocks.mock_strategy_step_functions import (
     EXTREME_BAR_INDEX_KEY,
     mock_check_fib_wrapper,
