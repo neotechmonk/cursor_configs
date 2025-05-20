@@ -8,7 +8,7 @@ For a each new Bar
 from enum import StrEnum
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 import yaml

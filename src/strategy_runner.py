@@ -1,6 +1,6 @@
 """Contains functions for executing a defined strategy step-by-step."""
 
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import pandas as pd
 

@@ -6,6 +6,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 
 import pandas as pd
 
+from src.validators import (
+    validate_identical_output_by_different_steps,
+    validate_no_duplicate_outputs_by_different_steps,
+    validate_step_output_keys_and_values,
+)
+
 
 class PriceLabel(StrEnum):
     # Values must match the column names in the price data
@@ -122,84 +128,9 @@ class StrategyExecutionContext:
     _strategy_steps_results: Main storage mapping (timestamp, step) to results
     _latest_results_cache: Cache for quick access to latest successful results
     """
-    _strategy_steps_results: Dict[Tuple[pd.Timestamp, StrategyStep], StrategStepEvaluationResult] = field(default_factory=dict) # succcessful and failed results
-    _latest_results_cache: Dict[str, Any] = field(default_factory=dict) # latest successful outputs from StrategySteps
+    _strategy_steps_results: Dict[Tuple[pd.Timestamp, StrategyStep], StrategStepEvaluationResult] = field(default_factory=dict)
+    _latest_results_cache: Dict[str, Any] = field(default_factory=dict)
 
-    def _validate_no_duplicate_outputs_by_different_steps(
-        self,
-        cur_step: StrategyStep,
-        cur_step_result: StrategStepEvaluationResult,
-        prev_results: Dict[Tuple[pd.Timestamp, StrategyStep], StrategStepEvaluationResult]
-    ) -> None:
-        """Ensure only one step produces a given output.
-
-        Args:
-            cur_step: The current step being validated
-            cur_step_result: The result from the current step
-            prev_results: Previous results to check against
-
-        Raises:
-            ValueError: If another step has already produced the same output - eliminates risk of the output from a step being overwritten by another step
-        """
-        if not cur_step_result.step_output:
-            return
-            
-        for (_, existing_step), existing_result in prev_results.items():
-            if (existing_step != cur_step 
-                and existing_result.step_output 
-                and existing_result.step_output == cur_step_result.step_output):
-                raise ValueError(
-                    f"Steps '{cur_step.name}' and '{existing_step.name}' "
-                    f"produced identical output: {list(cur_step_result.step_output.keys())}. "
-                    "Two StrategySteps cannot produce the same output."
-                )
-    def _validate_identical_output_by_different_steps(
-        self,
-        cur_step: StrategyStep,
-        cur_step_result: StrategStepEvaluationResult,
-        prev_results: Dict[Tuple[pd.Timestamp, StrategyStep], StrategStepEvaluationResult]
-        ) -> None:
-        """
-            Ensure that different StrategySteps do not produce identical outputs.
-
-            If two different steps produce the same output, it indicates a bug - error out.
-        """
-        if not cur_step_result.step_output:
-            return
-            
-        for (_, existing_step), existing_result in prev_results.items():
-            if (existing_step != cur_step 
-                and existing_result.step_output 
-                and existing_result.step_output == cur_step_result.step_output):
-                raise ValueError(
-                    f"Steps '{cur_step.name}' and '{existing_step.name}' "
-                    f"produced identical output: {list(cur_step_result.step_output.keys())}. "
-                    "Two different StrategySteps cannot produce the same output."
-                )
-
-    def _validate_step_output_keys_and_values(
-        self,
-        step: StrategyStep,
-        result: StrategStepEvaluationResult
-    ) -> None:
-        """Validate that step output keys and values are non-empty.
-        
-        Args:
-            step: The strategy step being validated
-            result: The result containing the output to validate
-            
-        Raises:
-            ValueError: If any key or value in the output is empty
-        """
-        if not result.step_output:
-            return
-            
-        for key, value in result.step_output.items():
-            if not key or not key.strip():
-                raise ValueError(f"Step '{step.name}' produced output with empty key")
-            if value is None or (isinstance(value, str) and not value.strip()):
-                raise ValueError(f"Step '{step.name}' produced output with empty value for key '{key}'")
-            
     def get_latest_strategey_step_output_result(self, lookup_key: str) -> Optional[Any]:
         """Find the latest successful data value for a given key in the cache.
         
@@ -242,15 +173,15 @@ class StrategyExecutionContext:
         current_key = (price_data_index, step)
 
         # Validations
-        self._validate_step_output_keys_and_values(step, result) 
-        self._validate_no_duplicate_outputs_by_different_steps(
+        validate_step_output_keys_and_values(step, result) 
+        validate_no_duplicate_outputs_by_different_steps(
             cur_step=step, 
             cur_step_result=result, 
             prev_results=self._strategy_steps_results
         )
-        self._validate_identical_output_by_different_steps(
-            cur_step=step, 
-            cur_step_result=result, 
+        validate_identical_output_by_different_steps(
+            cur_step=step,
+            cur_step_result=result,
             prev_results=self._strategy_steps_results
         )
 
@@ -274,5 +205,3 @@ class StrategyExecutionContext:
     #     """
     #     return sorted(timestamp for (timestamp, _), result in self._strategy_steps_results.items() 
     #                  if result.step_output and data_key in result.step_output)
-
-
