@@ -47,5 +47,83 @@ def test_evaluate_success():
     }
 
     # Verify both values were stored in the context
-    assert context.get_latest_strategey_step_output_result("trend") == "UP"
-    assert context.get_latest_strategey_step_output_result("trend_strength") == "strong" 
+    # Get the latest result for each key
+    trend = context.get_latest_strategey_step_output_result("trend")
+    trend_strength = context.get_latest_strategey_step_output_result("trend_strength")
+    assert trend == "UP"
+    assert trend_strength == "strong"
+
+def test_evaluate_with_empty_context():
+    """Test that StrategyStep handles empty context inputs gracefully."""
+    # Mock the pure function to return a simple dict
+    mock_pure_function = MagicMock(return_value={
+        "direction": "UP",
+        "strength": "strong"
+    })
+
+    # Create a step config with empty context inputs
+    step_config = {
+        "context_inputs": {},  # Empty context inputs
+        "context_outputs": {
+            "trend": "direction",
+            "trend_strength": "strength"
+        },
+        "config_mapping": {}
+    }
+
+    # Create a StrategyStep instance
+    step = StrategyStep(step_config, mock_pure_function)
+
+    # Create a price feed and empty context
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    # Execute the step
+    result = step.evaluate(price_feed, context)
+
+    # Verify the result
+    assert result.is_success
+    assert result.message == "Step completed successfully"
+    assert result.step_output == {
+        "direction": "UP",
+        "strength": "strong"
+    }
+
+    # Verify values were stored in the context
+    trend = context.get_latest_strategey_step_output_result("trend")
+    trend_strength = context.get_latest_strategey_step_output_result("trend_strength")
+    assert trend == "UP"
+    assert trend_strength == "strong"
+
+    # Verify the pure function was called with only price_feed
+    mock_pure_function.assert_called_once_with(price_feed)
+
+def test_evaluate_with_invalid_mapping():
+    """Test that StrategyStep handles invalid context output mappings gracefully."""
+    # Mock the pure function to return a dict without the expected key
+    mock_pure_function = MagicMock(return_value={
+        "direction": "UP"
+    })
+
+    # Create a step config with an invalid mapping (non-existent path)
+    step_config = {
+        "context_inputs": {},
+        "context_outputs": {
+            "trend": "direction",
+            "trend_strength": "strength"  # 'strength' does not exist in result
+        },
+        "config_mapping": {}
+    }
+
+    step = StrategyStep(step_config, mock_pure_function)
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    result = step.evaluate(price_feed, context)
+
+    # Should still succeed for valid mappings
+    assert result.is_success
+    trend = context.get_latest_strategey_step_output_result("trend")
+    assert trend == "UP"
+    # The missing mapping should not be present in context
+    assert context.get_latest_strategey_step_output_result("trend_strength") is None 
