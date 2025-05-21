@@ -192,4 +192,30 @@ def test_evaluate_with_non_dict_result():
     assert result.is_success
     assert result.message == "Step completed successfully"
     assert result.step_output == {"result": 42}
-    assert context.get_latest_strategey_step_output_result("answer") == 42 
+    assert context.get_latest_strategey_step_output_result("answer") == 42
+
+def test_evaluate_with_missing_required_inputs():
+    """Test that StrategyStep fails if required context inputs are missing."""
+    # Pure function expects a required argument
+    def pure_fn(price_feed, required_param):
+        return {"result": required_param}
+
+    step_config = {
+        "context_inputs": {
+            "required_param": "missing_in_context"
+        },
+        "context_outputs": {
+            "output": "result"
+        },
+        "config_mapping": {}
+    }
+
+    step = StrategyStep(step_config, pure_fn)
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    result = step.evaluate(price_feed, context)
+
+    assert not result.is_success
+    assert "argument of type 'StrategyExecutionContext' is not iterable" in result.message
+    assert context.get_latest_strategey_step_output_result("output") is None 
