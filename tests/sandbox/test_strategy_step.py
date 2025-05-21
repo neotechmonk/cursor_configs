@@ -99,7 +99,7 @@ def test_evaluate_with_empty_context():
     mock_pure_function.assert_called_once_with(price_feed)
 
 def test_evaluate_with_invalid_mapping():
-    """Test that StrategyStep handles invalid context output mappings gracefully."""
+    """Test that StrategyStep fails when context output mappings are invalid."""
     # Mock the pure function to return a dict without the expected key
     mock_pure_function = MagicMock(return_value={
         "direction": "UP"
@@ -121,9 +121,9 @@ def test_evaluate_with_invalid_mapping():
 
     result = step.evaluate(price_feed, context)
 
-    # Should still succeed for valid mappings
-    assert result.is_success
-    trend = context.get_latest_strategey_step_output_result("trend")
-    assert trend == "UP"
-    # The missing mapping should not be present in context
+    # Should fail when mapping is invalid
+    assert not result.is_success
+    assert "Path 'strength' not found in object" in result.message
+    # No values should be stored in context
+    assert context.get_latest_strategey_step_output_result("trend") is None
     assert context.get_latest_strategey_step_output_result("trend_strength") is None 

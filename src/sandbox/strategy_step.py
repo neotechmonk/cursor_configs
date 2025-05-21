@@ -1,6 +1,6 @@
 """Strategy step implementation using pipeline configuration."""
 
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 import pandas as pd
 
@@ -33,18 +33,21 @@ class StrategyStep:
         """
         try:
             result = self._execute_pure_function(price_feed, context, **kwargs)
-            self._update_context(context, result, price_feed)
+            self._update_context(context, result, self.step_config['context_outputs'])
+            timestamp = price_feed.index[-1] if not price_feed.empty else None
             return StrategStepEvaluationResult(
                 is_success=True,
                 message="Step completed successfully",
                 step_output=result,
-                timestamp=price_feed.index[-1]
+                timestamp=timestamp
             )
         except Exception as e:
+            timestamp = price_feed.index[-1] if not price_feed.empty else None
             return StrategStepEvaluationResult(
                 is_success=False,
                 message=str(e),
-                timestamp=price_feed.index[-1]
+                timestamp=timestamp,
+                step_output={}
             )
     
     def _get_value_from_path(self, obj: Dict[str, Any], path: str) -> Any:
@@ -115,19 +118,31 @@ class StrategyStep:
         except Exception as e:
             raise ValueError(f"Error in strategy step: {str(e)}")
 
-    def _update_context(self, context: StrategyExecutionContext, result: Dict[str, Any], price_feed: pd.DataFrame) -> None:
-        """Update the strategy execution context with the result of the strategy step."""
-        from src.models import StrategStepEvaluationResult
-        for context_key, result_path in self.step_config['context_outputs'].items():
-            try:
-                value = self._get_value_from_path(result, result_path)
-                # Add result to context using add_result
-                result_obj = StrategStepEvaluationResult(
-                    is_success=True,
-                    message="Step output update",
-                    step_output={context_key: value},
-                    timestamp=price_feed.index[-1] if not price_feed.empty else None
-                )
-                context.add_result(result_obj.timestamp, self, result_obj)
-            except KeyError as e:
-                raise KeyError(f"Failed to update context with key {context_key}: {e}") 
+    def _update_context(self, context: StrategyExecutionContext, result: Dict[str, Any], context_outputs: Dict[str, str]) -> None:
+        """
+        Update the context with the mapped outputs from the pure function result.
+        Fails if any mapping path is invalid.
+        
+        Args:
+            context: Strategy execution context
+            result: Result from pure function
+            context_outputs: Mapping of context keys to result paths
+            
+        Raises:
+            KeyError: If any mapping path is invalid
+        """
+        # First validate all mappings
+        mapped_values = {}
+        for context_key, result_path in context_outputs.items():
+            value = self._get_value_from_path(result, result_path)
+            mapped_values[context_key] = value
+            
+        # Only update context if all mappings are valid
+        for context_key, value in mapped_values.items():
+            result_obj = StrategStepEvaluationResult(
+                is_success=True,
+                message="Step output update",
+                step_output={context_key: value},
+                timestamp=result.get('timestamp') if isinstance(result, dict) else None
+            )
+            context.add_result(result_obj.timestamp, self, result_obj) 
