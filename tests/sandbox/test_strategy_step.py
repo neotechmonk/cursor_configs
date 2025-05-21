@@ -126,4 +126,47 @@ def test_evaluate_with_invalid_mapping():
     assert "Path 'strength' not found in object" in result.message
     # No values should be stored in context
     assert context.get_latest_strategey_step_output_result("trend") is None
-    assert context.get_latest_strategey_step_output_result("trend_strength") is None 
+    assert context.get_latest_strategey_step_output_result("trend_strength") is None
+
+def test_evaluate_with_nested_paths():
+    """Test that StrategyStep can extract values from deep nested paths."""
+    mock_pure_function = MagicMock(return_value={
+        "analysis": {
+            "trend": {
+                "direction": "DOWN",
+                "strength": "weak"
+            },
+            "confidence": 0.42
+        }
+    })
+
+    step_config = {
+        "context_inputs": {},
+        "context_outputs": {
+            "trend_direction": "analysis.trend.direction",
+            "trend_strength": "analysis.trend.strength",
+            "confidence": "analysis.confidence"
+        },
+        "config_mapping": {}
+    }
+
+    step = StrategyStep(step_config, mock_pure_function)
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    result = step.evaluate(price_feed, context)
+
+    assert result.is_success
+    assert result.message == "Step completed successfully"
+    assert result.step_output == {
+        "analysis": {
+            "trend": {
+                "direction": "DOWN",
+                "strength": "weak"
+            },
+            "confidence": 0.42
+        }
+    }
+    assert context.get_latest_strategey_step_output_result("trend_direction") == "DOWN"
+    assert context.get_latest_strategey_step_output_result("trend_strength") == "weak"
+    assert context.get_latest_strategey_step_output_result("confidence") == 0.42 
