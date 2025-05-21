@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/ntm/projects/tradex_strategy_pc/src/sandbox/example_usage.py", line 78, in <module>
+    main() 
+    ^^^^^^
+  File "/Users/ntm/projects/tradex_strategy_pc/src/sandbox/example_usage.py", line 31, in main
+    steps[step_name] = factory.create_step(step_name, pure_function)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ntm/projects/tradex_strategy_pc/src/sandbox/strategy_step_factory.py", line 39, in create_step
+    self._validate_function_signature(pure_function, step_config)
+  File "/Users/ntm/projects/tradex_strategy_pc/src/sandbox/strategy_step_factory.py", line 59, in _validate_function_signature
+    raise ValueError(f"Pure function missing required parameter from context: {context_key}")
+ValueError: Pure function missing required parameter from context: extreme_bar_index

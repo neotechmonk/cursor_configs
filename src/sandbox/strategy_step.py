@@ -33,7 +33,7 @@ class StrategyStep:
         """
         try:
             result = self._execute_pure_function(price_feed, context, **kwargs)
-            self._update_context(context, result)
+            self._update_context(context, result, price_feed)
             return StrategStepEvaluationResult(
                 is_success=True,
                 message="Step completed successfully",
@@ -91,13 +91,15 @@ class StrategyStep:
         try:
             # Map context inputs
             context_inputs = {}
-            for param_name, context_path in self.step_config['context_inputs'].items():
-                context_inputs[param_name] = self._get_value_from_path(context, context_path)
+            if self.step_config['context_inputs']:
+                for param_name, context_path in self.step_config['context_inputs'].items():
+                    context_inputs[param_name] = self._get_value_from_path(context, context_path)
 
             # Map config inputs
             config_inputs = {}
-            for param_name, config_path in self.step_config['config_mapping'].items():
-                config_inputs[param_name] = self._get_value_from_path(kwargs, config_path)
+            if self.step_config['config_mapping']:
+                for param_name, config_path in self.step_config['config_mapping'].items():
+                    config_inputs[param_name] = self._get_value_from_path(kwargs, config_path)
 
             # Combine all inputs
             all_inputs = {**context_inputs, **config_inputs}
@@ -113,7 +115,19 @@ class StrategyStep:
         except Exception as e:
             raise ValueError(f"Error in strategy step: {str(e)}")
 
-    def _update_context(self, context: StrategyExecutionContext, result: Dict[str, Any]) -> None:
+    def _update_context(self, context: StrategyExecutionContext, result: Dict[str, Any], price_feed: pd.DataFrame) -> None:
         """Update the strategy execution context with the result of the strategy step."""
-        for key, value in result.items():
-            self._set_value_in_context(context, f"result.{key}", value) 
+        from src.models import StrategStepEvaluationResult
+        for context_key, result_path in self.step_config['context_outputs'].items():
+            try:
+                value = self._get_value_from_path(result, result_path)
+                # Add result to context using add_result
+                result_obj = StrategStepEvaluationResult(
+                    is_success=True,
+                    message="Step output update",
+                    step_output={context_key: value},
+                    timestamp=price_feed.index[-1] if not price_feed.empty else None
+                )
+                context.add_result(result_obj.timestamp, self, result_obj)
+            except KeyError as e:
+                raise KeyError(f"Failed to update context with key {context_key}: {e}") 

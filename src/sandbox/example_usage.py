@@ -1,17 +1,16 @@
 """Example usage of the pipeline configuration pattern."""
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pandas as pd
 
 from src.core.strategy_config import load_strategy_config
 from src.core.strategy_runner import run_strategy
 from src.models import StrategyExecutionContext
-from src.models.base import Direction, PriceLabel
+from src.models.base import PriceLabel
 
 from .pipeline_config import PipelineConfig
-from .strategy_step import StrategyStep
 from .strategy_step_factory import StrategyStepFactory
 
 

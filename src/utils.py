@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
-from models import Direction, PriceLabel
+from src.models.base import Direction, PriceLabel
 
 
 def get_trend(price_feed: pd.DataFrame) -> Direction:
@@ -150,3 +150,26 @@ def is_last_bar_within_bars_count(
     bars_since_ref = ser_idx_pos - ref_idx_pos
 
     return min_bars <= bars_since_ref <= max_bars
+
+
+def mock_pure_get_trend(price_feed: pd.DataFrame, min_bars: int, threshold: float) -> Dict[str, Any]:
+    """Mock function to detect trend."""
+    return {"trend": "UP"}
+
+
+def mock_pure_is_extreme_bar(price_feed: pd.DataFrame, trend: str, frame_size: int) -> Dict[str, Any]:
+    """Mock function to detect extreme bar."""
+    return {
+        "is_extreme": True,
+        "extreme_bar_index": price_feed.index[-1] if not price_feed.empty else None
+    }
+
+
+def mock_pure_is_bars_since_extreme_pivot_valid(
+    price_feed: pd.DataFrame,
+    extreme_bar_index: pd.Timestamp,
+    min_bars: int,
+    max_bars: int
+) -> Dict[str, Any]:
+    """Mock function to validate pullback."""
+    return {"bars_valid": True}

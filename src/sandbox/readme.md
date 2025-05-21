@@ -122,4 +122,89 @@ Step output: {"fib_valid": True}
 
 - Implement the mapping layer in `StrategyStep` to handle context key renaming.
 - Re-run the example to verify the fix.
-- Consider adding more error handling, validation, or tests. 
+- Consider adding more error handling, validation, or tests.
+
+# Strategy Sandbox
+
+The sandbox provides a flexible way to execute strategy steps using pure functions and pipeline configuration.
+
+## Context Mapping
+
+The sandbox uses a mapping system to extract values from pure function results and store them in the strategy context. This allows for flexible data flow between steps.
+
+### How Context Mapping Works
+
+1. **Pure Function Returns Complex Data**
+   ```python
+   {
+       "analysis": {
+           "direction": "UP",
+           "strength": "strong",
+           "confidence": 0.95
+       }
+   }
+   ```
+
+2. **Context Outputs Mapping**
+   ```python
+   "context_outputs": {
+       "trend": "analysis.direction",      # Stores "UP" as "trend"
+       "trend_strength": "analysis.strength",  # Stores "strong" as "trend_strength"
+       "confidence": "analysis.confidence"     # Stores 0.95 as "confidence"
+   }
+   ```
+
+3. **What Happens**
+   - The pure function returns a complex object with multiple values
+   - The context_outputs mapping tells the sandbox:
+     - Which values to extract from the result
+     - What names to store them under in the context
+   - Any values not mapped are ignored
+   - The context can then be used by subsequent steps
+
+### Example
+
+```python
+# Pure function returns complex data
+def detect_trend(price_feed):
+    return {
+        "analysis": {
+            "direction": "UP",
+            "strength": "strong",
+            "confidence": 0.95
+        }
+    }
+
+# Step configuration maps specific values to context
+step_config = {
+    "context_inputs": {},
+    "context_outputs": {
+        "trend": "analysis.direction",
+        "trend_strength": "analysis.strength"
+    },
+    "config_mapping": {}
+}
+
+# Create and execute step
+step = StrategyStep(step_config, detect_trend)
+result = step.evaluate(price_feed, context)
+
+# Context now has:
+# - context.get_latest_strategey_step_output_result("trend") == "UP"
+# - context.get_latest_strategey_step_output_result("trend_strength") == "strong"
+# Note: "confidence" is not stored in context as it wasn't mapped
+```
+
+### Benefits
+
+1. **Flexibility**: Pure functions can return any structure, and the mapping system extracts what's needed
+2. **Clarity**: The mapping makes it explicit what data is being passed between steps
+3. **Decoupling**: Pure functions don't need to know about context structure
+4. **Selective Storage**: Only map the values you need in the context
+
+### Best Practices
+
+1. Use clear, descriptive names in the context_outputs mapping
+2. Document the structure of your pure function's return value
+3. Only map values that will be used by subsequent steps
+4. Consider using nested paths for complex data structures 

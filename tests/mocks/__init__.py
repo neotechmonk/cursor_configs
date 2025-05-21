@@ -1,0 +1,1 @@
+"""Mock functions for testing."""

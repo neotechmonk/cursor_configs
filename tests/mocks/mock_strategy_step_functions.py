@@ -30,74 +30,21 @@ def _get_latest_timestamp(price_feed: pd.DataFrame) -> pd.Timestamp:
 # --- Mock Wrapper Functions ---
 
 
-def mock_detect_trend_wrapper(
-    price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext,
-    **config: Dict[str, Any]
-) -> StrategStepEvaluationResult:
-    """Wrapper for mock_pure_get_trend."""
-    latest_timestamp = _get_latest_timestamp(price_feed)
-    try:
-        result_data = mock_pure_get_trend(price_feed, **config)
-        return StrategStepEvaluationResult(is_success=True, message="Trend detected", step_output=result_data, timestamp=latest_timestamp)
-    except Exception as e:
-        return StrategStepEvaluationResult(is_success=False, message=f"Error in mock_detect_trend_wrapper: {e}", timestamp=latest_timestamp)
+def mock_detect_trend_wrapper(price_feed: pd.DataFrame, **kwargs) -> Dict[str, Any]:
+    """Mock trend detection wrapper."""
+    return {"trend": "UP"}
 
 
-def mock_find_extreme_wrapper(
-    price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext,
-    **config: Dict[str, Any]
-) -> StrategStepEvaluationResult:
-    """Wrapper for mock_pure_is_extreme_bar."""
-    latest_timestamp = _get_latest_timestamp(price_feed)
-    try:
-        result_data = mock_pure_is_extreme_bar(price_feed, **config)
-        return StrategStepEvaluationResult(
-            is_success=True, 
-            message="Extreme bar detected", 
-            step_output=result_data, 
-            timestamp=latest_timestamp
-        )
-    except Exception as e:
-        return StrategStepEvaluationResult(is_success=False, message=f"Error in mock_find_extreme_wrapper: {e}", timestamp=latest_timestamp)
+def mock_find_extreme_wrapper(price_feed: pd.DataFrame, **kwargs) -> Dict[str, Any]:
+    """Mock extreme bar detection wrapper."""
+    return {"is_extreme": True, "extreme_bar_index": price_feed.index[-1]}
 
 
-def mock_validate_pullback_wrapper(
-    price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext,
-    **config: Dict[str, Any]
-) -> StrategStepEvaluationResult:
-    """Wrapper for mock_pure_is_bars_since_extreme_pivot_valid."""
-    latest_timestamp = _get_latest_timestamp(price_feed)
-
-    extreme_bar_index = context.get_latest_strategey_step_output_result(EXTREME_BAR_INDEX_KEY)
-    try:
-        mock_pure_is_bars_since_extreme_pivot_valid(price_feed=price_feed, extreme_bar_index=extreme_bar_index, **config)
-        return StrategStepEvaluationResult(
-            is_success=True, 
-            message="Pullback valid", 
-            step_output={'bars_valid': True}, # TODO: Fix manually overriden payload
-            timestamp=latest_timestamp
-        )
-    except Exception as e:
-        return StrategStepEvaluationResult(is_success=False, message=f"Error in mock_validate_pullback_wrapper: {e}", timestamp=latest_timestamp)
+def mock_validate_pullback_wrapper(price_feed: pd.DataFrame, **kwargs) -> Dict[str, Any]:
+    """Mock pullback validation wrapper."""
+    return {"bars_valid": True}
 
 
-def mock_check_fib_wrapper(
-    price_feed: pd.DataFrame, 
-    context: StrategyExecutionContext,
-    **config: Dict[str, Any]
-) -> StrategStepEvaluationResult:
-    """Wrapper for mock_pure_is_within_fib_extension."""
-    latest_timestamp = _get_latest_timestamp(price_feed)
-    try:
-        result_data = mock_pure_is_within_fib_extension(price_feed, **config)
-        return StrategStepEvaluationResult(
-            is_success=True, 
-            message="Fib valid", 
-            step_output=result_data, 
-            timestamp=latest_timestamp
-        )
-    except Exception as e:
-        return StrategStepEvaluationResult(is_success=False, message=f"Error in mock_check_fib_wrapper: {e}", timestamp=latest_timestamp) 
+def mock_check_fib_wrapper(price_feed: pd.DataFrame, **kwargs) -> Dict[str, Any]:
+    """Mock Fibonacci check wrapper."""
+    return {"fib_valid": True} 

@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 import yaml
 
+from src.utils import PriceLabel
+
 # Update import path for the wrapper functions
 from tests.mocks.mock_strategy_step_functions import (
     mock_check_fib_wrapper,
@@ -9,7 +11,6 @@ from tests.mocks.mock_strategy_step_functions import (
     mock_find_extreme_wrapper,
     mock_validate_pullback_wrapper,
 )
-from utils import PriceLabel
 
 
 @pytest.fixture
