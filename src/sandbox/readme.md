@@ -208,3 +208,93 @@ result = step.evaluate(price_feed, context)
 2. Document the structure of your pure function's return value
 3. Only map values that will be used by subsequent steps
 4. Consider using nested paths for complex data structures 
+
+## Test Plan
+
+### 1. StrategyStep Tests
+- [x] `test_evaluate_success`: Basic successful execution with context mapping
+- [x] `test_evaluate_with_empty_context`: Handle empty context gracefully
+- [x] `test_evaluate_with_invalid_mapping`: Handle invalid context mappings
+- [x] `test_evaluate_with_nested_paths`: Test deep nested path access
+- [x] `test_evaluate_with_non_dict_result`: Handle non-dictionary return values
+- [x] `test_evaluate_with_missing_required_inputs`: Handle missing required context inputs
+- [x] `test_evaluate_with_config_mapping`: Test config value mapping
+- [ ] `test_evaluate_with_pure_function_error`: Handle pure function exceptions
+
+### 2. PipelineConfig Tests
+- [ ] `test_load_valid_config`: Load and validate correct YAML config
+- [ ] `test_load_invalid_config`: Handle invalid YAML format
+- [ ] `test_load_missing_required_fields`: Handle missing required fields
+- [ ] `test_load_invalid_step_config`: Handle invalid step configurations
+- [ ] `test_load_duplicate_step_names`: Handle duplicate step names
+- [ ] `test_load_invalid_function_paths`: Handle invalid function paths
+
+### 3. StrategyStepFactory Tests
+- [ ] `test_create_step_success`: Create step from valid config
+- [ ] `test_create_step_invalid_function`: Handle invalid function paths
+- [ ] `test_create_step_missing_function`: Handle missing function
+- [ ] `test_create_step_signature_mismatch`: Handle function signature mismatches
+- [ ] `test_create_step_invalid_mapping`: Handle invalid context/config mappings
+
+### 4. Integration Tests
+- [ ] `test_pipeline_execution`: Execute full pipeline with multiple steps
+- [ ] `test_pipeline_context_flow`: Verify context values flow correctly between steps
+- [ ] `test_pipeline_error_handling`: Handle errors in pipeline execution
+- [ ] `test_pipeline_with_config`: Execute pipeline with configuration values
+- [ ] `test_pipeline_with_complex_mappings`: Test complex context and config mappings
+
+### Test Implementation Guidelines
+
+1. **Test Organization**
+   - Place all tests in `tests/sandbox/`
+   - Use descriptive test names
+   - Group related tests in test classes/functions
+
+2. **Test Data**
+   - Use fixtures for common test data
+   - Create mock functions in `tests/mocks/`
+   - Use realistic test scenarios
+
+3. **Test Coverage**
+   - Test happy paths
+   - Test error cases
+   - Test edge cases
+   - Test configuration variations
+
+4. **Best Practices**
+   - Use pytest fixtures
+   - Mock external dependencies
+   - Clean up test resources
+   - Document test scenarios
+
+### Example Test Structure
+
+```python
+# tests/sandbox/test_pipeline_config.py
+import pytest
+from src.sandbox.pipeline_config import PipelineConfig
+
+def test_load_valid_config():
+    """Test loading a valid pipeline configuration."""
+    config = PipelineConfig("path/to/valid_config.yaml")
+    assert config.steps is not None
+    assert "detect_trend" in config.steps
+
+def test_load_invalid_config():
+    """Test handling of invalid YAML configuration."""
+    with pytest.raises(ValueError):
+        PipelineConfig("path/to/invalid_config.yaml")
+```
+
+### Running Tests
+
+```bash
+# Run all sandbox tests
+pytest tests/sandbox/
+
+# Run specific test file
+pytest tests/sandbox/test_strategy_step.py
+
+# Run with coverage
+pytest --cov=src.sandbox tests/sandbox/
+``` 
