@@ -218,4 +218,48 @@ def test_evaluate_with_missing_required_inputs():
 
     assert not result.is_success
     assert "argument of type 'StrategyExecutionContext' is not iterable" in result.message
-    assert context.get_latest_strategey_step_output_result("output") is None 
+    assert context.get_latest_strategey_step_output_result("output") is None
+
+def test_evaluate_with_config_mapping():
+    """Test that StrategyStep correctly maps config values to function parameters."""
+    # Pure function that uses config values
+    def pure_fn(price_feed, min_bars, max_bars):
+        return {
+            "is_valid": min_bars <= len(price_feed) <= max_bars,
+            "bar_count": len(price_feed)
+        }
+
+    step_config = {
+        "context_inputs": {},
+        "context_outputs": {
+            "is_valid": "is_valid",
+            "bar_count": "bar_count"
+        },
+        "config_mapping": {
+            "min_bars": "config.validation.min_bars",
+            "max_bars": "config.validation.max_bars"
+        }
+    }
+
+    step = StrategyStep(step_config, pure_fn)
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    # Pass config values as keyword arguments
+    config = {
+        "validation": {
+            "min_bars": 2,
+            "max_bars": 5
+        }
+    }
+
+    result = step.evaluate(price_feed, context, config=config)
+
+    assert result.is_success
+    assert result.message == "Step completed successfully"
+    assert result.step_output == {
+        "is_valid": True,  # 3 bars is between min_bars (2) and max_bars (5)
+        "bar_count": 3
+    }
+    assert context.get_latest_strategey_step_output_result("is_valid") is True
+    assert context.get_latest_strategey_step_output_result("bar_count") == 3 
