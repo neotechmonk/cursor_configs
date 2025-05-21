@@ -262,4 +262,29 @@ def test_evaluate_with_config_mapping():
         "bar_count": 3
     }
     assert context.get_latest_strategey_step_output_result("is_valid") is True
-    assert context.get_latest_strategey_step_output_result("bar_count") == 3 
+    assert context.get_latest_strategey_step_output_result("bar_count") == 3
+
+def test_evaluate_with_pure_function_error():
+    """Test that StrategyStep handles exceptions from the pure function correctly."""
+    # Pure function that raises an exception
+    def pure_fn(price_feed):
+        raise ValueError("Invalid price data")
+
+    step_config = {
+        "context_inputs": {},
+        "context_outputs": {
+            "result": "result"
+        },
+        "config_mapping": {}
+    }
+
+    step = StrategyStep(step_config, pure_fn)
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    result = step.evaluate(price_feed, context)
+
+    assert not result.is_success
+    assert "Error in strategy step: Invalid price data" in result.message
+    assert result.step_output == {}
+    assert context.get_latest_strategey_step_output_result("result") is None 
