@@ -169,4 +169,27 @@ def test_evaluate_with_nested_paths():
     }
     assert context.get_latest_strategey_step_output_result("trend_direction") == "DOWN"
     assert context.get_latest_strategey_step_output_result("trend_strength") == "weak"
-    assert context.get_latest_strategey_step_output_result("confidence") == 0.42 
+    assert context.get_latest_strategey_step_output_result("confidence") == 0.42
+
+def test_evaluate_with_non_dict_result():
+    """Test that StrategyStep handles non-dictionary return values by wrapping them."""
+    mock_pure_function = MagicMock(return_value=42)
+
+    step_config = {
+        "context_inputs": {},
+        "context_outputs": {
+            "answer": "result"
+        },
+        "config_mapping": {}
+    }
+
+    step = StrategyStep(step_config, mock_pure_function)
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    result = step.evaluate(price_feed, context)
+
+    assert result.is_success
+    assert result.message == "Step completed successfully"
+    assert result.step_output == {"result": 42}
+    assert context.get_latest_strategey_step_output_result("answer") == 42 
