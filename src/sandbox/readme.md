@@ -1,132 +1,45 @@
-# Pipeline Configuration Pattern
+# Strategy Sandbox
 
 ## Overview
 
-The Pipeline Configuration Pattern is a flexible, configuration-driven approach to executing trading strategy steps. It allows you to define each step in a YAML configuration file, including its pure function, context inputs/outputs, and config mappings.
+The Strategy Sandbox provides a flexible, configuration-driven approach to executing trading strategy steps. It uses Pydantic models for configuration and direct evaluation via `StepEvaluator`.
 
 ## Key Components
 
-- **YAML Configuration:** Defines each step (e.g., `detect_trend`, `find_extreme`, `validate_pullback`, `check_fib`) with its pure function, context inputs/outputs, and config mappings.
-- **Pipeline Config Loader:** Loads and validates the YAML configuration.
-- **Strategy Step:** Executes a pure function, maps inputs from context/config, and stores outputs in the context.
-- **Strategy Step Factory:** Creates strategy steps from configuration and validates function signatures.
-- **Example Usage:** Demonstrates how to load the config, create steps, and execute them in order.
+- **StrategyStepTemplate:** A Pydantic model that defines a single strategy step, including its pure function, context inputs/outputs, and config mappings.
+- **StrategyStepRegistry:** A registry of all available strategy step templates, loaded from a YAML configuration file.
+- **StepEvaluator:** Evaluates a single strategy step using a pure function and configuration. It handles function signature validation, argument preparation, step execution, result mapping, and context updates.
 
 ## Flow Summary
 
-### Step 1: Load Configuration
+### Step 1: Define Strategy Step Template
 
-The YAML file (`strategy_steps.yaml`) defines each step:
+Define each step using `StrategyStepTemplate`:
 
-```yaml
-steps:
-  detect_trend:
-    pure_function: "src.utils.get_trend"
-    context_inputs: {}
-    context_outputs:
-      trend: "result.trend"
-    config_mapping: {}
-
-  find_extreme:
-    pure_function: "src.utils.is_extreme_bar"
-    context_inputs:
-      trend: "context.trend"
-    context_outputs:
-      is_extreme: "result.is_extreme"
-      extreme_bar_index: "result.extreme_bar_index"
-    config_mapping:
-      frame_size: "config.extreme.frame_size"
-
-  validate_pullback:
-    pure_function: "src.utils.is_bars_since_extreme_pivot_valid"
-    context_inputs:
-      major_swing_high_idx: "context.extreme_bar_index"
-    context_outputs:
-      bars_valid: "result.bars_valid"
-    config_mapping:
-      min_bars: "config.pullback.min_bars"
-      max_bars: "config.pullback.max_bars"
-
-  check_fib:
-    pure_function: "src.utils.is_within_fib_extension"
-    context_inputs:
-      trend: "context.trend"
-      ref_swing_start_idx: "context.extreme_bar_index"
-      ref_swing_end_idx: "context.current_bar_index"
-    context_outputs:
-      fib_valid: "result.fib_valid"
-    config_mapping:
-      min_fib_extension: "config.fib.min_extension"
-      max_fib_extension: "config.fib.max_extension"
+```python
+step_config = StrategyStepTemplate(
+    pure_function="mock_get_trend",
+    context_inputs={},
+    context_outputs={"trend": "direction"},
+    config_mapping={}
+)
 ```
 
-### Step 2: Create Strategy Steps
+### Step 2: Create Step Evaluator
 
-The factory loads each step's configuration and creates a `StrategyStep` instance. It validates that the pure function's signature matches the required inputs.
+Create a `StepEvaluator` instance with the step template and pure function:
 
-### Step 3: Execute Steps
-
-Each step is executed in order:
-
-1. **`detect_trend`:**  
-   Calls `get_trend(price_feed)` and stores the result as `trend` in the context.
-
-2. **`find_extreme`:**  
-   Calls `is_extreme_bar(price_feed, trend, frame_size)` and stores `is_extreme` and `extreme_bar_index` in the context.
-
-3. **`validate_pullback`:**  
-   Calls `is_bars_since_extreme_pivot_valid(price_feed, major_swing_high_idx, min_bars, max_bars)` and stores `bars_valid` in the context.
-
-4. **`check_fib`:**  
-   Calls `is_within_fib_extension(price_feed, trend, ref_swing_start_idx, ref_swing_end_idx, min_fib_extension, max_fib_extension)` and stores `fib_valid` in the context.
-
-### Step 4: Handle Non-Dict Returns
-
-If a pure function returns a non-dict (e.g., just a value), it is wrapped as `{"result": value}`. The `context_outputs` mapping in the YAML determines how this value is stored in the context.
-
-## Current Issues and Next Steps
-
-- **Issue:**  
-  The factory expects the pure function to have a parameter named `extreme_bar_index`, but the function in `utils.py` uses `major_swing_high_idx`.
-
-- **Solution:**  
-  Add a mapping layer in the `StrategyStep` to rename context keys to function parameters when calling the pure function.
-
-- **Next Steps:**
-  1. Update `StrategyStep._execute_pure_function` to map context keys to function parameters.
-  2. Re-run the example to verify everything works.
-
-## Example Output (Expected)
-
-When you run the example, you should see:
-
-```
-Executing step: detect_trend
-Step detect_trend succeeded: Step completed successfully
-Step output: {"trend": Direction.UP}
-
-Executing step: find_extreme
-Step find_extreme succeeded: Step completed successfully
-Step output: {"is_extreme": True, "extreme_bar_index": <timestamp>}
-
-Executing step: validate_pullback
-Step validate_pullback succeeded: Step completed successfully
-Step output: {"bars_valid": True}
-
-Executing step: check_fib
-Step check_fib succeeded: Step completed successfully
-Step output: {"fib_valid": True}
+```python
+evaluator = StepEvaluator(step_config, mock_get_trend)
 ```
 
-## Tomorrow's Tasks
+### Step 3: Execute Step
 
-- Implement the mapping layer in `StrategyStep` to handle context key renaming.
-- Re-run the example to verify the fix.
-- Consider adding more error handling, validation, or tests.
+Execute the step with a price feed and execution context:
 
-# Strategy Sandbox
-
-The sandbox provides a flexible way to execute strategy steps using pure functions and pipeline configuration.
+```python
+result = evaluator.evaluate(price_feed, context)
+```
 
 ## Context Mapping
 
@@ -176,18 +89,19 @@ def detect_trend(price_feed):
     }
 
 # Step configuration maps specific values to context
-step_config = {
-    "context_inputs": {},
-    "context_outputs": {
+step_config = StrategyStepTemplate(
+    pure_function="detect_trend",
+    context_inputs={},
+    context_outputs={
         "trend": "analysis.direction",
         "trend_strength": "analysis.strength"
     },
-    "config_mapping": {}
-}
+    config_mapping={}
+)
 
 # Create and execute step
-step = StrategyStep(step_config, detect_trend)
-result = step.evaluate(price_feed, context)
+evaluator = StepEvaluator(step_config, detect_trend)
+result = evaluator.evaluate(price_feed, context)
 
 # Context now has:
 # - context.get_latest_strategey_step_output_result("trend") == "UP"
@@ -207,41 +121,55 @@ result = step.evaluate(price_feed, context)
 1. Use clear, descriptive names in the context_outputs mapping
 2. Document the structure of your pure function's return value
 3. Only map values that will be used by subsequent steps
-4. Consider using nested paths for complex data structures 
+4. Consider using nested paths for complex data structures
 
 ## Test Plan
 
-### 1. StrategyStep Tests
-- [x] `test_evaluate_success`: Basic successful execution with context mapping
-- [x] `test_evaluate_with_empty_context`: Handle empty context gracefully
-- [x] `test_evaluate_with_invalid_mapping`: Handle invalid context mappings
-- [x] `test_evaluate_with_nested_paths`: Test deep nested path access
-- [x] `test_evaluate_with_non_dict_result`: Handle non-dictionary return values
+### 1. StrategyStepTemplate Tests
+- [x] `test_strategy_step_template_instantiation`: Basic instantiation with valid data
+- [x] `test_strategy_step_template_with_complex_mappings`: Test complex context and config mappings
+- [x] `test_strategy_step_template_empty_function`: Handle empty function names
+- [x] `test_strategy_step_template_whitespace_function`: Handle whitespace in function names
+- [x] `test_strategy_step_template_default_values`: Test default values for optional fields
+- [x] `test_strategy_step_template_immutability`: Ensure templates are immutable
+
+### 2. StrategyStepRegistry Tests
+- [x] `test_load_valid_registry`: Load and validate correct YAML config
+- [x] `test_load_invalid_registry_missing_field`: Handle missing required fields
+- [x] `test_load_invalid_registry_empty_function`: Handle empty function names
+- [x] `test_registry_properties`: Test registry properties (step names, templates)
+
+### 3. StepEvaluator Tests
+- [x] `test_step_evaluator_success`: Basic successful execution with context mapping
+- [x] `test_step_evaluator_error`: Handle errors and return failure result
+- [x] `test_step_evaluator_signature_validation`: Validate function signature on initialization
+- [x] `test_step_evaluator_invalid_signature`: Handle function signature mismatches
+- [x] `test_evaluate_success`: Test successful evaluation with nested outputs
+- [x] `test_evaluate_with_empty_context`: Handle empty context inputs gracefully
 - [x] `test_evaluate_with_missing_required_inputs`: Handle missing required context inputs
 - [x] `test_evaluate_with_config_mapping`: Test config value mapping
-- [ ] `test_evaluate_with_pure_function_error`: Handle pure function exceptions
-
-### 2. PipelineConfig Tests
-- [ ] `test_load_valid_config`: Load and validate correct YAML config
-- [ ] `test_load_invalid_config`: Handle invalid YAML format
-- [ ] `test_load_missing_required_fields`: Handle missing required fields
-- [ ] `test_load_invalid_step_config`: Handle invalid step configurations
-- [ ] `test_load_duplicate_step_names`: Handle duplicate step names
-- [ ] `test_load_invalid_function_paths`: Handle invalid function paths
-
-### 3. StrategyStepFactory Tests
-- [ ] `test_create_step_success`: Create step from valid config
-- [ ] `test_create_step_invalid_function`: Handle invalid function paths
-- [ ] `test_create_step_missing_function`: Handle missing function
-- [ ] `test_create_step_signature_mismatch`: Handle function signature mismatches
-- [ ] `test_create_step_invalid_mapping`: Handle invalid context/config mappings
+- [x] `test_evaluate_with_pure_function_error`: Handle exceptions from the pure function
 
 ### 4. Integration Tests
-- [ ] `test_pipeline_execution`: Execute full pipeline with multiple steps
-- [ ] `test_pipeline_context_flow`: Verify context values flow correctly between steps
-- [ ] `test_pipeline_error_handling`: Handle errors in pipeline execution
-- [ ] `test_pipeline_with_config`: Execute pipeline with configuration values
-- [ ] `test_pipeline_with_complex_mappings`: Test complex context and config mappings
+- [x] `test_pipeline_step_integration`: Execute a single step with direct instantiation
+
+### Additional Testing Scenarios (Not Yet Implemented)
+
+1. **Complex Error Handling**
+   - Test handling of nested exceptions in pure functions
+   - Test recovery mechanisms after errors
+
+2. **Advanced Integration Scenarios**
+   - Test multi-step pipelines with complex data flow
+   - Test parallel execution of steps
+
+3. **Edge Cases**
+   - Test with extremely large datasets
+   - Test with empty or malformed inputs
+
+4. **Performance Testing**
+   - Benchmark execution time for large datasets
+   - Test memory usage under load
 
 ### Test Implementation Guidelines
 
@@ -267,25 +195,6 @@ result = step.evaluate(price_feed, context)
    - Clean up test resources
    - Document test scenarios
 
-### Example Test Structure
-
-```python
-# tests/sandbox/test_pipeline_config.py
-import pytest
-from src.sandbox.pipeline_config import PipelineConfig
-
-def test_load_valid_config():
-    """Test loading a valid pipeline configuration."""
-    config = PipelineConfig("path/to/valid_config.yaml")
-    assert config.steps is not None
-    assert "detect_trend" in config.steps
-
-def test_load_invalid_config():
-    """Test handling of invalid YAML configuration."""
-    with pytest.raises(ValueError):
-        PipelineConfig("path/to/invalid_config.yaml")
-```
-
 ### Running Tests
 
 ```bash
@@ -293,7 +202,7 @@ def test_load_invalid_config():
 pytest tests/sandbox/
 
 # Run specific test file
-pytest tests/sandbox/test_strategy_step.py
+pytest tests/sandbox/test_strategy_step_template.py
 
 # Run with coverage
 pytest --cov=src.sandbox tests/sandbox/

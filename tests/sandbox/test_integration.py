@@ -1,8 +1,8 @@
 import pandas as pd
 
+from sandbox.evaluator import StepEvaluator
 from src.models import StrategyExecutionContext
 from src.sandbox.models import StrategyStepTemplate
-from src.sandbox.strategy_step_evaluator import StepEvaluator
 
 
 def test_pipeline_step_integration():

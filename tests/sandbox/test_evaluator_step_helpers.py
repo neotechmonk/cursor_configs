@@ -3,14 +3,14 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from src.models import StrategyExecutionContext
-from src.sandbox.models import StrategyStepTemplate
-from src.sandbox.strategy_step_evaluator import (
+from sandbox.evaluator import (
     StepEvaluator,
     get_value_from_path,
     map_strategy_step_function_results,
     prep_arguments_for_strategy_step_function,
 )
+from src.models import StrategyExecutionContext
+from src.sandbox.models import StrategyStepTemplate
 
 
 # region: get_value_from_path
