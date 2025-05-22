@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 DEFAULT_REGISTRY_FILE = 'configs/strategies/strategy_steps.yaml'
 
@@ -49,28 +49,19 @@ class StrategyStepRegistry(BaseSettings):
           param1: value1
     ```
     """
-    model_config = SettingsConfigDict(
+    model_config = ConfigDict(
         frozen=True,
         extra='forbid',
-        env_file_encoding='utf-8'
+        yaml_file=DEFAULT_REGISTRY_FILE,
+        yaml_file_encoding='utf-8'
     )
     
-    steps_data: Dict[str, StrategyStepTemplate] = Field(
+    steps: Dict[str, StrategyStepTemplate] = Field(
         default_factory=dict,
-        description="Step names and mapping of parameters and result payload",
-        alias='steps'  # This maps the YAML 'steps' field to steps_data
+        description="Step names and mapping of parameters and result payload"
     )
 
-    def __init__(self, **kwargs):
-        """Initialize the registry with YAML data."""
-        if '_env_file' in kwargs:
-            with open(kwargs['_env_file'], 'r', encoding='utf-8') as f:
-                import yaml
-                data = yaml.safe_load(f)
-                kwargs['steps_data'] = data.get('steps', {})
-        super().__init__(**kwargs)
-
-    def get_step(self, step_name: str) -> StrategyStepTemplate:
+    def get_step_template(self, step_name: str) -> StrategyStepTemplate:
         """Get a template by its name.
         
         Args:
@@ -82,24 +73,24 @@ class StrategyStepRegistry(BaseSettings):
         Raises:
             KeyError: If the step name doesn't exist in the registry
         """
-        if step_name not in self.steps_data:
+        if step_name not in self.steps:
             raise KeyError(f"Step '{step_name}' not found in registry")
-        return self.steps_data[step_name]
+        return self.steps[step_name]
 
     @property
-    def step_names(self) -> List[str]:
+    def step_template_names(self) -> List[str]:
         """Get names of all steps in the registry.
         
         Returns:
             List of step names
         """
-        return list(self.steps_data.keys())
+        return list(self.steps.keys())
 
     @property
-    def step_objects(self) -> List[StrategyStepTemplate]:
+    def step_templates(self) -> List[StrategyStepTemplate]:
         """Get all step template objects in the registry.
         
         Returns:
             List of StrategyStepTemplate objects
         """
-        return list(self.steps_data.values())
+        return list(self.steps.values())

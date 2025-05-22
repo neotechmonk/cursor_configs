@@ -4,8 +4,8 @@ import pandas as pd
 import pytest
 
 from src.models import StrategyExecutionContext
-from src.sandbox.pipeline_config import StepConfig
-from src.sandbox.pipeline_runtime import (
+from src.sandbox.models import StrategyStepTemplate
+from src.sandbox.strategy_step_evaluator import (
     StepEvaluator,
     get_value_from_path,
     map_strategy_step_function_results,
@@ -45,7 +45,7 @@ def test_get_value_from_path_empty_path_raises():
 # region: prep_arguments_for_strategy_step_function
 def test_prep_arguments_returns_expected_dict():
     """Should return correct mapping for valid context and config."""
-    config = StepConfig(
+    config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={"trend": "trend"},
         context_outputs={},
@@ -59,7 +59,7 @@ def test_prep_arguments_returns_expected_dict():
 
 def test_prep_arguments_missing_context_key_raises_keyerror():
     """Should raise KeyError if a required context key is missing."""
-    config = StepConfig(
+    config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={"trend": "trend", "momentum": "momentum"},
         context_outputs={},
@@ -73,7 +73,7 @@ def test_prep_arguments_missing_context_key_raises_keyerror():
 
 def test_prep_arguments_missing_config_key_raises_keyerror():
     """Should raise KeyError if a required config key is missing."""
-    config = StepConfig(
+    config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={"trend": "trend"},
         context_outputs={},
@@ -90,7 +90,7 @@ def test_prep_arguments_missing_config_key_raises_keyerror():
 
 def test_prep_arguments_empty_inputs_returns_empty_dict():
     """Should return empty dict if no mappings are provided."""
-    config = StepConfig(
+    config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={},
@@ -104,7 +104,7 @@ def test_prep_arguments_empty_inputs_returns_empty_dict():
 
 def test_prep_arguments_extra_keys_ignored():
     """Should ignore extra keys in context/config not referenced in mappings."""
-    config = StepConfig(
+    config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={"trend": "trend"},
         context_outputs={},
@@ -121,7 +121,7 @@ def test_prep_arguments_extra_keys_ignored():
 # region: map_strategy_step_function_results
 def test_map_strategy_step_function_results_dict_result():
     """Should map output from a nested dict result."""
-    config = StepConfig(
+    config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={"trend": "analysis.direction"},
@@ -134,7 +134,7 @@ def test_map_strategy_step_function_results_dict_result():
 
 def test_map_strategy_step_function_results_non_dict_result():
     """Should map output from a non-dict result (wraps in 'result')."""
-    config = StepConfig(
+    config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={"trend": "result"},
@@ -144,12 +144,8 @@ def test_map_strategy_step_function_results_non_dict_result():
     mapped = map_strategy_step_function_results(config, result)
     assert mapped == {"trend": "UP"}
 
-# endregion
 
-# region: update_context
-# Placeholder: Add tests for update_context if/when available
 # endregion
-
 
 # region: Nested Path Handling
 def test_evaluate_with_nested_paths():
@@ -164,7 +160,7 @@ def test_evaluate_with_nested_paths():
         }
     })
 
-    step_config = StepConfig(
+    step_config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={
@@ -199,7 +195,7 @@ def test_evaluate_with_non_dict_result():
     """Should handle non-dict return values by wrapping them."""
     mock_pure_function = MagicMock(return_value=42)
 
-    step_config = StepConfig(
+    step_config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={"answer": "result"},
@@ -226,7 +222,7 @@ def test_evaluate_with_invalid_mapping():
         "direction": "UP"
     })
 
-    step_config = StepConfig(
+    step_config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={
