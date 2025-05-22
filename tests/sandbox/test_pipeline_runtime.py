@@ -1,14 +1,92 @@
 from unittest.mock import MagicMock
 
 import pandas as pd
+import pytest
 
 from src.models import StrategyExecutionContext
-from src.sandbox.pipeline_config import StepConfig
+from src.sandbox.models import StrategyStepTemplate
 from src.sandbox.pipeline_runtime import StepEvaluator
 
 
+def test_step_evaluator_success():
+    """Should successfully evaluate a step and update context."""
+    mock_pure_function = MagicMock(return_value={"trend": "UP"})
+    step_config = StrategyStepTemplate(
+        pure_function="mock",
+        context_inputs={},
+        context_outputs={"trend": "trend"},
+        config_mapping={}
+    )
+    step = StepEvaluator(step_config, mock_pure_function)
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    result = step.evaluate(price_feed, context)
+
+    assert result.is_success
+    assert result.message == "Step completed successfully"
+    assert result.step_output == {"trend": "UP"}
+    assert context.get_latest_strategey_step_output_result("trend") == "UP"
+
+
+def test_step_evaluator_error():
+    """Should handle errors and return failure result."""
+    mock_pure_function = MagicMock(side_effect=ValueError("Test error"))
+    step_config = StrategyStepTemplate(
+        pure_function="mock",
+        context_inputs={},
+        context_outputs={"trend": "trend"},
+        config_mapping={}
+    )
+    step = StepEvaluator(step_config, mock_pure_function)
+    price_feed = pd.DataFrame({"Open": [100, 101, 102]})
+    context = StrategyExecutionContext()
+
+    result = step.evaluate(price_feed, context)
+
+    assert not result.is_success
+    assert result.message == "Test error"
+    assert result.step_output == {}
+    assert context.get_latest_strategey_step_output_result("trend") is None
+
+
+def test_step_evaluator_signature_validation():
+    """Should validate function signature on initialization."""
+    # Create a function with the expected signature
+    def test_function(price_feed, trend, frame_size):
+        return {"result": "test"}
+
+    step_config = StrategyStepTemplate(
+        pure_function="test_function",
+        context_inputs={"trend": "trend"},
+        context_outputs={"result": "result"},
+        config_mapping={"frame_size": "config.frame_size"}
+    )
+
+    # This should work
+    evaluator = StepEvaluator(step_config, test_function)
+    assert isinstance(evaluator, StepEvaluator)
+
+
+def test_step_evaluator_invalid_signature():
+    """Should raise error if function signature doesn't match config."""
+    # Create a function missing the frame_size parameter
+    def test_function(price_feed, trend):
+        return {"result": "test"}
+
+    step_config = StrategyStepTemplate(
+        pure_function="test_function",
+        context_inputs={"trend": "trend"},
+        context_outputs={"result": "result"},
+        config_mapping={"frame_size": "config.frame_size"}
+    )
+
+    with pytest.raises(ValueError, match="Pure function missing required parameter from config: frame_size"):
+        StepEvaluator(step_config, test_function)
+
+
 def test_evaluate_success():
-    # Mock the pure function to return a dict with a nested structure
+    """Should successfully evaluate a step with nested outputs."""
     mock_pure_function = MagicMock(return_value={
         "analysis": {
             "direction": "UP",
@@ -16,55 +94,42 @@ def test_evaluate_success():
         }
     })
 
-    # Create a step config with mappings for both direction and strength
-    step_config = StepConfig(
+    step_config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={
-            "trend": "analysis.direction",     # Maps "UP" to "trend"
-            "trend_strength": "analysis.strength"  # Maps "strong" to "trend_strength"
+            "trend": "analysis.direction",
+            "trend_strength": "analysis.strength"
         },
         config_mapping={}
     )
 
-    # Create a StrategyStep instance
     step = StepEvaluator(step_config, mock_pure_function)
-
-    # Create a price feed and context
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 
-    # Execute the step
     result = step.evaluate(price_feed, context)
 
-    # Verify the result
     assert result.is_success
     assert result.message == "Step completed successfully"
     assert result.step_output == {
         "trend": "UP",
         "trend_strength": "strong"
     }
-
-    # Verify both values were stored in the context
-    # Get the latest result for each key
-    trend = context.get_latest_strategey_step_output_result("trend")
-    trend_strength = context.get_latest_strategey_step_output_result("trend_strength")
-    assert trend == "UP"
-    assert trend_strength == "strong"
+    assert context.get_latest_strategey_step_output_result("trend") == "UP"
+    assert context.get_latest_strategey_step_output_result("trend_strength") == "strong"
 
 
 def test_evaluate_with_empty_context():
-    """Test that StrategyStep handles empty context inputs gracefully."""
-    # Mock the pure function to return a simple dict
+    """Should handle empty context inputs gracefully."""
     mock_pure_function = MagicMock(return_value={
         "direction": "UP",
         "strength": "strong"
     })
 
-    # Create a step config with empty context inputs
-    step_config = StepConfig(
+    step_config = StrategyStepTemplate(
         pure_function="mock",
-        context_inputs={},  # Empty context inputs
+        context_inputs={},
         context_outputs={
             "trend": "direction",
             "trend_strength": "strength"
@@ -72,41 +137,29 @@ def test_evaluate_with_empty_context():
         config_mapping={}
     )
 
-    # Create a StrategyStep instance
     step = StepEvaluator(step_config, mock_pure_function)
-
-    # Create a price feed and empty context
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 
-    # Execute the step
     result = step.evaluate(price_feed, context)
 
-    # Verify the result
     assert result.is_success
     assert result.message == "Step completed successfully"
     assert result.step_output == {
         "trend": "UP",
         "trend_strength": "strong"
     }
-
-    # Verify values were stored in the context
-    trend = context.get_latest_strategey_step_output_result("trend")
-    trend_strength = context.get_latest_strategey_step_output_result("trend_strength")
-    assert trend == "UP"
-    assert trend_strength == "strong"
-
-    # Verify the pure function was called with only price_feed
+    assert context.get_latest_strategey_step_output_result("trend") == "UP"
+    assert context.get_latest_strategey_step_output_result("trend_strength") == "strong"
     mock_pure_function.assert_called_once_with(price_feed)
 
 
 def test_evaluate_with_missing_required_inputs():
-    """Test that StrategyStep fails if required context inputs are missing."""
-    # Pure function expects a required argument
+    """Should fail if required context inputs are missing."""
     def pure_fn(price_feed, required_param):
         return {"result": required_param}
 
-    step_config = StepConfig(
+    step_config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={"result": "result"},
@@ -125,15 +178,14 @@ def test_evaluate_with_missing_required_inputs():
 
 
 def test_evaluate_with_config_mapping():
-    """Test that StrategyStep correctly maps config values to function parameters."""
-    # Pure function that uses config values
+    """Should correctly map config values to function parameters."""
     def pure_fn(price_feed, min_bars, max_bars):
         return {
             "is_valid": min_bars <= len(price_feed) <= max_bars,
             "bar_count": len(price_feed)
         }
 
-    step_config = StepConfig(
+    step_config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={
@@ -150,7 +202,6 @@ def test_evaluate_with_config_mapping():
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 
-    # Pass config values as keyword arguments
     config = {
         "validation": {
             "min_bars": 2,
@@ -163,7 +214,7 @@ def test_evaluate_with_config_mapping():
     assert result.is_success
     assert result.message == "Step completed successfully"
     assert result.step_output == {
-        "is_valid": True,  # 3 bars is between min_bars (2) and max_bars (5)
+        "is_valid": True,
         "bar_count": 3
     }
     assert context.get_latest_strategey_step_output_result("is_valid") is True
@@ -171,12 +222,11 @@ def test_evaluate_with_config_mapping():
 
 
 def test_evaluate_with_pure_function_error():
-    """Test that StrategyStep handles exceptions from the pure function correctly."""
-    # Pure function that raises an exception
+    """Should handle exceptions from the pure function correctly."""
     def pure_fn(price_feed):
         raise RuntimeError("Something went wrong!")
 
-    step_config = StepConfig(
+    step_config = StrategyStepTemplate(
         pure_function="mock",
         context_inputs={},
         context_outputs={"result": "result"},

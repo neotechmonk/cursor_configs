@@ -5,7 +5,7 @@ import pandas as pd
 
 from src.models import StrategStepEvaluationResult, StrategyExecutionContext
 
-from .pipeline_config import PipelineConfig, StepConfig
+from .models import StrategyStepTemplate
 
 
 # --- Mapping Helpers ---
@@ -34,11 +34,11 @@ def get_value_from_path(obj: dict, path: str) -> Any:
     return current
 
 
-def prep_arguments_for_strategy_step_function(config: StepConfig, context, kwargs) -> dict:
+def prep_arguments_for_strategy_step_function(config: StrategyStepTemplate, context, kwargs) -> dict:
     """
     Map context and config values to function arguments.
     Example:
-        config = StepConfig(
+        config = StrategyStepTemplate(
             pure_function="mock",
             context_inputs={"trend": "context.trend"},
             context_outputs={},
@@ -48,7 +48,7 @@ def prep_arguments_for_strategy_step_function(config: StepConfig, context, kwarg
         kwargs = {"config": {"extreme": {"frame_size": 5}}}
         prep_arguments_for_strategy_step_function(config, context, kwargs)  # returns {"trend": "UP", "frame_size": 5}
     Args:
-        config: StepConfig instance
+        config: StrategyStepTemplate instance
         context: Context object or dict
         kwargs: Additional keyword arguments (e.g., config)
     Returns:
@@ -62,14 +62,14 @@ def prep_arguments_for_strategy_step_function(config: StepConfig, context, kwarg
     return args
 
 
-def map_strategy_step_function_results(config: StepConfig, result: Any) -> dict:
+def map_strategy_step_function_results(config: StrategyStepTemplate, result: Any) -> dict:
     """
     Map function result to context keys using config context_outputs mapping.
     Handles both dict and non-dict results by wrapping non-dict results in {"result": value}.
     
     Example:
         # With dict result
-        config = StepConfig(
+        config = StrategyStepTemplate(
             pure_function="mock",
             context_inputs={},
             context_outputs={"trend": "analysis.direction"},
@@ -79,7 +79,7 @@ def map_strategy_step_function_results(config: StepConfig, result: Any) -> dict:
         map_strategy_step_function_results(config, result)  # returns {"trend": "UP"}
         
         # With non-dict result
-        config = StepConfig(
+        config = StrategyStepTemplate(
             pure_function="mock",
             context_inputs={},
             context_outputs={"trend": "result"},
@@ -89,7 +89,7 @@ def map_strategy_step_function_results(config: StepConfig, result: Any) -> dict:
         map_strategy_step_function_results(config, result)  # returns {"trend": Direction.UP}
         
     Args:
-        config: StepConfig instance
+        config: StrategyStepTemplate instance
         result: Result from pure function (can be dict or any other type)
     Returns:
         Dictionary mapping context keys to extracted values
@@ -129,8 +129,23 @@ def update_context(context: StrategyExecutionContext, mapped: dict, timestamp=No
 # --- StepEvaluator ---
 @dataclass
 class StepEvaluator:
-    config: StepConfig
+    config: StrategyStepTemplate
     pure_function: Callable
+
+    def __post_init__(self):
+        """Validate function signature after initialization."""
+        import inspect
+        sig = inspect.signature(self.pure_function)
+        required_params = set(sig.parameters.keys()) - {'price_feed'}
+
+        for context_key in self.config.context_inputs.keys():
+            if context_key not in required_params:
+                raise ValueError(f"Pure function missing required parameter from context: {context_key}")
+
+        for config_key in self.config.config_mapping.keys():
+            if config_key not in required_params:
+                raise ValueError(f"Pure function missing required parameter from config: {config_key}")
+
     def evaluate(self, price_feed: pd.DataFrame, execution_context: StrategyExecutionContext, **config_params) -> StrategStepEvaluationResult:
         try:
             args = prep_arguments_for_strategy_step_function(self.config, execution_context, config_params)
@@ -153,27 +168,4 @@ class StepEvaluator:
                 message=str(e),
                 timestamp=timestamp,
                 step_output={}
-            )
-
-
-# --- StrategyStepFactory ---
-@dataclass
-class StrategyStepFactory:
-    config: PipelineConfig
-    def create_evaluator(self, step_name: str, pure_function: Callable) -> StepEvaluator:
-        step_config_dict = self.config.get_step_config(step_name)
-        step_config = StepConfig(**step_config_dict)
-        self._validate_function_signature(pure_function, step_config)
-        return StepEvaluator(step_config, pure_function)
-    def _validate_function_signature(self, pure_function: Callable, step_config: StepConfig) -> None:
-        import inspect
-        sig = inspect.signature(pure_function)
-        # Extract all parameters from the function signature, excluding 'price_feed'
-        # 'price_feed' is excluded because it is a mandatory parameter for all pure functions
-        required_params = set(sig.parameters.keys()) - {'price_feed'}
-        for context_key in step_config.context_inputs.keys():
-            if context_key not in required_params:
-                raise ValueError(f"Pure function missing required parameter from context: {context_key}")
-        for config_key in step_config.config_mapping.keys():
-            if config_key not in required_params:
-                raise ValueError(f"Pure function missing required parameter from config: {config_key}") 
+            ) 
