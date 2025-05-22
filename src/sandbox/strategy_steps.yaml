@@ -1,0 +1,39 @@
+steps:
+  detect_trend:
+    pure_function: "src.utils.get_trend"
+    context_inputs: {}  # No inputs needed from context
+    context_outputs:
+      trend: "result.trend"
+    config_mapping: {}  # No config needed
+
+  find_extreme:
+    pure_function: "src.utils.is_extreme_bar"
+    context_inputs:
+      trend: "context.trend"  # Needs trend from previous step
+    context_outputs:
+      is_extreme: "result.is_extreme"
+      extreme_bar_index: "result.extreme_bar_index"
+    config_mapping:
+      frame_size: "config.extreme.frame_size"
+
+  validate_pullback:
+    pure_function: "src.utils.is_bars_since_extreme_pivot_valid"
+    context_inputs:
+      major_swing_high_idx: "context.extreme_bar_index"
+    context_outputs:
+      bars_valid: "result.bars_valid"
+    config_mapping:
+      min_bars: "config.pullback.min_bars"
+      max_bars: "config.pullback.max_bars"
+
+  check_fib:
+    pure_function: "src.utils.is_within_fib_extension"
+    context_inputs:
+      trend: "context.trend"
+      ref_swing_start_idx: "context.extreme_bar_index"
+      ref_swing_end_idx: "context.current_bar_index"
+    context_outputs:
+      fib_valid: "result.fib_valid"
+    config_mapping:
+      min_fib_extension: "config.fib.min_extension"
+      max_fib_extension: "config.fib.max_extension" 
