@@ -1,7 +1,5 @@
-"""Sandbox implementation of pipeline configuration pattern."""
+"""Sandbox module for strategy execution."""
 
-from .pipeline_config import PipelineConfig
-from .strategy_step import StrategyStep
-from .strategy_step_factory import StrategyStepFactory
+from .models import StrategyStepRegistry, StrategyStepTemplate
 
-__all__ = ['PipelineConfig', 'StrategyStep', 'StrategyStepFactory'] 
+__all__ = ['StrategyStepTemplate', 'StrategyStepRegistry'] 

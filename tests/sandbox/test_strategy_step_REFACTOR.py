@@ -3,11 +3,41 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from src.models import StrategyExecutionContext
-from src.sandbox.strategy_step import StrategyStep
+from src.sandbox.models import StrategyStepTemplate
+
+
+def test_step_template_validation():
+    """Test that StrategyStepTemplate validates required fields and values."""
+    # Test valid template
+    valid_template = StrategyStepTemplate(
+        pure_function="src.utils.get_trend",
+        context_inputs={},
+        context_outputs={"trend": "analysis.direction"},
+        config_mapping={}
+    )
+    assert valid_template.pure_function == "src.utils.get_trend"
+    
+    # Test empty pure_function
+    with pytest.raises(ValueError):
+        StrategyStepTemplate(
+            pure_function="",
+            context_inputs={},
+            context_outputs={},
+            config_mapping={}
+        )
+    
+    # Test whitespace pure_function
+    with pytest.raises(ValueError):
+        StrategyStepTemplate(
+            pure_function="   ",
+            context_inputs={},
+            context_outputs={},
+            config_mapping={}
+        )
 
 
 def test_evaluate_success():
+    """Test successful step evaluation with nested output structure."""
     # Mock the pure function to return a dict with a nested structure
     mock_pure_function = MagicMock(return_value={
         "analysis": {
@@ -16,18 +46,19 @@ def test_evaluate_success():
         }
     })
 
-    # Create a step config with mappings for both direction and strength
-    step_config = {
-        "context_inputs": {},
-        "context_outputs": {
+    # Create a step template with mappings for both direction and strength
+    step_template = StrategyStepTemplate(
+        pure_function="mock_function",
+        context_inputs={},
+        context_outputs={
             "trend": "analysis.direction",     # Maps "UP" to "trend"
             "trend_strength": "analysis.strength"  # Maps "strong" to "trend_strength"
         },
-        "config_mapping": {}
-    }
+        config_mapping={}
+    )
 
     # Create a StrategyStep instance
-    step = StrategyStep(step_config, mock_pure_function)
+    step = StrategyStep(step_template, mock_pure_function)
 
     # Create a price feed and context
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
@@ -47,11 +78,11 @@ def test_evaluate_success():
     }
 
     # Verify both values were stored in the context
-    # Get the latest result for each key
     trend = context.get_latest_strategey_step_output_result("trend")
     trend_strength = context.get_latest_strategey_step_output_result("trend_strength")
     assert trend == "UP"
     assert trend_strength == "strong"
+
 
 def test_evaluate_with_empty_context():
     """Test that StrategyStep handles empty context inputs gracefully."""
@@ -61,18 +92,19 @@ def test_evaluate_with_empty_context():
         "strength": "strong"
     })
 
-    # Create a step config with empty context inputs
-    step_config = {
-        "context_inputs": {},  # Empty context inputs
-        "context_outputs": {
+    # Create a step template with empty context inputs
+    step_template = StrategyStepTemplate(
+        pure_function="mock_function",
+        context_inputs={},  # Empty context inputs
+        context_outputs={
             "trend": "direction",
             "trend_strength": "strength"
         },
-        "config_mapping": {}
-    }
+        config_mapping={}
+    )
 
     # Create a StrategyStep instance
-    step = StrategyStep(step_config, mock_pure_function)
+    step = StrategyStep(step_template, mock_pure_function)
 
     # Create a price feed and empty context
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
@@ -98,6 +130,7 @@ def test_evaluate_with_empty_context():
     # Verify the pure function was called with only price_feed
     mock_pure_function.assert_called_once_with(price_feed)
 
+
 def test_evaluate_with_invalid_mapping():
     """Test that StrategyStep fails when context output mappings are invalid."""
     # Mock the pure function to return a dict without the expected key
@@ -105,17 +138,18 @@ def test_evaluate_with_invalid_mapping():
         "direction": "UP"
     })
 
-    # Create a step config with an invalid mapping (non-existent path)
-    step_config = {
-        "context_inputs": {},
-        "context_outputs": {
+    # Create a step template with an invalid mapping (non-existent path)
+    step_template = StrategyStepTemplate(
+        pure_function="mock_function",
+        context_inputs={},
+        context_outputs={
             "trend": "direction",
             "trend_strength": "strength"  # 'strength' does not exist in result
         },
-        "config_mapping": {}
-    }
+        config_mapping={}
+    )
 
-    step = StrategyStep(step_config, mock_pure_function)
+    step = StrategyStep(step_template, mock_pure_function)
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 
@@ -127,6 +161,7 @@ def test_evaluate_with_invalid_mapping():
     # No values should be stored in context
     assert context.get_latest_strategey_step_output_result("trend") is None
     assert context.get_latest_strategey_step_output_result("trend_strength") is None
+
 
 def test_evaluate_with_nested_paths():
     """Test that StrategyStep can extract values from deep nested paths."""
@@ -140,17 +175,18 @@ def test_evaluate_with_nested_paths():
         }
     })
 
-    step_config = {
-        "context_inputs": {},
-        "context_outputs": {
+    step_template = StrategyStepTemplate(
+        pure_function="mock_function",
+        context_inputs={},
+        context_outputs={
             "trend_direction": "analysis.trend.direction",
             "trend_strength": "analysis.trend.strength",
             "confidence": "analysis.confidence"
         },
-        "config_mapping": {}
-    }
+        config_mapping={}
+    )
 
-    step = StrategyStep(step_config, mock_pure_function)
+    step = StrategyStep(step_template, mock_pure_function)
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 
@@ -171,19 +207,21 @@ def test_evaluate_with_nested_paths():
     assert context.get_latest_strategey_step_output_result("trend_strength") == "weak"
     assert context.get_latest_strategey_step_output_result("confidence") == 0.42
 
+
 def test_evaluate_with_non_dict_result():
     """Test that StrategyStep handles non-dictionary return values by wrapping them."""
     mock_pure_function = MagicMock(return_value=42)
 
-    step_config = {
-        "context_inputs": {},
-        "context_outputs": {
+    step_template = StrategyStepTemplate(
+        pure_function="mock_function",
+        context_inputs={},
+        context_outputs={
             "answer": "result"
         },
-        "config_mapping": {}
-    }
+        config_mapping={}
+    )
 
-    step = StrategyStep(step_config, mock_pure_function)
+    step = StrategyStep(step_template, mock_pure_function)
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 
@@ -194,23 +232,25 @@ def test_evaluate_with_non_dict_result():
     assert result.step_output == {"result": 42}
     assert context.get_latest_strategey_step_output_result("answer") == 42
 
+
 def test_evaluate_with_missing_required_inputs():
     """Test that StrategyStep fails if required context inputs are missing."""
     # Pure function expects a required argument
     def pure_fn(price_feed, required_param):
         return {"result": required_param}
 
-    step_config = {
-        "context_inputs": {
+    step_template = StrategyStepTemplate(
+        pure_function="mock_function",
+        context_inputs={
             "required_param": "missing_in_context"
         },
-        "context_outputs": {
+        context_outputs={
             "output": "result"
         },
-        "config_mapping": {}
-    }
+        config_mapping={}
+    )
 
-    step = StrategyStep(step_config, pure_fn)
+    step = StrategyStep(step_template, pure_fn)
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 
@@ -219,6 +259,7 @@ def test_evaluate_with_missing_required_inputs():
     assert not result.is_success
     assert "argument of type 'StrategyExecutionContext' is not iterable" in result.message
     assert context.get_latest_strategey_step_output_result("output") is None
+
 
 def test_evaluate_with_config_mapping():
     """Test that StrategyStep correctly maps config values to function parameters."""
@@ -229,19 +270,20 @@ def test_evaluate_with_config_mapping():
             "bar_count": len(price_feed)
         }
 
-    step_config = {
-        "context_inputs": {},
-        "context_outputs": {
+    step_template = StrategyStepTemplate(
+        pure_function="mock_function",
+        context_inputs={},
+        context_outputs={
             "is_valid": "is_valid",
             "bar_count": "bar_count"
         },
-        "config_mapping": {
+        config_mapping={
             "min_bars": "config.validation.min_bars",
             "max_bars": "config.validation.max_bars"
         }
-    }
+    )
 
-    step = StrategyStep(step_config, pure_fn)
+    step = StrategyStep(step_template, pure_fn)
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 
@@ -264,21 +306,23 @@ def test_evaluate_with_config_mapping():
     assert context.get_latest_strategey_step_output_result("is_valid") is True
     assert context.get_latest_strategey_step_output_result("bar_count") == 3
 
+
 def test_evaluate_with_pure_function_error():
     """Test that StrategyStep handles exceptions from the pure function correctly."""
     # Pure function that raises an exception
     def pure_fn(price_feed):
         raise ValueError("Invalid price data")
 
-    step_config = {
-        "context_inputs": {},
-        "context_outputs": {
+    step_template = StrategyStepTemplate(
+        pure_function="mock_function",
+        context_inputs={},
+        context_outputs={
             "result": "result"
         },
-        "config_mapping": {}
-    }
+        config_mapping={}
+    )
 
-    step = StrategyStep(step_config, pure_fn)
+    step = StrategyStep(step_template, pure_fn)
     price_feed = pd.DataFrame({"Open": [100, 101, 102]})
     context = StrategyExecutionContext()
 

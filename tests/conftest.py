@@ -1,3 +1,8 @@
+"""Test configuration and fixtures."""
+
+import sys
+from pathlib import Path
+
 import pandas as pd
 import pytest
 import yaml
@@ -11,6 +16,11 @@ from tests.mocks.mock_strategy_step_functions import (
     mock_find_extreme_wrapper,
     mock_validate_pullback_wrapper,
 )
+
+# Add src to Python path
+src_path = str(Path(__file__).parent.parent)
+if src_path not in sys.path:
+    sys.path.append(src_path)
 
 
 @pytest.fixture

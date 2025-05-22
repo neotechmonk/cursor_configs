@@ -5,16 +5,9 @@ from typing import Any, Dict
 import pandas as pd
 
 # Update imports from src
-from src.models import StrategStepEvaluationResult, StrategyExecutionContext
 
 # Import the "pure" mock functions to be wrapped
 # Use relative import as it's now in the same directory
-from .mock_pure_logic import (
-    mock_pure_get_trend,
-    mock_pure_is_bars_since_extreme_pivot_valid,
-    mock_pure_is_extreme_bar,
-    mock_pure_is_within_fib_extension,
-)
 
 # --- Agreed upon Data Keys ---
 EXTREME_BAR_INDEX_KEY = "extreme_bar_index"
