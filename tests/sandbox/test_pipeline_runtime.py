@@ -5,7 +5,7 @@ import pytest
 
 from src.models import StrategyExecutionContext
 from src.sandbox.models import StrategyStepTemplate
-from src.sandbox.pipeline_runtime import StepEvaluator
+from src.sandbox.strategy_step_evaluator import StepEvaluator
 
 
 def test_step_evaluator_success():
