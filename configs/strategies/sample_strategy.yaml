@@ -1,0 +1,46 @@
+# Sample Strategy Configuration
+# This shows how to define a strategy using the new structure
+
+name: "Trend Following Strategy"
+steps:
+  # Step 1: Detect market trend
+  - strategy_id: detect_trend
+    system_id: trend_following_detect_trend
+    description: "Determine the current market trend direction"
+    static_config:
+      frame_size: 20
+    dynamic_config: {}  # No dynamic inputs needed for first step
+
+  # Step 2: Find extreme pivot point
+  - strategy_id: find_extreme
+    system_id: trend_following_find_extreme
+    description: "Identify extreme pivot points in the trend"
+    static_config:
+      min_bars: 5
+    dynamic_config:
+      trend: "trend"  # From detect_trend step
+
+  # Step 3: Validate pullback
+  - strategy_id: validate_pullback
+    system_id: trend_following_validate_pullback
+    description: "Check if pullback meets criteria"
+    static_config:
+      min_bars: 3
+      max_bars: 10
+    dynamic_config:
+      trend: "trend"  # From detect_trend step
+      is_extreme: "is_extreme"  # From find_extreme step
+
+  # Step 4: Check Fibonacci extension
+  - strategy_id: check_fib
+    system_id: trend_following_check_fib
+    description: "Verify if price action meets Fibonacci extension criteria"
+    static_config:
+      min_extension: 1.35
+      max_extension: 1.875
+    dynamic_config:
+      trend: "trend"  # From detect_trend step
+      is_extreme: "is_extreme"  # From find_extreme step
+      bars_valid: "bars_valid"  # From validate_pullback step
+    reevaluates:
+      - validate_pullback: true  # If fib check fails, revalidate pullback 
