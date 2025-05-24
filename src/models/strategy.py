@@ -1,22 +1,18 @@
 """Strategy-specific models for the strategy execution framework."""
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
 
 from src.validation.validators import (
     validate_identical_output_by_different_steps,
     validate_no_duplicate_outputs_by_different_steps,
-    validate_step_output_keys_and_values,
-)
-
-# Type variable for the context parameter to allow for future context types
-ContextT = TypeVar('ContextT', bound='StrategyExecutionContext')
+    validate_step_output_keys_and_values)
 
 # Method signature for strategy step evaluation functions
 StrategyStepFn = Callable[
-    [pd.DataFrame, 'ContextT', Dict[str, Any]], 
+    [pd.DataFrame, 'StrategyExecutionContext', Dict[str, Any]], 
     'StrategStepEvaluationResult'
 ]
 
