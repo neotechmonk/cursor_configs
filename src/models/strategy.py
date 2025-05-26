@@ -8,10 +8,11 @@ import pandas as pd
 from src.validation.validators import (
     validate_identical_output_by_different_steps,
     validate_no_duplicate_outputs_by_different_steps,
-    validate_step_output_keys_and_values)
+    validate_step_output_keys_and_values,
+)
 
 # Method signature for strategy step evaluation functions
-StrategyStepFn = Callable[
+StrategyStepEvalFn = Callable[
     [pd.DataFrame, 'StrategyExecutionContext', Dict[str, Any]], 
     'StrategStepEvaluationResult'
 ]
@@ -64,7 +65,7 @@ class StrategyStep:
     """
     id: str 
     name: str 
-    evaluation_fn: StrategyStepFn = field(hash=False)
+    evaluation_fn: StrategyStepEvalFn = field(hash=False)
     description: Optional[str] = field(default=None)
     config: Dict[str, Any] = field(hash=False, default_factory=dict)
     reevaluates: List['StrategyStep'] = field(default_factory=list, hash=False)

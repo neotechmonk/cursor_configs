@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 import pandas as pd
 
 from src.models.base import Direction, PriceLabel
+from src.models.strategy import StrategStepEvaluationResult, StrategyStep
 
 
 def get_trend(price_feed: pd.DataFrame) -> Direction:
@@ -173,3 +174,70 @@ def mock_pure_is_bars_since_extreme_pivot_valid(
 ) -> Dict[str, Any]:
     """Mock function to validate pullback."""
     return {"bars_valid": True}
+
+# region : creation of StrategyStepEvaluationResult for Success and Failure scenarios
+
+
+def create_success_result(
+    data: pd.DataFrame,
+    step: StrategyStep,
+    message: Optional[str] = None,
+    step_output: Optional[Dict[str, Any]] = None
+) -> StrategStepEvaluationResult:
+    """Create a successful strategy step evaluation result.
+    
+    Args:
+        data: Price data DataFrame
+        step: The strategy step being evaluated
+        message: Optional custom success message. If not provided, will use step name
+        step_output: Optional dictionary containing step output data
+        
+    Returns:
+        StrategStepEvaluationResult with success status
+    """
+    if message is None:
+        message = f"Successfully completed {step.name}"
+        
+    return StrategStepEvaluationResult(
+        is_success=True,
+        message=message,
+        timestamp=data.index[-1] if not data.empty else None,
+        step_output=step_output or {}
+    )
+
+
+def create_failure_result(
+    data: pd.DataFrame,
+    step: StrategyStep,
+    error_msg: Optional[str] = None,
+    e: Optional[Exception] = None,
+    step_output: Optional[Dict[str, Any]] = None
+) -> StrategStepEvaluationResult:
+    """Create a failed strategy step evaluation result.
+    
+    Args:
+        data: Price data DataFrame
+        step: The strategy step being evaluated
+        error_msg: Optional custom error message
+        e: Optional exception that caused the failure
+        step_output: Optional dictionary containing step output data
+        
+    Returns:
+        StrategStepEvaluationResult with failure status
+    """
+    if error_msg is None and e is None:
+        message = f"Failed to complete {step.name}"
+    elif error_msg is None:
+        message = f"Failed to complete {step.name}: {str(e)}"
+    elif e is None:
+        message = error_msg
+    else:
+        message = f"{error_msg}: {str(e)}"
+        
+    return StrategStepEvaluationResult(
+        is_success=False,
+        message=message,
+        timestamp=data.index[-1] if not data.empty else None,
+        step_output=step_output or {}
+    )
+# endregion : creation of StrategyStepEvaluationResult for Success and Failure scenarios

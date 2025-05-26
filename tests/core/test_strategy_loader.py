@@ -4,9 +4,9 @@ import pytest
 
 from src.core.strategy_loader import StrategyLoader
 from src.models import StrategyConfig, StrategyStep
-from src.sandbox.evaluator import StepEvaluator
 
 pytest.skip("Skipping all tests in this file for now", allow_module_level=True)
+
 
 def test_strategy_loader_creates_strategy():
     """Should create strategy config from YAML file."""
