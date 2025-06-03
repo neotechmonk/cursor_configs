@@ -36,29 +36,28 @@ def _validate_lookup_bars(
     return True
 
 
-def _get_bar_size(
-    data: pd.DataFrame,
-    bar_index: int
+def _get_bar_high_low_range(
+    price_data: pd.DataFrame,
+    index: pd.Timestamp
 ) -> float:
-    """Calculate the size of a single bar.
+    """Calculate the high-low range of a single bar by datetime index.
     
     Args:
-        data: Price data
-        bar_index: Index of the bar to measure
+        price_data: Price data
+        index: Datetime index label of the bar to measure
         
     Returns:
         Size of the bar (high - low)
         
     Raises:
-        IndexError: If bar_index is out of bounds
-        KeyError: If required price columns are missing
+        KeyError: If index is not in the DataFrame index or required price columns are missing
     """
-    bar = data.iloc[bar_index]
+    bar = price_data.loc[index]
     return bar[PriceLabel.HIGH] - bar[PriceLabel.LOW]
 
 
 def _is_bar_wider_than_lookback(
-    data: pd.DataFrame,
+    price_data: pd.DataFrame,
     current_bar_index: int,
     lookback_bars: int,
     min_size_increase_pct: float
@@ -66,7 +65,7 @@ def _is_bar_wider_than_lookback(
     """Check if current bar is wider than any bar in lookback period.
     
     Args:
-        data: Price data
+        price_data: Price data
         current_bar_index: Index of the current bar
         lookback_bars: Number of bars to look back
         min_size_increase_pct: Minimum percentage increase required
@@ -79,11 +78,11 @@ def _is_bar_wider_than_lookback(
         KeyError: If required price columns are missing
         ZeroDivisionError: If average lookback size is zero
     """
-    current_bar_size = _get_bar_size(data, current_bar_index)
+    current_bar_size = _get_bar_high_low_range(price_data, price_data.index[current_bar_index])
     
     # Get sizes of lookback bars
     lookback_sizes = [
-        _get_bar_size(data, i)
+        _get_bar_high_low_range(price_data, price_data.index[i])
         for i in range(current_bar_index - lookback_bars, current_bar_index)
     ]
     

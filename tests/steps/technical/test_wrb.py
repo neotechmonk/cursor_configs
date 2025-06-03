@@ -6,7 +6,7 @@ import pytest
 from src.models.base import PriceLabel
 from src.models.strategy import StrategyExecutionContext, StrategyStep
 from src.steps.technical.wrb import (
-    _get_bar_size,
+    _get_bar_high_low_range,
     _validate_lookup_bars,
     detect_wide_range_bar,
 )
@@ -173,31 +173,55 @@ def test_validate_lookup_bars_insufficient_data(sample_data):
     with pytest.raises(ValueError, match="Not enough bars for lookback period"):
         _validate_lookup_bars(sample_data.iloc[:2], lookback_bars=3)
 
+
 # endregion _validate_lookup_bars
 
-# region: _get_bar_size
+# region: _get_bar_high_low_range
+@pytest.mark.parametrize(
+    "open_, high, low, close, description",
+    [
+        (100, 110, 95, 105, "uptrend"),      # up bar: close > open
+        (110, 115, 90, 95, "downtrend"),     # down bar: close < open
+        (100, 105, 95, 100, "range/sideways"), # range bar: close == open
+    ]
+)
+def test_get_bar_high_low_range_happy_path(open_, high, low, close, description):
+    """Test _get_bar_high_low_range for up, down, and range trends."""
+    index = pd.Timestamp("2024-01-01")
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [open_],
+        PriceLabel.HIGH: [high],
+        PriceLabel.LOW: [low],
+        PriceLabel.CLOSE: [close],
+    }, index=[index])
 
-@pytest.mark.skip(reason="Skipping other handler function tests")
-def test_get_bar_size_success(sample_data):
-    """Test successful calculation of bar size."""
-    bar_size = _get_bar_size(sample_data, bar_index=0)
-    expected_size = sample_data.iloc[0][PriceLabel.HIGH] - sample_data.iloc[0][PriceLabel.LOW]
+    result = _get_bar_high_low_range(price_data, index)
+    expected = abs(high - low)
+    assert result == expected, f"Failed for {description}: expected {expected}, got {result}"
+
+
+def test_get_bar_high_low_range_success(sample_data):
+    """Test successful calculation of bar high-low range."""
+    index = sample_data.index[0]
+    bar_size = _get_bar_high_low_range(sample_data, index=index)
+    expected_size = sample_data.loc[index][PriceLabel.HIGH] - sample_data.loc[index][PriceLabel.LOW]
     assert bar_size == expected_size
 
 
-@pytest.mark.skip(reason="Skipping other handler function tests")
-def test_get_bar_size_invalid_index(sample_data):
-    """Test bar size calculation with invalid index."""
-    with pytest.raises(IndexError):
-        _get_bar_size(sample_data, bar_index=100)
-
-
-@pytest.mark.skip(reason="Skipping other handler function tests")
-def test_get_bar_size_missing_columns():
-    """Test bar size calculation with missing price columns."""
-    invalid_data = pd.DataFrame({'invalid': [1, 2, 3]})
+def test_get_bar_high_low_range_invalid_index(sample_data):
+    """Test bar high-low range calculation with invalid index."""
+    invalid_index = pd.Timestamp("2099-01-01")
     with pytest.raises(KeyError):
-        _get_bar_size(invalid_data, bar_index=0)
+        _get_bar_high_low_range(sample_data, index=invalid_index)
 
 
-# endregion _get_bar_size
+def test_get_bar_high_low_range_missing_columns():
+    """Test bar high-low range calculation with missing price columns."""
+    invalid_data = pd.DataFrame({'invalid': [1, 2, 3]})
+    index = invalid_data.index[0]
+    with pytest.raises(KeyError):
+        _get_bar_high_low_range(invalid_data, index=index)
+
+
+
+# endregion _get_bar_high_low_range
