@@ -1,4 +1,6 @@
-from models import Direction, PriceLabel
+"""Tests for base models."""
+
+from src.models.base import Direction, PriceLabel
 
 # Remove StrategyExecutionContext imports, moved to test_strategy_context.py
 # from src.models import (

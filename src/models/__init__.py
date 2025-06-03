@@ -4,9 +4,9 @@ from src.models.base import Direction, PriceLabel
 from src.models.strategy import (
                                  StrategStepEvaluationResult,
                                  StrategyConfig,
-                                 StrategyStepEvalFn,
                                  StrategyExecutionContext,
                                  StrategyStep,
+                                 StrategyStepEvalFn,
 )
 
 __all__ = [

@@ -340,4 +340,61 @@ def test_is_bar_wider_than_lookback_index_error():
     with pytest.raises(KeyError):
         _is_bar_wider_than_lookback(price_data, pd.Timestamp('2099-01-01'), 2, 50.0)
 
+
+def test_is_bar_wider_than_lookback_max_method():
+    """Test that function detects a bar wider than max lookback by required percentage."""
+    import pandas as pd
+
+    from src.models.base import PriceLabel
+    from src.steps.technical.wrb import _is_bar_wider_than_lookback
+
+    # Last bar is wider than max of lookback
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100, 100, 100, 100],
+        PriceLabel.HIGH: [105, 110, 105, 120],  # Max in lookback is 110
+        PriceLabel.LOW: [95, 95, 95, 90],
+        PriceLabel.CLOSE: [103, 104, 105, 110],
+    }, index=pd.date_range('2024-01-01', periods=4))
+    idx = price_data.index[-1]
+    is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5, comparison_method="max")  # 50% = 0.5
+    assert is_wide == True
+
+
+def test_is_bar_wider_than_lookback_avg_method():
+    """Test that function detects a bar wider than average lookback by required percentage."""
+    import pandas as pd
+
+    from src.models.base import PriceLabel
+    from src.steps.technical.wrb import _is_bar_wider_than_lookback
+
+    # Last bar is wider than average of lookback
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100, 100, 100, 100],
+        PriceLabel.HIGH: [105, 105, 105, 120],  # Avg in lookback is 105
+        PriceLabel.LOW: [95, 95, 95, 90],
+        PriceLabel.CLOSE: [103, 104, 105, 110],
+    }, index=pd.date_range('2024-01-01', periods=4))
+    idx = price_data.index[-1]
+    is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5, comparison_method="avg")  # 50% = 0.5
+    assert is_wide == True
+
+
+def test_is_bar_wider_than_lookback_invalid_method():
+    """Test that function raises ValueError for invalid comparison method."""
+    import pandas as pd
+
+    from src.models.base import PriceLabel
+    from src.steps.technical.wrb import _is_bar_wider_than_lookback
+
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100, 100, 100],
+        PriceLabel.HIGH: [105, 105, 105],
+        PriceLabel.LOW: [95, 95, 95],
+        PriceLabel.CLOSE: [103, 104, 105],
+    }, index=pd.date_range('2024-01-01', periods=3))
+    idx = price_data.index[-1]
+    
+    with pytest.raises(ValueError, match="Invalid comparison method"):
+        _is_bar_wider_than_lookback(price_data, idx, 2, 0.5, comparison_method="invalid")
+
 # endregion _is_bar_wider_than_lookback

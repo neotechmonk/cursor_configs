@@ -6,8 +6,11 @@ import pandas as pd
 import pytest
 
 # Imports from strategy module needed for tests
-# Update import for StrategStepEvaluationResult and StrategyExecutionContextV2
-from models import StrategStepEvaluationResult, StrategyExecutionContext, StrategyStep
+from src.models.strategy import (
+    StrategStepEvaluationResult,
+    StrategyExecutionContext,
+    StrategyStep,
+)
 from src.validation.validators import (
     validate_no_duplicate_outputs_by_different_steps,
     validate_step_output_keys_and_values,
@@ -487,6 +490,9 @@ def test_validate_identical_output_by_different_steps():
     assert len(context._strategy_steps_results) == 1
     assert len(context._latest_results_cache) == 1
     assert context._latest_results_cache["key"] == "value"
+
+#endregion
+
 
 #endregion
 
