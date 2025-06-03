@@ -58,7 +58,7 @@ def _get_bar_high_low_range(
 
 def _is_bar_wider_than_lookback(
     price_data: pd.DataFrame,
-    current_bar_index: int,
+    current_bar_index: pd.Timestamp,
     lookback_bars: int,
     min_size_increase_pct: float
 ) -> Tuple[bool, float]:
@@ -66,7 +66,7 @@ def _is_bar_wider_than_lookback(
     
     Args:
         price_data: Price data
-        current_bar_index: Index of the current bar
+        current_bar_index: Datetime index of the current bar
         lookback_bars: Number of bars to look back
         min_size_increase_pct: Minimum percentage increase required
         
@@ -78,16 +78,20 @@ def _is_bar_wider_than_lookback(
         KeyError: If required price columns are missing
         ZeroDivisionError: If average lookback size is zero
     """
-    current_bar_size = _get_bar_high_low_range(price_data, price_data.index[current_bar_index])
+    current_bar_size = _get_bar_high_low_range(price_data, current_bar_index)
+    
+    # Get indices of lookback bars
+    current_idx = price_data.index.get_loc(current_bar_index)
+    lookback_indices = price_data.index[current_idx - lookback_bars:current_idx]
+    
+    if len(lookback_indices) == 0:
+        return False, 0.0
     
     # Get sizes of lookback bars
     lookback_sizes = [
-        _get_bar_high_low_range(price_data, price_data.index[i])
-        for i in range(current_bar_index - lookback_bars, current_bar_index)
+        _get_bar_high_low_range(price_data, idx)
+        for idx in lookback_indices
     ]
-    
-    if not lookback_sizes:
-        return False, 0.0
     
     # Calculate average size of lookback bars
     avg_lookback_size = sum(lookback_sizes) / len(lookback_sizes)
@@ -132,7 +136,7 @@ def detect_wide_range_bar(
         # Check if current bar is wider
         is_wider, size_increase = _is_bar_wider_than_lookback(
             price_data,
-            -1,  # Latest bar
+            price_data.index[-1],  # Latest bar
             lookback_bars,
             min_size_increase_pct
         )
