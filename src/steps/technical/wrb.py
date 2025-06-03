@@ -105,8 +105,6 @@ def _is_bar_wider_than_lookback(
     match comparison_method.lower().strip():
         case "max":
             reference_size = max(lookback_sizes)
-            if reference_size == 0:
-                raise ZeroDivisionError("Maximum lookback bar size is zero")
         case "avg":
             reference_size = sum(lookback_sizes) / len(lookback_sizes)
             if reference_size == 0:
@@ -115,6 +113,8 @@ def _is_bar_wider_than_lookback(
             raise ValueError(f"Invalid comparison method: {comparison_method}. Must be 'max' or 'avg'")
     
     # Calculate size increase as decimal (0.0 to 1.0)
+    if reference_size == 0:
+        raise ZeroDivisionError("Reference size is zero")
     size_increase = (current_bar_size - reference_size) / reference_size
     
     return size_increase >= min_size_increase_pct
