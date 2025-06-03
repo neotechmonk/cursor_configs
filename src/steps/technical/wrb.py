@@ -102,14 +102,14 @@ def _is_bar_wider_than_lookback(
 
 
 def detect_wide_range_bar(
-    data: pd.DataFrame,
+    price_data: pd.DataFrame,
     context: StrategyExecutionContext,
     config: Dict[str, Any]
 ) -> StrategStepEvaluationResult:
     """Detect if the latest bar is significantly wider than recent bars.
     
     Args:
-        data: Price data to analyze
+        price_data: Price data to analyze
         context: Current strategy execution context
         config: Configuration parameters including:
             - lookback_bars: Number of bars to look back (default: 20)
@@ -127,18 +127,18 @@ def detect_wide_range_bar(
     
     try:
         # Validate input
-        _validate_lookup_bars(data, lookback_bars)
+        _validate_lookup_bars(price_data, lookback_bars)
         
         # Check if current bar is wider
         is_wider, size_increase = _is_bar_wider_than_lookback(
-            data,
+            price_data,
             -1,  # Latest bar
             lookback_bars,
             min_size_increase_pct
         )
         
         return create_success_result(
-            data=data,
+            data=price_data,
             step=context.current_step,
             step_output={
                 'is_wide_range': is_wider,
@@ -149,27 +149,27 @@ def detect_wide_range_bar(
         )
     except ValueError as e:
         return create_failure_result(
-            data=data,
+            data=price_data,
             step=context.current_step,
             error_msg=str(e)
         )
     except (IndexError, KeyError) as e:
         return create_failure_result(
-            data=data,
+            data=price_data,
             step=context.current_step,
             error_msg="Invalid price data format or index",
             e=e
         )
     except ZeroDivisionError as e:
         return create_failure_result(
-            data=data,
+            data=price_data,
             step=context.current_step,
             error_msg="Cannot calculate size increase: average bar size is zero",
             e=e
         )
     except Exception as e:
         return create_failure_result(
-            data=data,
+            data=price_data,
             step=context.current_step,
             error_msg="Error detecting wide range bar",
             e=e
