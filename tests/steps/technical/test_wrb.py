@@ -178,25 +178,24 @@ def test_validate_lookup_bars_insufficient_data(sample_data):
 
 # region: _get_bar_high_low_range
 @pytest.mark.parametrize(
-    "open_, high, low, close, description",
+    "open, high, low, close, expected, description",
     [
-        (100, 110, 95, 105, "uptrend"),      # up bar: close > open
-        (110, 115, 90, 95, "downtrend"),     # down bar: close < open
-        (100, 105, 95, 100, "range/sideways"), # range bar: close == open
+        (100, 110, 95, 105, 15, "uptrend"),      # up bar: close > open
+        (110, 115, 90, 95, 25, "downtrend"),     # down bar: close < open
+        (100, 105, 95, 100, 10, "range/sideways"), # range bar: close == open
     ]
 )
-def test_get_bar_high_low_range_happy_path(open_, high, low, close, description):
+def test_get_bar_high_low_range_happy_path(open, high, low, close, expected, description):
     """Test _get_bar_high_low_range for up, down, and range trends."""
     index = pd.Timestamp("2024-01-01")
     price_data = pd.DataFrame({
-        PriceLabel.OPEN: [open_],
+        PriceLabel.OPEN: [open],
         PriceLabel.HIGH: [high],
         PriceLabel.LOW: [low],
         PriceLabel.CLOSE: [close],
     }, index=[index])
 
     result = _get_bar_high_low_range(price_data, index)
-    expected = abs(high - low)
     assert result == expected, f"Failed for {description}: expected {expected}, got {result}"
 
 
@@ -222,6 +221,34 @@ def test_get_bar_high_low_range_missing_columns():
     with pytest.raises(KeyError):
         _get_bar_high_low_range(invalid_data, index=index)
 
+
+def test_get_bar_high_low_range_correct_index():
+    """Test that _get_bar_high_low_range fetches the correct index from the DataFrame."""
+    from src.models.base import PriceLabel
+    from src.steps.technical.wrb import _get_bar_high_low_range
+
+    indices = pd.date_range(start='2024-01-01', periods=3)
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100, 101, 102],
+        PriceLabel.HIGH: [110, 111, 112],
+        PriceLabel.LOW: [95, 96, 97],
+        PriceLabel.CLOSE: [105, 106, 107],
+    }, index=indices)
+
+    # Test fetching the first index
+    result = _get_bar_high_low_range(price_data, indices[0])
+    expected = 15  # high - low = 110 - 95 = 15
+    assert result == expected, f"Failed to fetch correct index: expected {expected}, got {result}"
+
+    # Test fetching the second index
+    result = _get_bar_high_low_range(price_data, indices[1])
+    expected = 15  # high - low = 111 - 96 = 15
+    assert result == expected, f"Failed to fetch correct index: expected {expected}, got {result}"
+
+    # Test fetching the third index
+    result = _get_bar_high_low_range(price_data, indices[2])
+    expected = 15  # high - low = 112 - 97 = 15
+    assert result == expected, f"Failed to fetch correct index: expected {expected}, got {result}"
 
 
 # endregion _get_bar_high_low_range
