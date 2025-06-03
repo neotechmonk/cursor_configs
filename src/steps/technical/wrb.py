@@ -2,13 +2,16 @@
 
 """
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Literal, Tuple
 
 import pandas as pd
 
 from src.models.base import PriceLabel
 from src.models.strategy import StrategStepEvaluationResult, StrategyExecutionContext
 from src.utils import create_failure_result, create_success_result
+
+# Type alias for comparison methods
+ComparisonMethod = Literal["max", "avg"]
 
 
 def _validate_lookup_bars(
@@ -60,23 +63,28 @@ def _is_bar_wider_than_lookback(
     price_data: pd.DataFrame,
     current_bar_index: pd.Timestamp,
     lookback_bars: int,
-    min_size_increase_pct: float
+    min_size_increase_pct: float,
+    comparison_method: ComparisonMethod = "max"
 ) -> bool:
-    """Check if current bar is wider than any bar in lookback period.
+    """Check if current bar is wider than lookback bars using specified comparison method.
     
     Args:
         price_data: Price data
         current_bar_index: Datetime index of the current bar
         lookback_bars: Number of bars to look back
         min_size_increase_pct: Minimum decimal increase required (0.0 to 1.0)
-        
+        comparison_method: Method to compare current bar with lookback bars
+            - "max": Compare with maximum size in lookback period
+            - "avg": Compare with average size of lookback period
+            
     Returns:
-        bool: True if the current bar is wider than the lookback average by the required percentage, False otherwise
+        bool: True if the current bar is wider than the lookback by the required percentage, False otherwise
         
     Raises:
         IndexError: If current_bar_index or lookback range is out of bounds
         KeyError: If required price columns are missing
-        ZeroDivisionError: If average lookback size is zero
+        ValueError: If comparison_method is invalid
+        ZeroDivisionError: If average lookback size is zero (only for "avg" method)
     """
     current_bar_size = _get_bar_high_low_range(price_data, current_bar_index)
     
@@ -93,14 +101,21 @@ def _is_bar_wider_than_lookback(
         for idx in lookback_indices
     ]
     
-    # Calculate average size of lookback bars
-    avg_lookback_size = sum(lookback_sizes) / len(lookback_sizes)
-    
-    if avg_lookback_size == 0:
-        raise ZeroDivisionError("Average lookback bar size is zero")
+    # Calculate reference size based on comparison method
+    match comparison_method.lower().strip():
+        case "max":
+            reference_size = max(lookback_sizes)
+            if reference_size == 0:
+                raise ZeroDivisionError("Maximum lookback bar size is zero")
+        case "avg":
+            reference_size = sum(lookback_sizes) / len(lookback_sizes)
+            if reference_size == 0:
+                raise ZeroDivisionError("Average lookback bar size is zero")
+        case _:
+            raise ValueError(f"Invalid comparison method: {comparison_method}. Must be 'max' or 'avg'")
     
     # Calculate size increase as decimal (0.0 to 1.0)
-    size_increase = (current_bar_size - avg_lookback_size) / avg_lookback_size
+    size_increase = (current_bar_size - reference_size) / reference_size
     
     return size_increase >= min_size_increase_pct
 

@@ -2,21 +2,22 @@
 
 """
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Literal
 
 import pandas as pd
 
-from src.models.strategy import (
-    StrategStepEvaluationResult,
-    StrategyExecutionContext,
-)
+from src.models.base import PriceLabel
+from src.models.strategy import StrategStepEvaluationResult, StrategyExecutionContext
 from src.utils import create_failure_result, create_success_result
+
+# Type alias for comparison methods
+ComparisonMethod = Literal["max", "avg"]
 
 
 def _validate_lookup_bars(
     data: pd.DataFrame,
     lookback_bars: int
-) -> Tuple[bool, str]:
+) -> bool:
     """Validate if there are enough bars for the lookback period.
     
     Args:
@@ -24,15 +25,18 @@ def _validate_lookup_bars(
         lookback_bars: Number of bars to look back
         
     Returns:
-        Tuple of (is_valid, error_message)
+        bool: True if validation passes
+        
+    Raises:
+        ValueError: If data is empty or insufficient bars for lookback period
     """
     if data.empty:
-        return False, "No data available"
+        raise ValueError("No data available")
     
     if len(data) < lookback_bars:
-        return False, f"Not enough bars for lookback period. Required: {lookback_bars}, Available: {len(data)}"
+        raise ValueError(f"Not enough bars for lookback period. Required: {lookback_bars}, Available: {len(data)}")
     
-    return True, ""
+    return True
 
 
 def _get_bar_size(
@@ -47,46 +51,91 @@ def _get_bar_size(
         
     Returns:
         Size of the bar (high - low)
+        
+    Raises:
+        IndexError: If bar_index is out of bounds
+        KeyError: If required price columns are missing
     """
     bar = data.iloc[bar_index]
-    return bar['high'] - bar['low']
+    return bar[PriceLabel.HIGH] - bar[PriceLabel.LOW]
 
 
 def _is_bar_wider_than_lookback(
     data: pd.DataFrame,
-    current_bar_index: int,
+    current_bar_index: pd.Timestamp,
     lookback_bars: int,
-    min_size_increase_pct: float
-) -> Tuple[bool, float]:
-    """Check if current bar is wider than any bar in lookback period.
+    min_size_increase_pct: float,
+    comparison_method: ComparisonMethod = "max"
+) -> bool:
+    """Check if current bar is wider than lookback bars using specified comparison method.
     
     Args:
         data: Price data
-        current_bar_index: Index of the current bar
+        current_bar_index: Datetime index of the current bar
         lookback_bars: Number of bars to look back
-        min_size_increase_pct: Minimum percentage increase required
-        
+        min_size_increase_pct: Minimum decimal increase required (0.0 to 1.0)
+        comparison_method: Method to compare current bar with lookback bars
+            - "max": Compare with maximum size in lookback period
+            - "avg": Compare with average size of lookback period
+            
     Returns:
-        Tuple of (is_wider, size_increase_pct)
+        bool: True if the current bar is wider than the lookback by the required percentage, False otherwise
+        
+    Raises:
+        IndexError: If current_bar_index or lookback range is out of bounds
+        KeyError: If required price columns are missing
+        ValueError: If comparison_method is invalid
+        ZeroDivisionError: If average lookback size is zero (only for "avg" method)
+
+    TODO:
+        1. wrb series :  consecutive bars closing higher or lower are 
+        equivalent to a sing WRB
+        2. efficient error flow based on guard clauses?
+        3. wrb as average or max - what if the function can be functional 
+        strategy. i.e pass a function
     """
-    current_bar_size = _get_bar_size(data, current_bar_index)
-    
-    # Get sizes of lookback bars
-    lookback_sizes = [
-        _get_bar_size(data, i)
-        for i in range(current_bar_index - lookback_bars, current_bar_index)
-    ]
-    
-    if not lookback_sizes:
-        return False, 0.0
-    
-    # Calculate average size of lookback bars
-    avg_lookback_size = sum(lookback_sizes) / len(lookback_sizes)
-    
-    # Calculate size increase percentage
-    size_increase_pct = ((current_bar_size - avg_lookback_size) / avg_lookback_size) * 100
-    
-    return size_increase_pct >= min_size_increase_pct, size_increase_pct
+    try:
+        # Get "high-low" ranges for the current and lookback bars
+        current_bar_idx = data.index.get_loc(current_bar_index)
+        lookback_indices = data.index[current_bar_idx - lookback_bars:current_bar_idx + 1]  # +1 to include current bar
+
+        if len(lookback_indices) <= 1:  # Only current bar or empty
+            return False
+
+        lookback_ranges = [
+            _get_bar_size(data, idx)
+            for idx in lookback_indices
+        ]
+
+        cur_bar_range = lookback_ranges[-1]  # Last one is current bar
+        lookback_bars_range = lookback_ranges[:-1]  # All except last are lookback bars
+
+        # Calculate reference size based on comparison method
+        match comparison_method.lower().strip():
+            case "max":
+                reference_size = max(lookback_bars_range)
+                if reference_size == 0:
+                    raise ZeroDivisionError("Maximum lookback bar size is zero")
+            case "avg":
+                reference_size = sum(lookback_bars_range) / len(lookback_bars_range)
+                if reference_size == 0:
+                    raise ZeroDivisionError("Average lookback bar size is zero")
+            case _:
+                raise ValueError(f"Invalid comparison method: {comparison_method}. Must be 'max' or 'avg'")
+        
+        # Calculate size increase as decimal (0.0 to 1.0)
+        size_increase = (cur_bar_range - reference_size) / reference_size
+        
+        return size_increase >= min_size_increase_pct
+
+    except KeyError as e:
+        raise KeyError(f"Invalid price data format or missing columns: {e}")
+    except IndexError as e:
+        raise IndexError(f"Invalid index or lookback range: {e}")
+    except ZeroDivisionError:
+        raise  # Re-raise as is
+    except Exception as e:
+        raise RuntimeError(f"Unexpected error in _is_bar_wider_than_lookback: {e}")
 
 
 def detect_wide_range_bar(
@@ -100,11 +149,15 @@ def detect_wide_range_bar(
         data: Price data to analyze
         context: Current strategy execution context
         config: Configuration parameters including:
-            - lookback_bars: Number of bars to look back
-            - min_size_increase_pct: Minimum percentage increase required
+            - lookback_bars: Number of bars to look back (default: 20)
+            - min_size_increase_pct: Minimum percentage increase required (default: 50.0)
             
     Returns:
-        Result containing wide range bar detection information
+        Result containing wide range bar detection information:
+        - is_wide_range: Whether the current bar is a wide range bar
+        - size_increase_pct: Percentage increase in size compared to average
+        - lookback_bars: Number of bars used for comparison
+        - min_size_increase_pct: Minimum percentage increase required
     """
     lookback_bars = config.get('lookback_bars', 20)
     min_size_increase_pct = config.get('min_size_increase_pct', 50.0)
@@ -120,7 +173,7 @@ def detect_wide_range_bar(
     
     try:
         # Check if current bar is wider
-        is_wider, size_increase = _is_bar_wider_than_lookback(
+        is_wider = _is_bar_wider_than_lookback(
             data,
             -1,  # Latest bar
             lookback_bars,
@@ -132,10 +185,23 @@ def detect_wide_range_bar(
             step=context.current_step,
             step_output={
                 'is_wide_range': is_wider,
-                'size_increase_pct': size_increase,
                 'lookback_bars': lookback_bars,
                 'min_size_increase_pct': min_size_increase_pct
             }
+        )
+    except (IndexError, KeyError) as e:
+        return create_failure_result(
+            data=data,
+            step=context.current_step,
+            error_msg="Invalid price data format or index",
+            e=e
+        )
+    except ZeroDivisionError as e:
+        return create_failure_result(
+            data=data,
+            step=context.current_step,
+            error_msg="Cannot calculate size increase: average bar size is zero",
+            e=e
         )
     except Exception as e:
         return create_failure_result(
