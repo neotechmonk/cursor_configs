@@ -61,17 +61,17 @@ def _is_bar_wider_than_lookback(
     current_bar_index: pd.Timestamp,
     lookback_bars: int,
     min_size_increase_pct: float
-) -> Tuple[bool, float]:
+) -> bool:
     """Check if current bar is wider than any bar in lookback period.
     
     Args:
         price_data: Price data
         current_bar_index: Datetime index of the current bar
         lookback_bars: Number of bars to look back
-        min_size_increase_pct: Minimum percentage increase required
+        min_size_increase_pct: Minimum decimal increase required (0.0 to 1.0)
         
     Returns:
-        Tuple of (is_wider, size_increase_pct)
+        bool: True if the current bar is wider than the lookback average by the required percentage, False otherwise
         
     Raises:
         IndexError: If current_bar_index or lookback range is out of bounds
@@ -85,7 +85,7 @@ def _is_bar_wider_than_lookback(
     lookback_indices = price_data.index[current_idx - lookback_bars:current_idx]
     
     if len(lookback_indices) == 0:
-        return False, 0.0
+        return False
     
     # Get sizes of lookback bars
     lookback_sizes = [
@@ -99,10 +99,10 @@ def _is_bar_wider_than_lookback(
     if avg_lookback_size == 0:
         raise ZeroDivisionError("Average lookback bar size is zero")
     
-    # Calculate size increase percentage
-    size_increase_pct = ((current_bar_size - avg_lookback_size) / avg_lookback_size) * 100
+    # Calculate size increase as decimal (0.0 to 1.0)
+    size_increase = (current_bar_size - avg_lookback_size) / avg_lookback_size
     
-    return size_increase_pct >= min_size_increase_pct, size_increase_pct
+    return size_increase >= min_size_increase_pct
 
 
 def detect_wide_range_bar(
@@ -134,7 +134,7 @@ def detect_wide_range_bar(
         _validate_lookup_bars(price_data, lookback_bars)
         
         # Check if current bar is wider
-        is_wider, size_increase = _is_bar_wider_than_lookback(
+        is_wider = _is_bar_wider_than_lookback(
             price_data,
             price_data.index[-1],  # Latest bar
             lookback_bars,
@@ -146,7 +146,7 @@ def detect_wide_range_bar(
             step=context.current_step,
             step_output={
                 'is_wide_range': is_wider,
-                'size_increase_pct': size_increase,
+                'size_increase_pct': min_size_increase_pct,
                 'lookback_bars': lookback_bars,
                 'min_size_increase_pct': min_size_increase_pct
             }
