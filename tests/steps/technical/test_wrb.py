@@ -5,6 +5,7 @@ import pytest
 
 from src.models.base import PriceLabel
 from src.models.strategy import StrategyExecutionContext, StrategyStep
+from src.steps.technical.range import _get_uptrend_wrb_series_range
 from src.steps.technical.wrb import (
     _get_bar_high_low_range,
     _is_bar_wider_than_lookback,
@@ -225,9 +226,6 @@ def test_get_bar_high_low_range_missing_columns():
 
 def test_get_bar_high_low_range_correct_index():
     """Test that _get_bar_high_low_range fetches the correct index from the DataFrame."""
-    from src.models.base import PriceLabel
-    from src.steps.technical.wrb import _get_bar_high_low_range
-
     indices = pd.date_range(start='2024-01-01', periods=3)
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 101, 102],
@@ -258,11 +256,6 @@ def test_get_bar_high_low_range_correct_index():
 
 def test_is_bar_wider_than_lookback_true():
     """Test that function detects a bar wider than lookback by required percentage."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.wrb import _is_bar_wider_than_lookback
-
     # Last bar is much wider
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 100, 100, 100],
@@ -272,15 +265,11 @@ def test_is_bar_wider_than_lookback_true():
     }, index=pd.date_range('2024-01-01', periods=4))
     idx = price_data.index[-1]
     is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5)  # 50% = 0.5
-    assert is_wide == True
+    assert is_wide
 
 
 def test_is_bar_wider_than_lookback_false():
     """Test that function detects a bar NOT wider than lookback by required percentage."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.wrb import _is_bar_wider_than_lookback
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 100, 100, 100],
         PriceLabel.HIGH: [105, 105, 105, 106],
@@ -289,14 +278,11 @@ def test_is_bar_wider_than_lookback_false():
     }, index=pd.date_range('2024-01-01', periods=4))
     idx = price_data.index[-1]
     is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5)  # 50% = 0.5
-    assert is_wide == False
+    assert not is_wide
 
 
 def test_is_bar_wider_than_lookback_zero_division():
     """Test that ZeroDivisionError is raised if lookback bars have zero size."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 100, 100, 100],
         PriceLabel.HIGH: [100, 100, 100, 120],
@@ -304,16 +290,12 @@ def test_is_bar_wider_than_lookback_zero_division():
         PriceLabel.CLOSE: [100, 100, 100, 110],
     }, index=pd.date_range('2024-01-01', periods=4))
     idx = price_data.index[-1]
-    import pytest
     with pytest.raises(ZeroDivisionError):
         _is_bar_wider_than_lookback(price_data, idx, 3, 50.0)
 
 
 def test_is_bar_wider_than_lookback_empty_lookback():
     """Test that function returns False if lookback is empty."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100],
         PriceLabel.HIGH: [105],
@@ -322,32 +304,23 @@ def test_is_bar_wider_than_lookback_empty_lookback():
     }, index=pd.date_range('2024-01-01', periods=1))
     idx = price_data.index[0]
     is_wide = _is_bar_wider_than_lookback(price_data, idx, 1, 0.5)  # 50% = 0.5
-    assert is_wide == False
+    assert not is_wide
 
 
 def test_is_bar_wider_than_lookback_index_error():
     """Test that KeyError is raised if current_bar_index is not in the DataFrame index."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 100, 100],
         PriceLabel.HIGH: [105, 105, 105],
         PriceLabel.LOW: [95, 95, 95],
         PriceLabel.CLOSE: [103, 104, 105],
     }, index=pd.date_range('2024-01-01', periods=3))
-    import pytest
     with pytest.raises(KeyError):
         _is_bar_wider_than_lookback(price_data, pd.Timestamp('2099-01-01'), 2, 50.0)
 
 
 def test_is_bar_wider_than_lookback_max_method():
     """Test that function detects a bar wider than max lookback by required percentage."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.wrb import _is_bar_wider_than_lookback
-
     # Last bar is wider than max of lookback
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 100, 100, 100],
@@ -357,16 +330,11 @@ def test_is_bar_wider_than_lookback_max_method():
     }, index=pd.date_range('2024-01-01', periods=4))
     idx = price_data.index[-1]
     is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5, comparison_method="max")  # 50% = 0.5
-    assert is_wide == True
+    assert is_wide
 
 
 def test_is_bar_wider_than_lookback_avg_method():
     """Test that function detects a bar wider than average lookback by required percentage."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.wrb import _is_bar_wider_than_lookback
-
     # Last bar is wider than average of lookback
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 100, 100, 100],
@@ -376,16 +344,11 @@ def test_is_bar_wider_than_lookback_avg_method():
     }, index=pd.date_range('2024-01-01', periods=4))
     idx = price_data.index[-1]
     is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5, comparison_method="avg")  # 50% = 0.5
-    assert is_wide == True
+    assert is_wide
 
 
 def test_is_bar_wider_than_lookback_invalid_method():
     """Test that function raises ValueError for invalid comparison method."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.wrb import _is_bar_wider_than_lookback
-
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 100, 100],
         PriceLabel.HIGH: [105, 105, 105],
@@ -403,11 +366,6 @@ def test_is_bar_wider_than_lookback_invalid_method():
 
 def test_get_uptrend_wrb_series_range_single_bar():
     """Test that function returns correct range for a single bar."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.range import _get_uptrend_wrb_series_range
-
     # Single bar with high=110, low=90
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100],
@@ -425,11 +383,6 @@ def test_get_uptrend_wrb_series_range_single_bar():
 
 def test_get_uptrend_wrb_series_range_multiple_bars():
     """Test that function correctly identifies a series of bars in an uptrend."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.range import _get_uptrend_wrb_series_range
-
     # Series of bars where each high is higher than previous
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 102, 104, 106],
@@ -448,11 +401,6 @@ def test_get_uptrend_wrb_series_range_multiple_bars():
 
 def test_get_uptrend_wrb_series_range_break_in_series():
     """Test that function stops when trend breaks."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.range import _get_uptrend_wrb_series_range
-
     # Series where third bar breaks the trend
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 102, 104, 106],
@@ -471,11 +419,6 @@ def test_get_uptrend_wrb_series_range_break_in_series():
 
 def test_get_uptrend_wrb_series_range_invalid_index():
     """Test that function raises IndexError for invalid index."""
-    import pandas as pd
-
-    from src.models.base import PriceLabel
-    from src.steps.technical.range import _get_uptrend_wrb_series_range
-
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100],
         PriceLabel.HIGH: [110],
@@ -489,10 +432,6 @@ def test_get_uptrend_wrb_series_range_invalid_index():
 
 def test_get_uptrend_wrb_series_range_missing_columns():
     """Test that function raises KeyError for missing price columns."""
-    import pandas as pd
-
-    from src.steps.technical.range import _get_uptrend_wrb_series_range
-
     price_data = pd.DataFrame({
         'invalid': [1, 2, 3],
     }, index=pd.date_range('2024-01-01', periods=3))
