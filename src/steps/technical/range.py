@@ -60,6 +60,49 @@ def _get_bar_size(
     return bar[PriceLabel.HIGH] - bar[PriceLabel.LOW]
 
 
+def _get_uptrend_wrb_series_range(
+    data: pd.DataFrame,
+    current_bar_index: pd.Timestamp
+) -> tuple[float, list[pd.Timestamp]]:
+    """Calculate the range of a wide range bar series in an uptrend.
+    
+    A wide range bar series in an uptrend is defined as consecutive bars where:
+    1. Each bar's high is higher than the previous bar's high
+    2. The close of the current bar is higher than the previous high
+    
+    Args:
+        data: Price data
+        current_bar_index: Datetime index of the current bar
+        
+    Returns:
+        tuple[float, list[pd.Timestamp]]: (high-low range of the series, list of indices in the series)
+        
+    Raises:
+        IndexError: If current_bar_index is not in the DataFrame index
+        KeyError: If required price columns are missing
+    """
+    try:
+        current_idx = data.index.get_loc(current_bar_index)
+    except KeyError:
+        raise IndexError(f"Current bar index {current_bar_index} not found in data")
+    
+    wrb_series_indices = [data.index[current_idx]]
+    for i in range(current_idx, 0, -1):
+        curr_bar = data.iloc[i]
+        prev_bar = data.iloc[i-1]
+        prev_idx = data.index[i-1]
+        if curr_bar[PriceLabel.HIGH] > prev_bar[PriceLabel.HIGH] and curr_bar[PriceLabel.CLOSE] >= prev_bar[PriceLabel.HIGH]:
+            wrb_series_indices.append(prev_idx)
+        else:
+            break
+    series_bars = data.loc[wrb_series_indices]
+    series_high = series_bars[PriceLabel.HIGH].max()
+    series_low = series_bars[PriceLabel.LOW].min()
+    range_size = float(series_high - series_low)
+    wrb_series_indices = sorted(wrb_series_indices)
+    return range_size, wrb_series_indices
+
+
 def _is_bar_wider_than_lookback(
     data: pd.DataFrame,
     current_bar_index: pd.Timestamp,

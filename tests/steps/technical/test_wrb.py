@@ -398,3 +398,106 @@ def test_is_bar_wider_than_lookback_invalid_method():
         _is_bar_wider_than_lookback(price_data, idx, 2, 0.5, comparison_method="invalid")
 
 # endregion _is_bar_wider_than_lookback
+
+# region: _get_uptrend_wrb_series_range
+
+def test_get_uptrend_wrb_series_range_single_bar():
+    """Test that function returns correct range for a single bar."""
+    import pandas as pd
+
+    from src.models.base import PriceLabel
+    from src.steps.technical.range import _get_uptrend_wrb_series_range
+
+    # Single bar with high=110, low=90
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100],
+        PriceLabel.HIGH: [110],
+        PriceLabel.LOW: [90],
+        PriceLabel.CLOSE: [105],
+    }, index=pd.date_range('2024-01-01', periods=1))
+    
+    idx = price_data.index[0]
+    range_size, indices = _get_uptrend_wrb_series_range(price_data, idx)
+    
+    assert range_size == 20  # 110 - 90
+    assert indices == [idx]
+
+
+def test_get_uptrend_wrb_series_range_multiple_bars():
+    """Test that function correctly identifies a series of bars in an uptrend."""
+    import pandas as pd
+
+    from src.models.base import PriceLabel
+    from src.steps.technical.range import _get_uptrend_wrb_series_range
+
+    # Series of bars where each high is higher than previous
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100, 102, 104, 106],
+        PriceLabel.HIGH: [105, 107, 109, 111],  # Strictly increasing highs
+        PriceLabel.LOW: [95, 97, 99, 101],
+        PriceLabel.CLOSE: [103, 105, 107, 109],
+    }, index=pd.date_range('2024-01-01', periods=4))
+    
+    idx = price_data.index[-1]  # Last bar
+    range_size, indices = _get_uptrend_wrb_series_range(price_data, idx)
+    
+    assert range_size == 16  # Highest high (111) - Lowest low (95)
+    assert len(indices) == 4  # All 4 bars should be included
+    assert indices == list(price_data.index)
+
+
+def test_get_uptrend_wrb_series_range_break_in_series():
+    """Test that function stops when trend breaks."""
+    import pandas as pd
+
+    from src.models.base import PriceLabel
+    from src.steps.technical.range import _get_uptrend_wrb_series_range
+
+    # Series where third bar breaks the trend
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100, 102, 104, 106],
+        PriceLabel.HIGH: [105, 107, 106, 108],  # Third bar's high is lower than previous
+        PriceLabel.LOW: [95, 97, 99, 101],
+        PriceLabel.CLOSE: [103, 105, 107, 109],
+    }, index=pd.date_range('2024-01-01', periods=4))
+    
+    idx = price_data.index[-1]  # Last bar
+    range_size, indices = _get_uptrend_wrb_series_range(price_data, idx)
+    
+    assert range_size == 9  # Highest high (108) - Lowest low (99)
+    assert len(indices) == 2  # Only last two bars should be included
+    assert indices == list(price_data.index[-2:])
+
+
+def test_get_uptrend_wrb_series_range_invalid_index():
+    """Test that function raises IndexError for invalid index."""
+    import pandas as pd
+
+    from src.models.base import PriceLabel
+    from src.steps.technical.range import _get_uptrend_wrb_series_range
+
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100],
+        PriceLabel.HIGH: [110],
+        PriceLabel.LOW: [90],
+        PriceLabel.CLOSE: [105],
+    }, index=pd.date_range('2024-01-01', periods=1))
+    
+    with pytest.raises(IndexError):
+        _get_uptrend_wrb_series_range(price_data, pd.Timestamp('2099-01-01'))
+
+
+def test_get_uptrend_wrb_series_range_missing_columns():
+    """Test that function raises KeyError for missing price columns."""
+    import pandas as pd
+
+    from src.steps.technical.range import _get_uptrend_wrb_series_range
+
+    price_data = pd.DataFrame({
+        'invalid': [1, 2, 3],
+    }, index=pd.date_range('2024-01-01', periods=3))
+    
+    with pytest.raises(KeyError):
+        _get_uptrend_wrb_series_range(price_data, price_data.index[0])
+
+# endregion _get_uptrend_wrb_series_range
