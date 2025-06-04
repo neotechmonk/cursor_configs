@@ -5,7 +5,7 @@ import pytest
 
 from src.models.base import PriceLabel
 from src.models.strategy import StrategyExecutionContext, StrategyStep
-from src.steps.technical.range import _get_uptrend_wrb_series_range
+from src.steps.technical.range import _get_multi_bar_range
 from src.steps.technical.wrb import (
     _get_bar_high_low_range,
     _is_bar_wider_than_lookback,
@@ -362,9 +362,10 @@ def test_is_bar_wider_than_lookback_invalid_method():
 
 # endregion _is_bar_wider_than_lookback
 
-# region: _get_uptrend_wrb_series_range
+# region: _get_wrb_series_range
 
-def test_get_uptrend_wrb_series_range_single_bar():
+
+def test_wrb_series_range_single_bar():
     """Test that function returns correct range for a single bar."""
     # Single bar with high=110, low=90
     price_data = pd.DataFrame({
@@ -375,13 +376,13 @@ def test_get_uptrend_wrb_series_range_single_bar():
     }, index=pd.date_range('2024-01-01', periods=1))
     
     idx = price_data.index[0]
-    range_size, indices = _get_uptrend_wrb_series_range(price_data, idx)
+    range_size, indices = _get_multi_bar_range(price_data, idx)
     
     assert range_size == 20  # 110 - 90
     assert indices == [idx]
 
 
-def test_get_uptrend_wrb_series_range_multiple_bars():
+def test_wrb_series_range_uptrending_multiple_bars():
     """Test that function correctly identifies a series of bars in an uptrend."""
     # Series of bars where each high is higher than previous
     price_data = pd.DataFrame({
@@ -392,15 +393,15 @@ def test_get_uptrend_wrb_series_range_multiple_bars():
     }, index=pd.date_range('2024-01-01', periods=4))
     
     idx = price_data.index[-1]  # Last bar
-    range_size, indices = _get_uptrend_wrb_series_range(price_data, idx)
+    range_size, indices = _get_multi_bar_range(price_data, idx)
     
     assert range_size == 16  # Highest high (111) - Lowest low (95)
     assert len(indices) == 4  # All 4 bars should be included
     assert indices == list(price_data.index)
 
 
-def test_get_uptrend_wrb_series_range_break_in_series():
-    """Test that function stops when trend breaks."""
+def test_wrb_series_range_uptrending_break_in_series():
+    """Test that function stops when uptrend breaks."""
     # Series where third bar breaks the trend
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 102, 104, 106],
@@ -410,14 +411,14 @@ def test_get_uptrend_wrb_series_range_break_in_series():
     }, index=pd.date_range('2024-01-01', periods=4))
     
     idx = price_data.index[-1]  # Last bar
-    range_size, indices = _get_uptrend_wrb_series_range(price_data, idx)
+    range_size, indices = _get_multi_bar_range(price_data, idx)
     
     assert range_size == 9  # Highest high (108) - Lowest low (99)
     assert len(indices) == 2  # Only last two bars should be included
     assert indices == list(price_data.index[-2:])
 
 
-def test_get_uptrend_wrb_series_range_invalid_index():
+def test_wrb_series_range_invalid_index():
     """Test that function raises IndexError for invalid index."""
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100],
@@ -427,16 +428,52 @@ def test_get_uptrend_wrb_series_range_invalid_index():
     }, index=pd.date_range('2024-01-01', periods=1))
     
     with pytest.raises(IndexError):
-        _get_uptrend_wrb_series_range(price_data, pd.Timestamp('2099-01-01'))
+        _get_multi_bar_range(price_data, pd.Timestamp('2099-01-01'))
 
 
-def test_get_uptrend_wrb_series_range_missing_columns():
+def test_wrb_series_range_missing_columns():
     """Test that function raises KeyError for missing price columns."""
     price_data = pd.DataFrame({
         'invalid': [1, 2, 3],
     }, index=pd.date_range('2024-01-01', periods=3))
     
     with pytest.raises(KeyError):
-        _get_uptrend_wrb_series_range(price_data, price_data.index[0])
+        _get_multi_bar_range(price_data, price_data.index[0])
 
-# endregion _get_uptrend_wrb_series_range
+# endregion _get_wrb_series_range
+
+
+def test_wrb_series_range_downtrending_multiple_bars():
+    """Test that function correctly identifies a series of bars in a downtrend."""
+    # Series of bars where each low is lower than previous
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [106, 104, 102, 100],
+        PriceLabel.HIGH: [111, 109, 107, 105],
+        PriceLabel.LOW: [101, 99, 97, 95],  # Strictly decreasing lows
+        PriceLabel.CLOSE: [103, 101, 99, 97],  # Closes below previous lows
+    }, index=pd.date_range('2024-01-01', periods=4))
+    
+    idx = price_data.index[-1]  # Last bar
+    range_size, indices = _get_multi_bar_range(price_data, idx)
+    
+    assert range_size == 16  # Highest high (111) - Lowest low (95)
+    assert len(indices) == 4  # All 4 bars should be included
+    assert indices == list(price_data.index)
+
+
+def test_wrb_series_range_mixed_trends():
+    """Test that function correctly identifies a series of bars with mixed trends."""
+    # Series of bars that alternate between uptrend and downtrend
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100, 102, 98, 96],
+        PriceLabel.HIGH: [105, 107, 103, 101],  # First two bars uptrend, last two downtrend
+        PriceLabel.LOW: [95, 97, 93, 91],
+        PriceLabel.CLOSE: [103, 107, 93, 91],  # Closes above previous high for uptrend, below previous low for downtrend
+    }, index=pd.date_range('2024-01-01', periods=4))
+    
+    idx = price_data.index[-1]  # Last bar
+    range_size, indices = _get_multi_bar_range(price_data, idx)
+    
+    assert range_size == 16  # Highest high (107) - Lowest low (91)
+    assert len(indices) == 4  # All 4 bars should be included
+    assert indices == list(price_data.index)

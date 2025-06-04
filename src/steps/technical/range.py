@@ -39,8 +39,8 @@ def _validate_lookup_bars(
     return True
 
 
-def _get_bar_size(
-    data: pd.DataFrame,
+def _get_single_bar_range(
+    price_data: pd.DataFrame,
     bar_index: int
 ) -> float:
     """Calculate the size of a single bar.
@@ -56,12 +56,12 @@ def _get_bar_size(
         IndexError: If bar_index is out of bounds
         KeyError: If required price columns are missing
     """
-    bar = data.iloc[bar_index]
+    bar = price_data.iloc[bar_index]
     return bar[PriceLabel.HIGH] - bar[PriceLabel.LOW]
 
 
-def _get_wrb_series_range(
-    data: pd.DataFrame,
+def _get_multi_bar_range(
+    price_data: pd.DataFrame,
     current_bar_index: pd.Timestamp,
 ) -> tuple[float, list[pd.Timestamp]]:
     """Calculate the range of a wide range bar series in a trend.
@@ -86,24 +86,26 @@ def _get_wrb_series_range(
         IndexError: If current_bar_index is not in the DataFrame index
         KeyError: If required price columns are missing
     """
-    try:
-        current_idx = data.index.get_loc(current_bar_index)
-    except KeyError:
+    if current_bar_index not in price_data.index:
         raise IndexError(f"Current bar index {current_bar_index} not found in data")
+
+    current_idx = price_data.index.get_loc(current_bar_index)
     
-    wrb_series_indices = [data.index[current_idx]]
+    wrb_series_indices = [price_data.index[current_idx]]
     for i in range(current_idx, 0, -1):
-        curr_bar = data.iloc[i]
-        prev_bar = data.iloc[i-1]
-        prev_idx = data.index[i-1]
+        curr_bar = price_data.iloc[i]
+        prev_bar = price_data.iloc[i-1]
+        prev_idx = price_data.index[i-1]
         
         # Define trend conditions using all() for consistency
-        # m
+        # in an uptrend, WRB must make a new high and close above the previous high
+        
         is_uptrend_qualified_wrb = all([
             curr_bar[PriceLabel.HIGH] > prev_bar[PriceLabel.HIGH],
             curr_bar[PriceLabel.CLOSE] >= prev_bar[PriceLabel.HIGH]
         ])
-        
+
+        # in a downtrend, WRB must make a new low and close below the previous low
         is_downtrend_qualified_wrb = all([
             curr_bar[PriceLabel.LOW] < prev_bar[PriceLabel.LOW],
             curr_bar[PriceLabel.CLOSE] <= prev_bar[PriceLabel.LOW]
@@ -114,10 +116,9 @@ def _get_wrb_series_range(
         else:
             break
                 
-    series_bars = data.loc[wrb_series_indices]
-    range_size = float(series_bars[PriceLabel.HIGH].max() - series_bars[PriceLabel.LOW].min())
-    wrb_series_indices = sorted(wrb_series_indices)
-    return range_size, wrb_series_indices
+    wrb_series = price_data.loc[wrb_series_indices]
+    wrb_range = float(wrb_series[PriceLabel.HIGH].max() - wrb_series[PriceLabel.LOW].min())
+    return wrb_range, sorted(wrb_series_indices)
 
 
 def _is_bar_wider_than_lookback(
@@ -163,7 +164,7 @@ def _is_bar_wider_than_lookback(
             return False
 
         lookback_ranges = [
-            _get_bar_size(data, idx)
+            _get_single_bar_range(data, idx)
             for idx in lookback_indices
         ]
 
