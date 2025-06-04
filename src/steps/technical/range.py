@@ -98,6 +98,7 @@ def _get_wrb_series_range(
         prev_idx = data.index[i-1]
         
         # Define trend conditions using all() for consistency
+        # m
         is_uptrend_qualified_wrb = all([
             curr_bar[PriceLabel.HIGH] > prev_bar[PriceLabel.HIGH],
             curr_bar[PriceLabel.CLOSE] >= prev_bar[PriceLabel.HIGH]
