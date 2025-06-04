@@ -60,15 +60,20 @@ def _get_bar_size(
     return bar[PriceLabel.HIGH] - bar[PriceLabel.LOW]
 
 
-def _get_uptrend_wrb_series_range(
+def _get_wrb_series_range(
     data: pd.DataFrame,
-    current_bar_index: pd.Timestamp
+    current_bar_index: pd.Timestamp,
 ) -> tuple[float, list[pd.Timestamp]]:
-    """Calculate the range of a wide range bar series in an uptrend.
+    """Calculate the range of a wide range bar series in a trend.
     
-    A wide range bar series in an uptrend is defined as consecutive bars where:
+    A wide range bar series is defined as consecutive bars where either:
+    For uptrend:
     1. Each bar's high is higher than the previous bar's high
     2. The close of the current bar is higher than the previous high
+    
+    OR for downtrend:
+    1. Each bar's low is lower than the previous bar's low
+    2. The close of the current bar is lower than the previous low
     
     Args:
         data: Price data
@@ -91,14 +96,25 @@ def _get_uptrend_wrb_series_range(
         curr_bar = data.iloc[i]
         prev_bar = data.iloc[i-1]
         prev_idx = data.index[i-1]
-        if curr_bar[PriceLabel.HIGH] > prev_bar[PriceLabel.HIGH] and curr_bar[PriceLabel.CLOSE] >= prev_bar[PriceLabel.HIGH]:
+        
+        # Define trend conditions using all() for consistency
+        is_uptrend_qualified_wrb = all([
+            curr_bar[PriceLabel.HIGH] > prev_bar[PriceLabel.HIGH],
+            curr_bar[PriceLabel.CLOSE] >= prev_bar[PriceLabel.HIGH]
+        ])
+        
+        is_downtrend_qualified_wrb = all([
+            curr_bar[PriceLabel.LOW] < prev_bar[PriceLabel.LOW],
+            curr_bar[PriceLabel.CLOSE] <= prev_bar[PriceLabel.LOW]
+        ])
+        
+        if is_uptrend_qualified_wrb or is_downtrend_qualified_wrb:
             wrb_series_indices.append(prev_idx)
         else:
             break
+                
     series_bars = data.loc[wrb_series_indices]
-    series_high = series_bars[PriceLabel.HIGH].max()
-    series_low = series_bars[PriceLabel.LOW].min()
-    range_size = float(series_high - series_low)
+    range_size = float(series_bars[PriceLabel.HIGH].max() - series_bars[PriceLabel.LOW].min())
     wrb_series_indices = sorted(wrb_series_indices)
     return range_size, wrb_series_indices
 
