@@ -11,11 +11,14 @@ from src.steps.technical.wrb import _get_multi_bar_range
 @pytest.mark.parametrize(
     "open, high, low, close, expected_range, description",
     [
-        (100, 110, 95, 111, 15, "single_bar_uptrend_wrb"),      # single bar: high (110) > prev high (106) AND close (111) >= prev high (106)
-        (110, 106, 85, 95, 21, "single_bar_downtrend_wrb"),     # single bar: low (85) < prev low (96) AND close (95) <= prev low (96)
-        (110, 115, 85, 111, 30, "single_bar_uptrend_wrb"),      # single bar: high (115) > prev high (106) AND close (111) >= prev high (106)
-        (110, 106, 90, 95, 16, "single_bar_downtrend_wrb"),     # single bar: low (90) < prev low (96) AND close (95) <= prev low (96)
-        (110, 106, 85, 96, 21, "single_bar_downtrend_wrb"),     # single bar: low (85) < prev low (96) AND close (96) <= prev low (96)
+        # Uptrend WRB cases
+        (100, 110, 97, 111, 13, "single_bar_uptrend_wrb"),      # high (110) > prev high (106) AND low (97) > prev low (96) AND close (111) >= prev high (106)
+        (110, 115, 97, 111, 18, "single_bar_uptrend_wrb"),      # high (115) > prev high (106) AND low (97) > prev low (96) AND close (111) >= prev high (106)
+        
+        # Downtrend WRB cases
+        (110, 105, 85, 95, 20, "single_bar_downtrend_wrb"),     # low (85) < prev low (96) AND high (105) < prev high (106) AND close (95) <= prev low (96)
+        (110, 105, 90, 95, 15, "single_bar_downtrend_wrb"),     # low (90) < prev low (96) AND high (105) < prev high (106) AND close (95) <= prev low (96)
+        (110, 105, 85, 96, 20, "single_bar_downtrend_wrb"),     # low (85) < prev low (96) AND high (105) < prev high (106) AND close (96) <= prev low (96)
     ]
 )
 def test_get_multi_bar_range_single_bar_wrb(open, high, low, close, expected_range, description):
@@ -24,10 +27,12 @@ def test_get_multi_bar_range_single_bar_wrb(open, high, low, close, expected_ran
     These are cases where a single bar fully qualifies as a WRB:
     - Uptrend WRB:
       ✅ High > previous high
+      ✅ Low > previous low
       ✅ Close >= previous high
     
     - Downtrend WRB:
       ✅ Low < previous low
+      ✅ High < previous high
       ✅ Close <= previous low
 
     Note: A bar cannot be both uptrend and downtrend WRB at the same time.
@@ -58,22 +63,22 @@ def test_get_multi_bar_range_single_bar_wrb(open, high, low, close, expected_ran
             pd.DataFrame({
                 PriceLabel.OPEN: [100, 102, 104, 106],
                 PriceLabel.HIGH: [105, 107, 109, 111],  # Strictly increasing highs
-                PriceLabel.LOW: [95, 97, 99, 101],
-                PriceLabel.CLOSE: [103, 105, 107, 110],  # Closes above or equals previous highs
+                PriceLabel.LOW: [95, 97, 99, 101],      # Strictly increasing lows
+                PriceLabel.CLOSE: [103, 105, 107, 110],  # Closes above previous highs
             }, index=pd.date_range('2024-01-01', periods=4)),
             14,  # Highest high (111) - Lowest low (97) = 14
-            pd.date_range('2024-01-02', periods=3),  # Last 3 bars should be included (excluding first bar)
+            pd.date_range('2024-01-02', periods=3),  # All bars in series should be included (except first)
             "uptrend_series_wrb"
         ),
         (
             pd.DataFrame({
                 PriceLabel.OPEN: [106, 104, 102, 100],
-                PriceLabel.HIGH: [111, 109, 107, 105],
-                PriceLabel.LOW: [101, 99, 97, 95],  # Strictly decreasing lows
-                PriceLabel.CLOSE: [103, 101, 99, 95],  # Closes below or equals previous lows
+                PriceLabel.HIGH: [111, 109, 107, 105],  # Strictly decreasing highs
+                PriceLabel.LOW: [101, 99, 97, 95],      # Strictly decreasing lows
+                PriceLabel.CLOSE: [103, 101, 99, 95],    # Closes below previous lows
             }, index=pd.date_range('2024-01-01', periods=4)),
             14,  # Highest high (109) - Lowest low (95) = 14
-            pd.date_range('2024-01-02', periods=3),  # Last 3 bars should be included (excluding first bar)
+            pd.date_range('2024-01-02', periods=3),  # All bars in series should be included (except first)
             "downtrend_series_wrb"
         ),
     ]
@@ -84,10 +89,12 @@ def test_get_multi_bar_range_series_wrb(price_data, expected_range, expected_ind
     These are cases where multiple consecutive bars form a WRB series:
     - Uptrend series WRB:
       ✅ Each bar's high > previous high
+      ✅ Each bar's low > previous low
       ✅ Each bar's close > previous high
     
     - Downtrend series WRB:
       ✅ Each bar's low < previous low
+      ✅ Each bar's high < previous high
       ✅ Each bar's close < previous low
     """
     # Test the last bar
@@ -185,5 +192,100 @@ def test_get_multi_bar_range_non_wrb_cases_due_to_new_extreme_condition_unmet(op
     # 2. Range size should be nan
     assert wrb_indices == [], f"Failed for {description}: expected no WRB indices, got {wrb_indices}"
     assert str(range_size) == 'nan', f"Failed for {description}: expected nan range size, got {range_size}"
+
+
+@pytest.mark.parametrize(
+    "open, high, low, close, description",
+    [
+        (100, 110, 95, 105, "first_bar"),  # First bar should never be WRB regardless of values
+    ]
+)
+def test_get_multi_bar_range_first_bar(open, high, low, close, description):
+    """Test _get_multi_bar_range for first bar edge case.
+    
+    First bar should never be considered a WRB because:
+    - No previous bar to compare against
+    - Cannot establish trend direction
+    """
+    # Create single bar of data
+    indices = pd.date_range('2024-01-01', periods=1)
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [open],
+        PriceLabel.HIGH: [high],
+        PriceLabel.LOW: [low],
+        PriceLabel.CLOSE: [close],
+    }, index=indices)
+
+    range_size, wrb_indices = _get_multi_bar_range(price_data, indices[0])
+    assert wrb_indices == [], f"Failed for {description}: expected no WRB indices for first bar"
+    assert str(range_size) == 'nan', f"Failed for {description}: expected nan range size for first bar"
+
+
+@pytest.mark.parametrize(
+    "open, high, low, close, description",
+    [
+        (100, 106, 96, 103, "equal_high"),      # high = prev high (106)
+        (100, 105, 96, 103, "equal_low"),       # low = prev low (96)
+        (100, 106, 96, 103, "equal_high_low"),  # both high and low equal to prev
+    ]
+)
+def test_get_multi_bar_range_equal_extremes(open, high, low, close, description):
+    """Test _get_multi_bar_range for cases where current bar's extremes equal previous bar's.
+    
+    These cases should not be considered WRBs because:
+    - Equal high means no higher high
+    - Equal low means no lower low
+    - Cannot establish trend direction
+    """
+    indices = pd.date_range('2024-01-01', periods=3)
+    price_data = pd.DataFrame({
+        PriceLabel.OPEN: [100, 101, open],
+        PriceLabel.HIGH: [105, 106, high],
+        PriceLabel.LOW: [95, 96, low],
+        PriceLabel.CLOSE: [103, 104, close],
+    }, index=indices)
+
+    range_size, wrb_indices = _get_multi_bar_range(price_data, indices[2])
+    assert wrb_indices == [], f"Failed for {description}: expected no WRB indices for equal extremes"
+    assert str(range_size) == 'nan', f"Failed for {description}: expected nan range size for equal extremes"
+
+
+@pytest.mark.parametrize(
+    "price_data, description",
+    [
+        (
+            pd.DataFrame({
+                PriceLabel.OPEN: [100, 101, 102, 103],
+                PriceLabel.HIGH: [105, 107, 109, 111],  # Strictly increasing highs
+                PriceLabel.LOW: [95, 97, 99, 101],      # Strictly increasing lows
+                PriceLabel.CLOSE: [103, 105, 107, 110],  # Closes above previous highs
+            }, index=pd.date_range('2024-01-01', periods=4)),
+            "series_with_increasing_lows"  # Valid uptrend WRB with increasing lows
+        ),
+        (
+            pd.DataFrame({
+                PriceLabel.OPEN: [103, 102, 101, 100],
+                PriceLabel.HIGH: [111, 109, 107, 105],  # Strictly decreasing highs
+                PriceLabel.LOW: [101, 99, 97, 95],      # Strictly decreasing lows
+                PriceLabel.CLOSE: [100, 99, 98, 95],    # Closes below previous lows
+            }, index=pd.date_range('2024-01-01', periods=4)),
+            "series_with_decreasing_highs"  # Valid downtrend WRB with decreasing highs
+        ),
+    ]
+)
+def test_get_multi_bar_range_series_edge_cases(price_data, description):
+    """Test _get_multi_bar_range for series edge cases.
+    
+    These cases test that:
+    - Uptrend WRB series can have increasing lows (not just highs)
+    - Downtrend WRB series can have decreasing highs (not just lows)
+    
+    Both cases should be valid because:
+    - Uptrend: high > prev high AND low > prev low AND close >= prev high
+    - Downtrend: low < prev low AND high < prev high AND close <= prev low
+    """
+    range_size, wrb_indices = _get_multi_bar_range(price_data, price_data.index[-1])
+    assert len(wrb_indices) > 0, f"Failed for {description}: expected WRB indices for valid series"
+    assert not str(range_size) == 'nan', f"Failed for {description}: expected valid range size for valid series"
 
 # endregion 
