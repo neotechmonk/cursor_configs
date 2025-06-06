@@ -129,12 +129,12 @@ def _get_multi_bar_range(
         #                   curr_bar[PriceLabel.CLOSE] <= prev_bar[PriceLabel.LOW]])
         
         is_uptrend = all([curr_bar[PriceLabel.HIGH] > prev_bar[PriceLabel.HIGH],\
-                          curr_bar[PriceLabel.LOW] >prev_bar[PriceLabel.LOW],\
+                          curr_bar[PriceLabel.LOW] > prev_bar[PriceLabel.LOW],\
                           curr_bar[PriceLabel.CLOSE] >= prev_bar[PriceLabel.HIGH]])
         
         is_downtrend = all([curr_bar[PriceLabel.LOW] < prev_bar[PriceLabel.LOW],\
                             curr_bar[PriceLabel.HIGH] < prev_bar[PriceLabel.HIGH],\
-                          curr_bar[PriceLabel.CLOSE] < prev_bar[PriceLabel.LOW]])
+                            curr_bar[PriceLabel.CLOSE] <= prev_bar[PriceLabel.LOW]])
         
         # both uptrend and downtrend cannot happen at the same time : unrealistic in real market
         if is_uptrend and is_downtrend:
