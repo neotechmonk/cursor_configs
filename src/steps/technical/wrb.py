@@ -221,102 +221,105 @@ def compare_bar_width(
 
 
 def detect_wide_range_bar(
-    data: pd.DataFrame,
+    price_data: pd.DataFrame,
     context: StrategyExecutionContext,
-    config: Dict[str, Any]
+    config: Dict[str, Any],
+    success_result_schema: Dict[str, Any] = {"strategy_wrb_detected_wide_range_bar": False}
 ) -> StrategStepEvaluationResult:
     """Detect if the latest bar is significantly wider than recent bars.
     
     Args:
-        data: Price data to analyze
+        price_data: 
         context: Current strategy execution context
         config: Configuration parameters including:
             - lookback_bars: Number of bars to look back (default: 20)
-            - min_size_increase_pct: Minimum percentage increase required (default: 50.0)
+            - min_size_increase_dec: Minimum size increase as decimal (default: 0.50)
+                For example, 0.50 means the WRB must be 50% wider than the reference value
+        success_result_schema: Schema for the success result output.
+            Can contain additional keys beyond strategy_wrb_detected_wide_range_bar
             
     Returns:
-        Result containing wide range bar detection information:
-        - is_wide_range: Whether the current bar is a wide range bar
-        - size_increase_pct: Percentage increase in size compared to average
-        - lookback_bars: Number of bars used for comparison
-        - min_size_increase_pct: Minimum percentage increase required
+        Result containing wide range bar detection information
+        - strategy_wrb_detected_wide_range_bar: Whether the current bar is a wide range bar
     """
+    step = context.current_step #FIX : step is not defined in the context. Fix when strategy runner is refactored
     lookback_bars = config.get('lookback_bars', 20)
-    min_size_increase_pct = config.get('min_size_increase_pct', 50.0)
+    min_size_increase_dec = config.get('min_size_increase_dec', 0.50)
     
-    # Step 1. Validate sufficient lookback bars
-    is_valid = validate_lookback_period(data, lookback_bars)
-    if not is_valid:
+    # Step 1. Validate lookback bars count
+    has_min_lookback_bar = validate_lookback_period(price_data, lookback_bars)
+    if not has_min_lookback_bar:
         return create_failure_result(
-            data=data,
-            step=context.current_step,
-            error_msg="Not enough bars for the lookback period"
+            data=price_data,
+            step=step,
+            error_msg="Insufficient lookback bars in the price data"
         )
     
     try:
         # Step 2. Identify WRB if present
         # Get the latest bar index
-        current_bar_index = data.index[-1]
+        current_bar_index = price_data.index[-1]
         
         # Get WRB range and indices
-        wrb_range, wrb_indices = identify_wide_range_bar(data, current_bar_index)
+        wrb_range, wrb_indices = identify_wide_range_bar(price_data, current_bar_index)
         
         # If no WRB detected, return failure
         if not wrb_range or not wrb_indices:
-            return create_success_result(
-                data=data,
-                step=context.current_step,
-                step_output={
-                    'is_wide_range': False,
-                    'lookback_bars': lookback_bars,
-                    'min_size_increase_pct': min_size_increase_pct
-                }
+            return create_failure_result(
+                data=price_data,
+                step=step,
+                error_msg="No wide range bar detected in the price data"
             )
         
-        # Step 3. Get lookback ranges
-        current_pos = data.index.get_loc(current_bar_index)
+        # Step 3. Calculate lookback bar ranges (high-low)
+        current_pos = price_data.index.get_loc(current_bar_index)
         lookback_start_idx = current_pos - lookback_bars
-        lookback_indices = data.index[lookback_start_idx:current_pos]
+        lookback_indices = price_data.index[lookback_start_idx:current_pos]
         lookback_ranges = [
-            calculate_bar_range(data, idx)
+            calculate_bar_range(price_data, idx)
             for idx in lookback_indices
         ]
         
-        # Step 4. Check if WRB is wider than lookback
-        is_wider = compare_bar_width(
+        # Step 4. Check if WRB is wider than lookback 
+        is_wrb_gt_lookup_bars = compare_bar_width(
             wrb_range=wrb_range,
             lookback_ranges=lookback_ranges,
-            min_size_increase_pct=min_size_increase_pct
+            min_size_increase_pct=min_size_increase_dec
         )
         
-        if is_wider: 
-            return create_success_result(
-                data=data,
-                step=context.current_step,
-                step_output={
-                    'is_wide_range': is_wider,
-                    'lookback_bars': lookback_bars,
-                    'min_size_increase_pct': min_size_increase_pct
-                }
+        if not is_wrb_gt_lookup_bars:
+            return create_failure_result(
+                data=price_data,
+                step=step,
+                error_msg="WRB is not wider than lookback ranges"
             )
+        
+        # Default return  - happy path
+        success_result_schema.update({'strategy_wrb_detected_wide_range_bar': is_wrb_gt_lookup_bars})
+        
+        return create_success_result(
+            data=price_data,
+            step=step,
+            step_output=success_result_schema
+        )
     except (IndexError, KeyError) as e:
         return create_failure_result(
-            data=data,
-            step=context.current_step,
+            data=price_data,
+            step=step,
             error_msg="Invalid price data format or index",
             e=e
         )
     except ZeroDivisionError as e:
         return create_failure_result(
-            data=data,
-            step=context.current_step,
+            data=price_data,
+            step=step,
             error_msg="Cannot calculate size increase: average bar size is zero",
             e=e
         )
     except Exception as e:
         return create_failure_result(
-            data=data,
-            step=context.current_step,
+            data=price_data,
+            step=step,
             error_msg="Error detecting wide range bar",
             e=e
         ) 

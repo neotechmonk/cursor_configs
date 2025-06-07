@@ -12,7 +12,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.models.base import PriceLabel
 from src.models.strategy import StrategyExecutionContext, StrategyStep
 from src.steps.technical.wrb import detect_wide_range_bar
 
