@@ -59,6 +59,47 @@ def _validate_lookup_bars(
     return True
 
 
+def _calculate_lookup_reference_value(
+    ranges: list[float],
+    comparison_method: ComparisonMethod
+) -> float:
+    """Calculate a reference value from lookback bar ranges for comparison.
+    
+    This function calculates a single reference value (either maximum or average)
+    from a list of lookback bar ranges to be used for comparing against the current
+    bar's range. The reference value helps determine if the current bar is
+    significantly wider than recent bars.
+    
+    Args:
+        ranges: List of high-low ranges from lookback bars
+        comparison_method: Method to use for calculation ('max' or 'avg')
+        
+    Returns:
+        float: Reference value calculated using the comparison method
+        
+    Raises:
+        ValueError: If comparison_method is invalid or ranges is empty
+        ZeroDivisionError: If average calculation results in zero
+    """
+    if not ranges:
+        raise ValueError("No ranges provided")
+        
+    comparison_methods = {
+        "max": lambda x: max(x),
+        "avg": lambda x: sum(x) / len(x)
+    }
+    
+    if (method := comparison_method.lower().strip()) not in comparison_methods:
+        raise ValueError(f"Invalid comparison method: {comparison_method}. Must be 'max' or 'avg'")
+    
+    result = comparison_methods[method](ranges)
+    
+    if result == 0:
+        raise ZeroDivisionError("Reference size is zero")
+        
+    return result
+
+
 def _get_high_low_range_abs(
     price_data: pd.DataFrame,
     current_bar_index: pd.Timestamp,
@@ -182,16 +223,6 @@ def _is_bar_wider_than_lookback(
         return False
 
     # 3. Check if WRB satisfies the min growth percentage
-    # Calculate reference size based on comparison method
-    comparison_methods = {
-        "max": lambda x: max(x),
-        "avg": lambda x: sum(x) / len(x)
-    }
-    
-    # guard : unsupported comparison method
-    if (method := comparison_method.lower().strip()) not in comparison_methods:
-        raise ValueError(f"Invalid comparison method: {comparison_method}. Must be 'max' or 'avg'")
-    
     # Get the lookback period indices - look back from the current bar
     lookback_start_idx = current_pos - lookback_bars
     lookback_indices = data.index[lookback_start_idx:current_pos]
@@ -204,19 +235,19 @@ def _is_bar_wider_than_lookback(
     ]
     print(f"DEBUG: lookback_ranges={lookback_ranges}")
 
-    # Get the comparison function and calculate reference size
-    comp_result = comparison_methods[method](lookback_ranges)
-    print(f"DEBUG: comp_result={comp_result}")
+    try:
+        # Get reference value using comparison method
+        reference_value = _calculate_lookup_reference_value(lookback_ranges, comparison_method)
+        print(f"DEBUG: reference_value={reference_value}")
 
-    # guard : arithmetic error
-    if comp_result == 0:
-        raise ZeroDivisionError("Reference size is zero")
-    
-    size_increase = wrb_range/comp_result - 1
-    print(f"DEBUG: size_increase={size_increase}, min_size_increase_pct={min_size_increase_pct}")
-    print(f"DEBUG: Final result: {size_increase >= min_size_increase_pct}")
-    
-    return size_increase >= min_size_increase_pct
+        size_increase = wrb_range/reference_value - 1
+        print(f"DEBUG: size_increase={size_increase}, min_size_increase_pct={min_size_increase_pct}")
+        print(f"DEBUG: Final result: {size_increase >= min_size_increase_pct}")
+        
+        return size_increase >= min_size_increase_pct
+    except (ValueError, ZeroDivisionError) as e:
+        print(f"DEBUG: Error calculating reference value: {e}")
+        raise e
 
 
 def detect_wide_range_bar(
