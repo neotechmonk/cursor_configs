@@ -82,7 +82,7 @@ def _get_high_low_range_abs(
     return float(bar[PriceLabel.HIGH] - bar[PriceLabel.LOW])
 
 
-def _get_multi_bar_range(
+def _get_wide_range_bar(
     price_data: pd.DataFrame,
     current_bar_index: pd.Timestamp,
 ) -> tuple[float, list[pd.Timestamp]]:
@@ -91,11 +91,13 @@ def _get_multi_bar_range(
     A wide range bar series is defined as consecutive bars where either:
     For uptrend:
     1. Each bar's high is higher than the previous bar's high
-    2. The close of the current bar is higher than the previous high
+    2. Each bar's low is higher than the previous bar's low
+    3. Each bar's close is higher than the previous bar's high
     
     OR for downtrend:
     1. Each bar's low is lower than the previous bar's low
-    2. The close of the current bar is lower than the previous low
+    2. Each bar's high is lower than the previous bar's high
+    3. Each bar's close is lower than the previous bar's low
     
     Args:
         price_data: Price data
@@ -123,18 +125,13 @@ def _get_multi_bar_range(
         curr_idx = price_data.index[pos]
 
         # First determine if we're in an uptrend or downtrend
-        # is_uptrend = all([curr_bar[PriceLabel.HIGH] > prev_bar[PriceLabel.HIGH],\
-        #                   curr_bar[PriceLabel.CLOSE] >= prev_bar[PriceLabel.HIGH]])
-        # is_downtrend = all([curr_bar[PriceLabel.LOW] < prev_bar[PriceLabel.LOW],\
-        #                   curr_bar[PriceLabel.CLOSE] <= prev_bar[PriceLabel.LOW]])
-        
         is_uptrend = all([curr_bar[PriceLabel.HIGH] > prev_bar[PriceLabel.HIGH],\
                           curr_bar[PriceLabel.LOW] > prev_bar[PriceLabel.LOW],\
-                          curr_bar[PriceLabel.CLOSE] >= prev_bar[PriceLabel.HIGH]])
+                          curr_bar[PriceLabel.CLOSE] > prev_bar[PriceLabel.HIGH]])
         
         is_downtrend = all([curr_bar[PriceLabel.LOW] < prev_bar[PriceLabel.LOW],\
                             curr_bar[PriceLabel.HIGH] < prev_bar[PriceLabel.HIGH],\
-                            curr_bar[PriceLabel.CLOSE] <= prev_bar[PriceLabel.LOW]])
+                          curr_bar[PriceLabel.CLOSE] < prev_bar[PriceLabel.LOW]])
         
         # both uptrend and downtrend cannot happen at the same time : unrealistic in real market
         if is_uptrend and is_downtrend:
@@ -167,7 +164,7 @@ def _is_bar_wider_than_lookback(
     print(f"DEBUG: current_bar_index={current_bar_index}, lookback_bars={lookback_bars}, min_size_increase_pct={min_size_increase_pct}, comparison_method={comparison_method}")
 
     # 1. get the single bar WRB or consequtive bar WRB
-    wrb_range, wrb_indices = _get_multi_bar_range(price_data=data, current_bar_index=current_bar_index)
+    wrb_range, wrb_indices = _get_wide_range_bar(price_data=data, current_bar_index=current_bar_index)
     print(f"DEBUG: wrb_range={wrb_range}, wrb_indices={wrb_indices}")
 
     # if current or recent bars did not form a WRB, return False
