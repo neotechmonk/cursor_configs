@@ -1,6 +1,6 @@
 """Tests for _is_bar_wider_than_lookback function in wrb.py"""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -44,6 +44,8 @@ def mock_calculate_lookup_reference_value():
         yield mock
 
 
+# ===== Basic WRB Detection Tests =====
+
 def test_no_wrb_detected(mock_data, mock_get_wide_range_bar):
     """Test when no wide range bar is detected.
     
@@ -71,6 +73,8 @@ def test_no_wrb_detected(mock_data, mock_get_wide_range_bar):
         current_bar_index=mock_data.index[-1]
     )
 
+
+# ===== Single Bar WRB Tests =====
 
 def test_valid_wrb_max_comparison(mock_get_wide_range_bar, 
                                 mock_calculate_lookup_reference_value):
@@ -102,6 +106,7 @@ def test_valid_wrb_max_comparison(mock_get_wide_range_bar,
         min_size_increase_pct=1,  # 1% increase required
         comparison_method='max'
     )
+
 
 def test_valid_wrb_avg_comparison(mock_get_wide_range_bar, 
                                 mock_calculate_lookup_reference_value):
@@ -148,8 +153,8 @@ def test_valid_wrb_avg_comparison(mock_get_wide_range_bar,
 
 
 def test_valid_wrb_verify_internal_calls(mock_data, mock_get_wide_range_bar, 
-                                               mock_get_high_low_range_abs, 
-                                               mock_calculate_lookup_reference_value):
+                                       mock_get_high_low_range_abs, 
+                                       mock_calculate_lookup_reference_value):
     """Test internal function calls for valid wide range bar with max comparison.
     
     This test verifies that the internal functions are called correctly:
@@ -185,13 +190,115 @@ def test_valid_wrb_verify_internal_calls(mock_data, mock_get_wide_range_bar,
     )
     
     # Verify lookback range calculations
-    assert mock_get_high_low_range_abs.call_count == 2 # relates the first to bars
+    assert mock_get_high_low_range_abs.call_count == 2  # relates to the first two bars
     
     # Verify reference value calculation
     mock_calculate_lookup_reference_value.assert_called_once_with([10.0, 10.0], 'max')
 
 
+# ===== Series WRB Tests =====
 
+def test_valid_wrb_series_max_comparison(mock_get_wide_range_bar, 
+                                       mock_calculate_lookup_reference_value,
+                                       mock_get_high_low_range_abs):
+    """Test valid wide range bar series with max comparison method.
+    
+    This test focuses on verifying that a valid WRB series is correctly identified.
+    The series consists of 5 bars where the last 2 bars form a WRB series in an uptrend:
+    
+    Bar 1: range=10 (90-100) - normal bar
+    Bar 2: range=10 (100-110) - normal bar
+    Bar 3: range=10 (110-120) - normal bar
+    Bar 4: range=15 (120-135) - WRB start: higher high, higher low, close above prev high
+    Bar 5: range=20 (130-150) - WRB continuation: higher high, higher low, close above prev high
+    
+    The WRB series range is 30 (150-120) as it spans the last two bars.
+    Lookback bars (2 and 3) have ranges of 10 each.
+    """
+    # Setup mock data for a series of WRBs
+    sample_data_series_wrb = pd.DataFrame({
+        PriceLabel.HIGH: [100, 110, 120, 135, 150],  # Last two bars have higher highs
+        PriceLabel.LOW: [90, 100, 110, 120, 130],    # Last two bars have higher lows
+        PriceLabel.CLOSE: [95, 105, 115, 140, 145]   # Last two bars close above previous highs
+    }, index=pd.date_range('2024-01-01', periods=5))
+    
+    current_idx = sample_data_series_wrb.index[-1]
+    fake_lookback_side_effect = [10.0, 10.0]
+    
+    # Mock WRB detection to return the series range and last two indices
+    mock_get_wide_range_bar.return_value = (30.0, list(sample_data_series_wrb.index[-2:]))
+    
+    # Mock lookback range calculations to return 10.0 for both lookback bars
+    mock_get_high_low_range_abs.side_effect = fake_lookback_side_effect
+    
+    # Mock reference value calculation - any value less than WRB range will work
+    mock_calculate_lookup_reference_value.return_value = 10.0  # Max of lookback ranges (10, 10)
+    
+    # Execute & assert
+    assert _is_bar_wider_than_lookback(
+        data=sample_data_series_wrb,
+        current_bar_index=current_idx,
+        lookback_bars=2,
+        min_size_increase_pct=1,  # 1% increase required
+        comparison_method='max'
+    )
+
+
+def test_valid_wrb_series_avg_comparison(mock_get_wide_range_bar, 
+                                       mock_calculate_lookup_reference_value,
+                                       mock_get_high_low_range_abs):
+    """Test valid wide range bar series with average comparison method.
+    
+    This test focuses on verifying that a valid WRB series is correctly identified
+    when using average comparison method. The series consists of 5 bars where the
+    last 2 bars form a WRB series in a downtrend:
+    
+    Bar 1: range=10 (100-90) - normal bar
+    Bar 2: range=10 (90-80) - normal bar
+    Bar 3: range=10 (80-70) - normal bar
+    Bar 4: range=15 (75-60) - WRB start: lower high, lower low, close below prev low
+    Bar 5: range=20 (60-40) - WRB continuation: lower high, lower low, close below prev low
+    
+    The WRB series range is 35 (75-40) as it spans the last two bars.
+    Lookback bars (2 and 3) have ranges of 10 each.
+    Average of lookback ranges = (10 + 10) / 2 = 10
+    WRB range (35) > Average (10) * 1.01
+    """
+    # Setup mock data for a series of WRBs in downtrend
+    sample_data_series_wrb = pd.DataFrame({
+        PriceLabel.HIGH: [100, 90, 80, 75, 60],    # Last two bars have lower highs
+        PriceLabel.LOW: [90, 80, 70, 60, 40],      # Last two bars have lower lows
+        PriceLabel.CLOSE: [85, 75, 65, 55, 45]     # Last two bars close below previous lows
+    }, index=pd.date_range('2024-01-01', periods=5))
+    
+    current_idx = sample_data_series_wrb.index[-1]
+    fake_lookback_side_effect = [10.0, 10.0]
+    
+    # Mock WRB detection to return the series range and last two indices
+    mock_get_wide_range_bar.return_value = (35.0, list(sample_data_series_wrb.index[-2:]))
+    
+    # Mock lookback range calculations to return 10.0 for both lookback bars
+    mock_get_high_low_range_abs.side_effect = fake_lookback_side_effect
+    
+    # Mock reference value calculation
+    # The function will receive [10.0, 10.0] as ranges and should return their average
+    mock_calculate_lookup_reference_value.return_value = 10.0  # (10 + 10) / 2
+    
+    # Execute & assert
+    result = _is_bar_wider_than_lookback(
+        data=sample_data_series_wrb,
+        current_bar_index=current_idx,
+        lookback_bars=2,
+        min_size_increase_pct=1,  # 1% increase required
+        comparison_method='avg'
+    )
+    
+    # Verify the result and the mock call
+    assert result is True
+    mock_calculate_lookup_reference_value.assert_called_once_with(fake_lookback_side_effect, 'avg')
+
+
+# ===== Error Handling Tests =====
 
 def test_zero_reference_value(mock_data, mock_get_wide_range_bar,
                             mock_get_high_low_range_abs,
@@ -213,7 +320,6 @@ def test_zero_reference_value(mock_data, mock_get_wide_range_bar,
             lookback_bars=2,
             min_size_increase_pct=50.0
         )
-
 
 
 def test_invalid_comparison_method(mock_get_wide_range_bar):
@@ -243,7 +349,6 @@ def test_invalid_comparison_method(mock_get_wide_range_bar):
             min_size_increase_pct=50.0,
             comparison_method='invalid'  # Invalid comparison method
         )
-
 
 
 def test_invalid_index(mock_get_wide_range_bar):
