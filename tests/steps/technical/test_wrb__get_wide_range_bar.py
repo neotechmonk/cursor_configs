@@ -1,4 +1,4 @@
-"""Tests for _get_wide_range_bar functionality.
+"""Tests for identify_wide_range_bar functionality.
 
 This module tests the wide range bar (WRB) detection functionality, which identifies
 bars that show strong trend continuation. A WRB is defined as:
@@ -23,10 +23,10 @@ import pandas as pd
 import pytest
 
 from src.models.base import PriceLabel
-from src.steps.technical.wrb import _get_wide_range_bar
+from src.steps.technical.wrb import identify_wide_range_bar
 
 
-# region: _get_wide_range_bar : specific cases
+# region: identify_wide_range_bar : specific cases
 @pytest.mark.parametrize(
     "open, high, low, close, expected_range, description",
     [
@@ -37,8 +37,8 @@ from src.steps.technical.wrb import _get_wide_range_bar
         (110, 105, 85, 95, 20, "single_bar_downtrend_wrb"),     # low (85) < prev low (96) AND high (105) < prev high (106) AND close (95) < prev low (96)
     ]
 )
-def test_get_wide_range_bar_single_bar_wrb(open, high, low, close, expected_range, description):
-    """Test _get_wide_range_bar for single bar WRB cases.
+def test_identify_wide_range_bar_single_bar_wrb(open, high, low, close, expected_range, description):
+    """Test identify_wide_range_bar for single bar WRB cases.
     
     These are cases where a single bar fully qualifies as a WRB:
     📈 Uptrend WRB:
@@ -64,7 +64,7 @@ def test_get_wide_range_bar_single_bar_wrb(open, high, low, close, expected_rang
     }, index=indices)
 
     # Test the last bar (index 2)
-    range_size, wrb_indices = _get_wide_range_bar(price_data, indices[2])
+    range_size, wrb_indices = identify_wide_range_bar(price_data, indices[2])
     
     # For single bar WRB cases, we expect:
     # 1. Only the last bar to be included in indices
@@ -100,8 +100,8 @@ def test_get_wide_range_bar_single_bar_wrb(open, high, low, close, expected_rang
         ),
     ]
 )
-def test_get_wide_range_bar_series_wrb(price_data, expected_range, expected_indices, description):
-    """Test _get_wide_range_bar for series WRB cases.
+def test_identify_wide_range_bar_series_wrb(price_data, expected_range, expected_indices, description):
+    """Test identify_wide_range_bar for series WRB cases.
     
     These are cases where multiple consecutive bars form a WRB series:
     📈 Uptrend series WRB:
@@ -118,7 +118,7 @@ def test_get_wide_range_bar_series_wrb(price_data, expected_range, expected_indi
     and calculates the range based on the highest high and lowest low in the series.
     """
     # Test the last bar
-    range_size, wrb_indices = _get_wide_range_bar(price_data, price_data.index[-1])
+    range_size, wrb_indices = identify_wide_range_bar(price_data, price_data.index[-1])
     
     # For series WRB cases, we expect:
     # 1. Only the last bar to be included in indices
@@ -127,8 +127,8 @@ def test_get_wide_range_bar_series_wrb(price_data, expected_range, expected_indi
     assert range_size == expected_range, f"Failed for {description}: expected range {expected_range}, got {range_size}"
 
 
-def test_get_wide_range_bar_one_bar_data_series():
-    """Test _get_wide_range_bar for first bar edge case.
+def test_identify_wide_range_bar_one_bar_data_series():
+    """Test identify_wide_range_bar for first bar edge case.
     
     First bar should never be considered a WRB because:
     ❌ No previous bar to compare against
@@ -143,13 +143,13 @@ def test_get_wide_range_bar_one_bar_data_series():
         PriceLabel.CLOSE: [105],
     }, index=indices)
 
-    range_size, wrb_indices = _get_wide_range_bar(price_data, indices[0])
+    range_size, wrb_indices = identify_wide_range_bar(price_data, indices[0])
     assert wrb_indices == [], "Expected no WRB indices for first bar"
     assert str(range_size) == 'nan', "Expected nan range size for first bar"
 
 
-def test_get_wide_range_current_bar_not_part_of_wrb():
-    """Test _get_wide_range_bar when WRB pattern occurs before current bar.
+def test_identify_wide_range_bar_current_bar_not_part_of_wrb():
+    """Test identify_wide_range_bar when WRB pattern occurs before current bar.
     
     This test case verifies behavior when:
     📈 Uptrend WRB pattern in bars 2-4:
@@ -174,7 +174,7 @@ def test_get_wide_range_current_bar_not_part_of_wrb():
     }, index=indices)
 
     # Test the last bar (index 5)
-    range_size, wrb_indices = _get_wide_range_bar(price_data, indices[5])
+    range_size, wrb_indices = identify_wide_range_bar(price_data, indices[5])
     
     # For a pattern that occurred before current bar, we expect:
     # 1. No indices returned (empty list)
@@ -190,8 +190,8 @@ def test_get_wide_range_current_bar_not_part_of_wrb():
         (110, 106, 90, 97, "downtrend_close_above_prev_low"),     # down bar: low < prev low but close (97) >= prev low (96)
     ]
 )
-def test_get_wide_range_bar_non_wrb_cases_due_to_close_condition_unmet(open, high, low, close, description):
-    """Test _get_wide_range_bar for cases that should NOT be identified as WRBs due to close condition not being met.
+def test_identify_wide_range_bar_non_wrb_cases_due_to_close_condition_unmet(open, high, low, close, description):
+    """Test identify_wide_range_bar for cases that should NOT be identified as WRBs due to close condition not being met.
     
     These are cases where bars have the correct trend direction but don't meet the close condition:
     📈 Uptrend bar that doesn't close above previous high:
@@ -221,7 +221,7 @@ def test_get_wide_range_bar_non_wrb_cases_due_to_close_condition_unmet(open, hig
     }, index=indices)
 
     # Test the last bar (index 2)
-    range_size, wrb_indices = _get_wide_range_bar(price_data, indices[2])
+    range_size, wrb_indices = identify_wide_range_bar(price_data, indices[2])
     
     # For non-WRB cases, we expect:
     # 1. No indices returned (empty list)
@@ -239,8 +239,8 @@ def test_get_wide_range_bar_non_wrb_cases_due_to_close_condition_unmet(open, hig
         (100, 105, 96, 103, "equal_low"),       # low = prev low (96)
     ]
 )
-def test_get_wide_range_bar_non_wrb_cases_due_to_new_extreme_condition_unmet(open, high, low, close, description):
-    """Test _get_wide_range_bar for cases that should NOT be identified as WRBs due to no new extreme being made.
+def test_identify_wide_range_bar_non_wrb_cases_due_to_new_extreme_condition_unmet(open, high, low, close, description):
+    """Test identify_wide_range_bar for cases that should NOT be identified as WRBs due to no new extreme being made.
     
     These are cases where bars don't establish a trend direction because they don't make new extremes:
     ❌ No higher high case:
@@ -269,7 +269,7 @@ def test_get_wide_range_bar_non_wrb_cases_due_to_new_extreme_condition_unmet(ope
     }, index=indices)
 
     # Test the last bar (index 2)
-    range_size, wrb_indices = _get_wide_range_bar(price_data, indices[2])
+    range_size, wrb_indices = identify_wide_range_bar(price_data, indices[2])
     
     # For non-WRB cases, we expect:
     # 1. No indices returned (empty list)
@@ -280,7 +280,7 @@ def test_get_wide_range_bar_non_wrb_cases_due_to_new_extreme_condition_unmet(ope
 
 # endregion 
 
-# region: _get_multi_bar_range : comprehensive tests
+# region: identify_wide_range_bar : comprehensive tests
 @pytest.mark.skip(reason="Optional : covered by specific tests")
 @pytest.mark.parametrize(
     "test_data, expected_range, expected_indices, description",
@@ -522,13 +522,13 @@ def test_get_wide_range_bar_non_wrb_cases_due_to_new_extreme_condition_unmet(ope
         ),
     ]
 )
-def test_get_wide_range_bar_all_scenarios(
+def test_identify_wide_range_bar_all_scenarios(
     test_data: dict,
     expected_range: float,
     expected_indices: list,
     description: str
 ):
-    """Test _get_wide_range_bar with comprehensive parameterized cases.
+    """Test identify_wide_range_bar with comprehensive parameterized cases.
 
     One stop shop for all scenarios. Specific test cases are additioanlly tested individually in the module. 
     
@@ -559,7 +559,7 @@ def test_get_wide_range_bar_all_scenarios(
         test_idx = indices[-1]
 
     # Test the target bar
-    range_size, wrb_indices = _get_wide_range_bar(price_data, test_idx)
+    range_size, wrb_indices = identify_wide_range_bar(price_data, test_idx)
     
     # Convert indices to strings for comparison
     wrb_indices_str = [str(idx) for idx in wrb_indices]

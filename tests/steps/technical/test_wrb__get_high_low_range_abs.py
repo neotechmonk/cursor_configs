@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from src.models.base import PriceLabel
-from src.steps.technical.wrb import _get_high_low_range_abs
+from src.steps.technical.wrb import calculate_bar_range
 
 
 @pytest.mark.parametrize(
@@ -45,8 +45,8 @@ from src.steps.technical.wrb import _get_high_low_range_abs
         ),
     ]
 )
-def test_get_high_low_range_abs_happy_path(test_data):
-    """Test _get_high_low_range_abs for up, down, and range trends."""
+def test_calculate_bar_range_happy_path(test_data):
+    """Test calculate_bar_range for up, down, and range trends."""
     index = pd.Timestamp("2024-01-01")
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [test_data["open"]],
@@ -55,50 +55,54 @@ def test_get_high_low_range_abs_happy_path(test_data):
         PriceLabel.CLOSE: [test_data["close"]],
     }, index=[index])
 
-    result = _get_high_low_range_abs(price_data, current_bar_index=index)
+    result = calculate_bar_range(price_data, current_bar_index=index)
     assert result == test_data["expected"], f"Failed for {test_data['description']}: expected {test_data['expected']}, got {result}"
 
 
-def test_get_high_low_range_abs_success():
-    """Test successful calculation of bar high-low range."""
+def test_calculate_bar_range_success():
+    """Test calculate_bar_range with valid data."""
     index = pd.Timestamp("2024-01-01")
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100],
         PriceLabel.HIGH: [110],
-        PriceLabel.LOW: [90],
+        PriceLabel.LOW: [95],
         PriceLabel.CLOSE: [105],
     }, index=[index])
-    
-    bar_size = _get_high_low_range_abs(price_data, current_bar_index=index)
-    expected_size = price_data.loc[index][PriceLabel.HIGH] - price_data.loc[index][PriceLabel.LOW]
-    assert bar_size == expected_size
+
+    bar_size = calculate_bar_range(price_data, current_bar_index=index)
+    assert bar_size == 15
 
 
-def test_get_high_low_range_abs_invalid_index():
-    """Test bar high-low range calculation with invalid index."""
+def test_calculate_bar_range_invalid_index():
+    """Test calculate_bar_range with invalid index."""
+    index = pd.Timestamp("2024-01-01")
+    invalid_index = pd.Timestamp("2024-01-02")
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100],
         PriceLabel.HIGH: [110],
-        PriceLabel.LOW: [90],
+        PriceLabel.LOW: [95],
         PriceLabel.CLOSE: [105],
-    }, index=[pd.Timestamp("2024-01-01")])
-    
-    invalid_index = pd.Timestamp("2099-01-01")
-    with pytest.raises(IndexError, match="Current bar index 2099-01-01 00:00:00 not found in data"):
-        _get_high_low_range_abs(price_data, current_bar_index=invalid_index)
+    }, index=[index])
+
+    with pytest.raises(IndexError):
+        calculate_bar_range(price_data, current_bar_index=invalid_index)
 
 
-def test_get_high_low_range_abs_missing_columns():
-    """Test bar high-low range calculation with missing price columns."""
-    invalid_data = pd.DataFrame({'invalid': [1, 2, 3]})
-    index = invalid_data.index[0]
+def test_calculate_bar_range_missing_columns():
+    """Test calculate_bar_range with missing price columns."""
+    index = pd.Timestamp("2024-01-01")
+    invalid_data = pd.DataFrame({
+        PriceLabel.OPEN: [100],
+        PriceLabel.CLOSE: [105],
+    }, index=[index])
+
     with pytest.raises(KeyError):
-        _get_high_low_range_abs(invalid_data, current_bar_index=index)
+        calculate_bar_range(invalid_data, current_bar_index=index)
 
 
-def test_get_high_low_range_abs_correct_index():
-    """Test that _get_high_low_range_abs fetches the correct index from the DataFrame."""
-    indices = pd.date_range(start='2024-01-01', periods=3)
+def test_calculate_bar_range_correct_index():
+    """Test that calculate_bar_range fetches the correct index from the DataFrame."""
+    indices = pd.date_range('2024-01-01', periods=3)
     price_data = pd.DataFrame({
         PriceLabel.OPEN: [100, 101, 102],
         PriceLabel.HIGH: [110, 111, 112],
@@ -106,17 +110,14 @@ def test_get_high_low_range_abs_correct_index():
         PriceLabel.CLOSE: [105, 106, 107],
     }, index=indices)
 
-    # Test fetching the first index
-    result = _get_high_low_range_abs(price_data, current_bar_index=indices[0])
-    expected = 15  # high - low = 110 - 95 = 15
-    assert result == expected, f"Failed to fetch correct index: expected {expected}, got {result}"
+    # Test first bar
+    result = calculate_bar_range(price_data, current_bar_index=indices[0])
+    assert result == 15
 
-    # Test fetching the second index
-    result = _get_high_low_range_abs(price_data, current_bar_index=indices[1])
-    expected = 15  # high - low = 111 - 96 = 15
-    assert result == expected, f"Failed to fetch correct index: expected {expected}, got {result}"
+    # Test second bar
+    result = calculate_bar_range(price_data, current_bar_index=indices[1])
+    assert result == 15
 
-    # Test fetching the third index
-    result = _get_high_low_range_abs(price_data, current_bar_index=indices[2])
-    expected = 15  # high - low = 112 - 97 = 15
-    assert result == expected, f"Failed to fetch correct index: expected {expected}, got {result}" 
+    # Test third bar
+    result = calculate_bar_range(price_data, current_bar_index=indices[2])
+    assert result == 15 

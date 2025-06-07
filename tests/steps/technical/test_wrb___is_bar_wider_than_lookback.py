@@ -1,6 +1,6 @@
-"""Tests for _is_bar_wider_than_lookback function in wrb.py
+"""Tests for compare_bar_width function in wrb.py
 
-This module tests the comparison logic of _is_bar_wider_than_lookback function.
+This module tests the comparison logic of compare_bar_width function.
 The function is responsible for comparing a WRB range against lookback ranges
 and determining if the WRB is significantly wider.
 """
@@ -9,19 +9,19 @@ from unittest.mock import patch
 
 import pytest
 
-from src.steps.technical.wrb import _is_bar_wider_than_lookback
+from src.steps.technical.wrb import compare_bar_width
 
 
 @pytest.fixture
-def mock_calculate_lookup_reference_value():
-    """Mock _calculate_lookup_reference_value function."""
-    with patch('src.steps.technical.wrb._calculate_lookup_reference_value') as mock:
+def mock_calculate_reference_range():
+    """Mock calculate_reference_range function."""
+    with patch('src.steps.technical.wrb.calculate_reference_range') as mock:
         yield mock
 
 
 # ===== Basic Comparison Tests =====
 
-def test_wider_than_lookback_max_comparison(mock_calculate_lookup_reference_value):
+def test_wider_than_lookback_max_comparison(mock_calculate_reference_range):
     """Test when WRB range is wider than lookback ranges using max comparison.
     
     Given:
@@ -38,10 +38,10 @@ def test_wider_than_lookback_max_comparison(mock_calculate_lookup_reference_valu
     - Should return True as 100% > 50%
     """
     # Setup
-    mock_calculate_lookup_reference_value.return_value = 10.0
+    mock_calculate_reference_range.return_value = 10.0
     
     # Execute
-    result = _is_bar_wider_than_lookback(
+    result = compare_bar_width(
         wrb_range=20.0,
         lookback_ranges=[8.0, 10.0],
         min_size_increase_pct=0.5,
@@ -50,10 +50,10 @@ def test_wider_than_lookback_max_comparison(mock_calculate_lookup_reference_valu
     
     # Assert
     assert result is True
-    mock_calculate_lookup_reference_value.assert_called_once_with([8.0, 10.0], 'max')
+    mock_calculate_reference_range.assert_called_once_with([8.0, 10.0], 'max')
 
 
-def test_wider_than_lookback_avg_comparison(mock_calculate_lookup_reference_value):
+def test_wider_than_lookback_avg_comparison(mock_calculate_reference_range):
     """Test when WRB range is wider than lookback ranges using avg comparison.
     
     Given:
@@ -70,10 +70,10 @@ def test_wider_than_lookback_avg_comparison(mock_calculate_lookup_reference_valu
     - Should return True as 122% > 50%
     """
     # Setup
-    mock_calculate_lookup_reference_value.return_value = 9.0
+    mock_calculate_reference_range.return_value = 9.0
     
     # Execute
-    result = _is_bar_wider_than_lookback(
+    result = compare_bar_width(
         wrb_range=20.0,
         lookback_ranges=[8.0, 10.0],
         min_size_increase_pct=0.5,
@@ -82,10 +82,10 @@ def test_wider_than_lookback_avg_comparison(mock_calculate_lookup_reference_valu
     
     # Assert
     assert result is True
-    mock_calculate_lookup_reference_value.assert_called_once_with([8.0, 10.0], 'avg')
+    mock_calculate_reference_range.assert_called_once_with([8.0, 10.0], 'avg')
 
 
-def test_not_wider_than_lookback(mock_calculate_lookup_reference_value):
+def test_not_wider_than_lookback(mock_calculate_reference_range):
     """Test when WRB range is not wider than lookback ranges.
     
     Given:
@@ -102,10 +102,10 @@ def test_not_wider_than_lookback(mock_calculate_lookup_reference_value):
     - Should return True as 50% == 50% (not greater)
     """
     # Setup
-    mock_calculate_lookup_reference_value.return_value = 10.0
+    mock_calculate_reference_range.return_value = 10.0
     
     # Execute
-    result = _is_bar_wider_than_lookback(
+    result = compare_bar_width(
         wrb_range=15.0,
         lookback_ranges=[8.0, 10.0],
         min_size_increase_pct=0.5,
@@ -114,12 +114,12 @@ def test_not_wider_than_lookback(mock_calculate_lookup_reference_value):
     
     # Assert
     assert result is True
-    mock_calculate_lookup_reference_value.assert_called_once_with([8.0, 10.0], 'max')
+    mock_calculate_reference_range.assert_called_once_with([8.0, 10.0], 'max')
 
 
 # ===== Error Cases =====
 
-def test_zero_reference_value(mock_calculate_lookup_reference_value):
+def test_zero_reference_value(mock_calculate_reference_range):
     """Test handling of zero reference value.
     
     Given:
@@ -134,18 +134,18 @@ def test_zero_reference_value(mock_calculate_lookup_reference_value):
     - Should propagate the ZeroDivisionError
     """
     # Setup
-    mock_calculate_lookup_reference_value.side_effect = ZeroDivisionError("Reference size is zero")
+    mock_calculate_reference_range.side_effect = ZeroDivisionError("Reference size is zero")
     
     # Execute & Assert
     with pytest.raises(ZeroDivisionError, match="Reference size is zero"):
-        _is_bar_wider_than_lookback(
+        compare_bar_width(
             wrb_range=20.0,
             lookback_ranges=[0.0, 0.0],
             min_size_increase_pct=0.5
         )
 
 
-def test_invalid_comparison_method(mock_calculate_lookup_reference_value):
+def test_invalid_comparison_method(mock_calculate_reference_range):
     """Test handling of invalid comparison method.
     
     Given:
@@ -161,11 +161,11 @@ def test_invalid_comparison_method(mock_calculate_lookup_reference_value):
     - Should propagate the ValueError
     """
     # Setup
-    mock_calculate_lookup_reference_value.side_effect = ValueError("Invalid comparison method")
+    mock_calculate_reference_range.side_effect = ValueError("Invalid comparison method")
     
     # Execute & Assert
     with pytest.raises(ValueError, match="Invalid comparison method"):
-        _is_bar_wider_than_lookback(
+        compare_bar_width(
             wrb_range=20.0,
             lookback_ranges=[8.0, 10.0],
             min_size_increase_pct=0.5,

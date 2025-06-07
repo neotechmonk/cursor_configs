@@ -1,9 +1,9 @@
-"""Tests for _validate_lookup_bars function in wrb.py."""
+"""Tests for validate_lookback_period function in wrb.py."""
 
 import pandas as pd
 import pytest
 
-from src.steps.technical.wrb import _validate_lookup_bars
+from src.steps.technical.wrb import validate_lookback_period
 
 
 @pytest.fixture
@@ -28,58 +28,58 @@ def price_data():
                 "lookback_bars": 3,
                 "lookback_start_idx": None,
                 "expected": True,
-                "id": "valid lookback from latest bar"
+                "description": "valid lookback with default start index"
             },
-            id="valid lookback from latest bar"
-        ),
-        pytest.param(
-            {
-                "lookback_bars": 2,
-                "lookback_start_idx": pd.Timestamp("2024-01-03"),
-                "expected": True,
-                "id": "valid lookback from middle bar"
-            },
-            id="valid lookback from middle bar"
-        ),
-        pytest.param(
-            {
-                "lookback_bars": 6,
-                "lookback_start_idx": None,
-                "expected": False,
-                "id": "insufficient bars from latest"
-            },
-            id="insufficient bars from latest"
+            id="valid_default_start"
         ),
         pytest.param(
             {
                 "lookback_bars": 3,
-                "lookback_start_idx": pd.Timestamp("2024-01-02"),
-                "expected": False,
-                "id": "insufficient bars from middle"
+                "lookback_start_idx": pd.Timestamp('2024-01-04'),
+                "expected": True,
+                "description": "valid lookback with explicit start index"
             },
-            id="insufficient bars from middle"
+            id="valid_explicit_start"
+        ),
+        pytest.param(
+            {
+                "lookback_bars": 5,
+                "lookback_start_idx": None,
+                "expected": False,
+                "description": "insufficient bars for lookback"
+            },
+            id="insufficient_bars"
+        ),
+        pytest.param(
+            {
+                "lookback_bars": 3,
+                "lookback_start_idx": pd.Timestamp('2024-01-02'),
+                "expected": False,
+                "description": "insufficient bars before start index"
+            },
+            id="insufficient_bars_before_start"
         ),
     ]
 )
-def test_validate_lookup_bars_happy_path(price_data, test_data):
-    """Test _validate_lookup_bars with various valid scenarios."""
-    result = _validate_lookup_bars(
+def test_validate_lookback_period_happy_path(price_data, test_data):
+    """Test validate_lookback_period with various valid scenarios."""
+    result = validate_lookback_period(
         data=price_data,
         lookback_bars=test_data["lookback_bars"],
         lookback_start_idx=test_data["lookback_start_idx"]
     )
-    assert result == test_data["expected"]
+    assert result == test_data["expected"], f"Failed for {test_data['description']}: expected {test_data['expected']}, got {result}"
 
 
-def test_validate_lookup_bars_empty_data():
-    """Test _validate_lookup_bars with empty data."""
+def test_validate_lookback_period_empty_data():
+    """Test validate_lookback_period with empty data."""
     empty_data = pd.DataFrame()
     with pytest.raises(ValueError, match="No data available"):
-        _validate_lookup_bars(empty_data, lookback_bars=3)
+        validate_lookback_period(empty_data, lookback_bars=3)
 
 
-def test_validate_lookup_bars_invalid_start_idx(price_data):
-    """Test _validate_lookup_bars with invalid start index."""
-    invalid_idx = pd.Timestamp("2099-01-01")
+def test_validate_lookback_period_invalid_start_idx(price_data):
+    """Test validate_lookback_period with invalid start index."""
+    invalid_idx = pd.Timestamp('2099-01-01')
     with pytest.raises(IndexError, match=f"Lookback start index {invalid_idx} not found in data"):
-        _validate_lookup_bars(price_data, lookback_bars=3, lookback_start_idx=invalid_idx) 
+        validate_lookback_period(price_data, lookback_bars=3, lookback_start_idx=invalid_idx) 
