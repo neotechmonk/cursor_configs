@@ -281,6 +281,7 @@ def test_get_wide_range_bar_non_wrb_cases_due_to_new_extreme_condition_unmet(ope
 # endregion 
 
 # region: _get_multi_bar_range : comprehensive tests
+@pytest.mark.skip(reason="Optional : covered by specific tests")
 @pytest.mark.parametrize(
     "test_data, expected_range, expected_indices, description",
     [
