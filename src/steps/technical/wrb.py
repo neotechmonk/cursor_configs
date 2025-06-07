@@ -201,53 +201,76 @@ def _is_bar_wider_than_lookback(
     min_size_increase_pct: float,
     comparison_method: ComparisonMethod = "max"
 ) -> bool:
-    """Check if current bar is wider than lookback bars using specified comparison method."""
-    print(f"\nDEBUG: Starting _is_bar_wider_than_lookback")
-    print(f"DEBUG: current_bar_index={current_bar_index}, lookback_bars={lookback_bars}, min_size_increase_pct={min_size_increase_pct}, comparison_method={comparison_method}")
-
-    # 1. get the single bar WRB or consequtive bar WRB
+    """Check if current bar is wider than lookback bars using specified comparison method.
+    
+    Args:
+        data: Price data to analyze
+        current_bar_index: Datetime index of the current bar
+        lookback_bars: Number of bars to look back
+        min_size_increase_pct: Minimum percentage increase required
+        comparison_method: Method to use for comparison ('max' or 'avg')
+        
+    Returns:
+        bool: True if the current bar is significantly wider than lookback bars
+        
+    Raises:
+        IndexError: If current_bar_index is not in the DataFrame index
+        ValueError: If comparison_method is invalid or ranges is empty
+        ZeroDivisionError: If average calculation results in zero
+    """
+    # 1. Get the WRB range and indices
     wrb_range, wrb_indices = _get_wide_range_bar(price_data=data, current_bar_index=current_bar_index)
-    print(f"DEBUG: wrb_range={wrb_range}, wrb_indices={wrb_indices}")
-
-    # if current or recent bars did not form a WRB, return False
-    if not wrb_range and not wrb_indices:
-        print("DEBUG: No WRB detected, returning False")
+    
+    # If no WRB detected, return False
+    if not wrb_range or not wrb_indices:
         return False
-
-    # 2. Check if min lookback bars are available relative to the current bar
-    # Get the position of the current bar index
+    
+    # 2. Check if min lookback bars are available
     current_pos = data.index.get_loc(current_bar_index)
-    # We need at least lookback_bars before the current bar
     if current_pos < lookback_bars:
-        print("DEBUG: Insufficient lookback bars, returning False")
         return False
-
-    # 3. Check if WRB satisfies the min growth percentage
-    # Get the lookback period indices - look back from the current bar
+    
+    # 3. Get lookback ranges
     lookback_start_idx = current_pos - lookback_bars
     lookback_indices = data.index[lookback_start_idx:current_pos]
-    print(f"DEBUG: lookback_indices={lookback_indices}")
-
-    # Calculate ranges for each bar in lookback period
     lookback_ranges = [
         _get_high_low_range_abs(data, idx)
         for idx in lookback_indices
     ]
-    print(f"DEBUG: lookback_ranges={lookback_ranges}")
+    
+    # 4. Compare WRB range with lookback ranges
+    reference_value = _calculate_lookup_reference_value(lookback_ranges, comparison_method)
+    size_increase = wrb_range/reference_value - 1
+    
+    return size_increase >= min_size_increase_pct
 
-    try:
-        # Get reference value using comparison method
-        reference_value = _calculate_lookup_reference_value(lookback_ranges, comparison_method)
-        print(f"DEBUG: reference_value={reference_value}")
 
-        size_increase = wrb_range/reference_value - 1
-        print(f"DEBUG: size_increase={size_increase}, min_size_increase_pct={min_size_increase_pct}")
-        print(f"DEBUG: Final result: {size_increase >= min_size_increase_pct}")
+def _get_lookback_ranges(
+    data: pd.DataFrame,
+    current_bar_index: pd.Timestamp,
+    lookback_bars: int
+) -> list[float]:
+    """Get the high-low ranges for lookback bars.
+    
+    Args:
+        data: Price data
+        current_bar_index: Datetime index of the current bar
+        lookback_bars: Number of bars to look back
         
-        return size_increase >= min_size_increase_pct
-    except (ValueError, ZeroDivisionError) as e:
-        print(f"DEBUG: Error calculating reference value: {e}")
-        raise e
+    Returns:
+        list[float]: List of high-low ranges for lookback bars
+        
+    Raises:
+        IndexError: If current_bar_index is not in the DataFrame index
+    """
+    current_pos = data.index.get_loc(current_bar_index)
+    lookback_start_idx = current_pos - lookback_bars
+    lookback_indices = data.index[lookback_start_idx:current_pos]
+    
+    return [
+        _get_high_low_range_abs(data, idx)
+        for idx in lookback_indices
+    ]
 
 
 def detect_wide_range_bar(
@@ -284,12 +307,30 @@ def detect_wide_range_bar(
         )
     
     try:
-        # Check if current bar is wider
+        # Get the latest bar index
+        current_bar_index = data.index[-1]
+        
+        # Get WRB range and indices
+        wrb_range, wrb_indices = _get_wide_range_bar(data, current_bar_index)
+        
+        # If no WRB detected, return failure
+        if not wrb_range or not wrb_indices:
+            return create_success_result(
+                data=data,
+                step=context.current_step,
+                step_output={
+                    'is_wide_range': False,
+                    'lookback_bars': lookback_bars,
+                    'min_size_increase_pct': min_size_increase_pct
+                }
+            )
+        
+        # Check if WRB is wider than lookback
         is_wider = _is_bar_wider_than_lookback(
-            data,
-            -1,  # Latest bar
-            lookback_bars,
-            min_size_increase_pct
+            data=data,
+            current_bar_index=current_bar_index,
+            lookback_bars=lookback_bars,
+            min_size_increase_pct=min_size_increase_pct
         )
         
         return create_success_result(

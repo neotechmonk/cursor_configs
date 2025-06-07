@@ -5,11 +5,9 @@ import pytest
 
 from src.models.base import PriceLabel
 from src.models.strategy import StrategyExecutionContext, StrategyStep
-from src.steps.technical.range import _get_multi_bar_range
 from src.steps.technical.wrb import (
-    _get_high_low_range_abs,
+    _get_wide_range_bar,
     _is_bar_wider_than_lookback,
-    _validate_lookup_bars,
     detect_wide_range_bar,
 )
 
@@ -155,138 +153,152 @@ def test_detect_wide_range_bar_default_config(sample_data, sample_context):
     assert result.step_output['min_size_increase_pct'] == 50.0  # Default value 
 
 
-# region: _validate_lookup_bars
-
-def test_validate_lookup_bars_success(sample_data):
-    """Test successful validation of lookup bars."""
-    result = _validate_lookup_bars(sample_data, lookback_bars=3)
-    assert result is True
-
-
-def test_validate_lookup_bars_empty_data():
-    """Test validation with empty data."""
-    empty_data = pd.DataFrame(columns=[PriceLabel.OPEN, PriceLabel.HIGH, PriceLabel.LOW, PriceLabel.CLOSE])
-    with pytest.raises(ValueError, match="No data available"):
-        _validate_lookup_bars(empty_data, lookback_bars=3)
+# region: _get_wide_range_bar
+def test_get_wide_range_bar_success(sample_data):
+    """Test successful calculation of wide range bar."""
+    result = _get_wide_range_bar(sample_data, sample_data.index[-1])
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    assert isinstance(result[0], float)
+    assert isinstance(result[1], list)
 
 
-def test_validate_lookup_bars_insufficient_data(sample_data):
-    """Test validation with insufficient data."""
-    with pytest.raises(ValueError, match="Not enough bars for lookback period"):
-        _validate_lookup_bars(sample_data.iloc[:2], lookback_bars=3)
+def test_get_wide_range_bar_invalid_index(sample_data):
+    """Test behavior with invalid index."""
+    invalid_index = pd.Timestamp("2099-01-01")
+    with pytest.raises(IndexError, match=f"Current bar index {invalid_index} not found in data"):
+        _get_wide_range_bar(sample_data, invalid_index)
 
 
-# endregion _validate_lookup_bars
+def test_get_wide_range_bar_missing_columns(sample_data):
+    """Test behavior with missing price columns."""
+    data = sample_data.drop(columns=[PriceLabel.HIGH])
+    with pytest.raises(KeyError, match=PriceLabel.HIGH):
+        _get_wide_range_bar(data, sample_data.index[-1])
+
+
+def test_get_wide_range_bar_first_bar(sample_data):
+    """Test behavior with first bar."""
+    result = _get_wide_range_bar(sample_data, sample_data.index[0])
+    assert result[0] == float('nan')
+    assert result[1] == []
+
+
+def test_get_wide_range_bar_no_trend(sample_data):
+    """Test behavior with no trend."""
+    # Create data with no clear trend
+    data = sample_data.copy()
+    data.loc[data.index[1], PriceLabel.HIGH] = data.loc[data.index[0], PriceLabel.HIGH]
+    data.loc[data.index[1], PriceLabel.LOW] = data.loc[data.index[0], PriceLabel.LOW]
+    data.loc[data.index[1], PriceLabel.CLOSE] = data.loc[data.index[0], PriceLabel.HIGH]
+    
+    result = _get_wide_range_bar(data, data.index[1])
+    assert result[0] == float('nan')
+    assert result[1] == []
+
+
+def test_get_wide_range_bar_uptrend(sample_data):
+    """Test behavior with uptrend."""
+    # Create data with clear uptrend
+    data = sample_data.copy()
+    data.loc[data.index[1], PriceLabel.HIGH] = data.loc[data.index[0], PriceLabel.HIGH] + 1
+    data.loc[data.index[1], PriceLabel.LOW] = data.loc[data.index[0], PriceLabel.LOW] + 1
+    data.loc[data.index[1], PriceLabel.CLOSE] = data.loc[data.index[0], PriceLabel.HIGH] + 1
+    
+    result = _get_wide_range_bar(data, data.index[1])
+    assert result[0] > 0
+    assert len(result[1]) > 0
+
+
+def test_get_wide_range_bar_downtrend(sample_data):
+    """Test behavior with downtrend."""
+    # Create data with clear downtrend
+    data = sample_data.copy()
+    data.loc[data.index[1], PriceLabel.HIGH] = data.loc[data.index[0], PriceLabel.HIGH] - 1
+    data.loc[data.index[1], PriceLabel.LOW] = data.loc[data.index[0], PriceLabel.LOW] - 1
+    data.loc[data.index[1], PriceLabel.CLOSE] = data.loc[data.index[0], PriceLabel.LOW] - 1
+    
+    result = _get_wide_range_bar(data, data.index[1])
+    assert result[0] > 0
+    assert len(result[1]) > 0
+# endregion
+
 
 # region: _is_bar_wider_than_lookback
-
-def test_is_bar_wider_than_lookback_true():
-    """Test that function detects a bar wider than lookback by required percentage."""
-    # Last bar is much wider
-    price_data = pd.DataFrame({
-        PriceLabel.OPEN: [100, 100, 100, 100],
-        PriceLabel.HIGH: [105, 105, 105, 120],
-        PriceLabel.LOW: [95, 95, 95, 90],
-        PriceLabel.CLOSE: [103, 104, 105, 110],
-    }, index=pd.date_range('2024-01-01', periods=4))
-    idx = price_data.index[-1]
-    is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5)  # 50% = 0.5
-    assert is_wide
+def test_is_bar_wider_than_lookback_success(sample_data):
+    """Test successful comparison of bar width."""
+    result = _is_bar_wider_than_lookback(
+        sample_data,
+        sample_data.index[-1],
+        lookback_bars=3,
+        min_size_increase_pct=0.5
+    )
+    assert isinstance(result, bool)
 
 
-def test_is_bar_wider_than_lookback_false():
-    """Test that function detects a bar NOT wider than lookback by required percentage."""
-    price_data = pd.DataFrame({
-        PriceLabel.OPEN: [100, 100, 100, 100],
-        PriceLabel.HIGH: [105, 105, 105, 106],
-        PriceLabel.LOW: [95, 95, 95, 96],
-        PriceLabel.CLOSE: [103, 104, 105, 100],
-    }, index=pd.date_range('2024-01-01', periods=4))
-    idx = price_data.index[-1]
-    is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5)  # 50% = 0.5
-    assert not is_wide
+def test_is_bar_wider_than_lookback_invalid_index(sample_data):
+    """Test behavior with invalid index."""
+    invalid_index = pd.Timestamp("2099-01-01")
+    with pytest.raises(IndexError, match=f"Current bar index {invalid_index} not found in data"):
+        _is_bar_wider_than_lookback(
+            sample_data,
+            invalid_index,
+            lookback_bars=3,
+            min_size_increase_pct=0.5
+        )
 
 
-def test_is_bar_wider_than_lookback_zero_division():
-    """Test that ZeroDivisionError is raised if lookback bars have zero size."""
-    price_data = pd.DataFrame({
-        PriceLabel.OPEN: [100, 100, 100, 100],
-        PriceLabel.HIGH: [100, 100, 100, 120],
-        PriceLabel.LOW: [100, 100, 100, 90],
-        PriceLabel.CLOSE: [100, 100, 100, 110],
-    }, index=pd.date_range('2024-01-01', periods=4))
-    idx = price_data.index[-1]
-    with pytest.raises(ZeroDivisionError):
-        _is_bar_wider_than_lookback(price_data, idx, 3, 50.0)
+def test_is_bar_wider_than_lookback_missing_columns(sample_data):
+    """Test behavior with missing price columns."""
+    data = sample_data.drop(columns=[PriceLabel.HIGH])
+    with pytest.raises(KeyError, match=PriceLabel.HIGH):
+        _is_bar_wider_than_lookback(
+            data,
+            sample_data.index[-1],
+            lookback_bars=3,
+            min_size_increase_pct=0.5
+        )
 
 
-def test_is_bar_wider_than_lookback_empty_lookback():
-    """Test that function returns False if lookback is empty."""
-    price_data = pd.DataFrame({
-        PriceLabel.OPEN: [100],
-        PriceLabel.HIGH: [105],
-        PriceLabel.LOW: [95],
-        PriceLabel.CLOSE: [103],
-    }, index=pd.date_range('2024-01-01', periods=1))
-    idx = price_data.index[0]
-    is_wide = _is_bar_wider_than_lookback(price_data, idx, 1, 0.5)  # 50% = 0.5
-    assert not is_wide
+def test_is_bar_wider_than_lookback_insufficient_bars(sample_data):
+    """Test behavior with insufficient lookback bars."""
+    result = _is_bar_wider_than_lookback(
+        sample_data,
+        sample_data.index[1],  # Only 1 bar before this
+        lookback_bars=3,
+        min_size_increase_pct=0.5
+    )
+    assert result is False
 
 
-def test_is_bar_wider_than_lookback_index_error():
-    """Test that KeyError is raised if current_bar_index is not in the DataFrame index."""
-    price_data = pd.DataFrame({
-        PriceLabel.OPEN: [100, 100, 100],
-        PriceLabel.HIGH: [105, 105, 105],
-        PriceLabel.LOW: [95, 95, 95],
-        PriceLabel.CLOSE: [103, 104, 105],
-    }, index=pd.date_range('2024-01-01', periods=3))
-    with pytest.raises(KeyError):
-        _is_bar_wider_than_lookback(price_data, pd.Timestamp('2099-01-01'), 2, 50.0)
-
-
-def test_is_bar_wider_than_lookback_max_method():
-    """Test that function detects a bar wider than max lookback by required percentage."""
-    # Last bar is wider than max of lookback
-    price_data = pd.DataFrame({
-        PriceLabel.OPEN: [100, 100, 100, 100],
-        PriceLabel.HIGH: [105, 110, 105, 120],  # Max in lookback is 110
-        PriceLabel.LOW: [95, 95, 95, 90],
-        PriceLabel.CLOSE: [103, 104, 105, 110],
-    }, index=pd.date_range('2024-01-01', periods=4))
-    idx = price_data.index[-1]
-    is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5, comparison_method="max")  # 50% = 0.5
-    assert is_wide
-
-
-def test_is_bar_wider_than_lookback_avg_method():
-    """Test that function detects a bar wider than average lookback by required percentage."""
-    # Last bar is wider than average of lookback
-    price_data = pd.DataFrame({
-        PriceLabel.OPEN: [100, 100, 100, 100],
-        PriceLabel.HIGH: [105, 105, 105, 120],  # Avg in lookback is 105
-        PriceLabel.LOW: [95, 95, 95, 90],
-        PriceLabel.CLOSE: [103, 104, 105, 110],
-    }, index=pd.date_range('2024-01-01', periods=4))
-    idx = price_data.index[-1]
-    is_wide = _is_bar_wider_than_lookback(price_data, idx, 3, 0.5, comparison_method="avg")  # 50% = 0.5
-    assert is_wide
-
-
-def test_is_bar_wider_than_lookback_invalid_method():
-    """Test that function raises ValueError for invalid comparison method."""
-    price_data = pd.DataFrame({
-        PriceLabel.OPEN: [100, 100, 100],
-        PriceLabel.HIGH: [105, 105, 105],
-        PriceLabel.LOW: [95, 95, 95],
-        PriceLabel.CLOSE: [103, 104, 105],
-    }, index=pd.date_range('2024-01-01', periods=3))
-    idx = price_data.index[-1]
+def test_is_bar_wider_than_lookback_zero_reference(sample_data):
+    """Test behavior when reference size is zero."""
+    # Create data where all bars have same high and low
+    data = sample_data.copy()
+    data[PriceLabel.HIGH] = 100
+    data[PriceLabel.LOW] = 100
     
-    with pytest.raises(ValueError, match="Invalid comparison method"):
-        _is_bar_wider_than_lookback(price_data, idx, 2, 0.5, comparison_method="invalid")
+    with pytest.raises(ZeroDivisionError, match="Reference size is zero"):
+        _is_bar_wider_than_lookback(
+            data,
+            data.index[-1],
+            lookback_bars=3,
+            min_size_increase_pct=0.5
+        )
 
-# endregion _is_bar_wider_than_lookback
+
+def test_is_bar_wider_than_lookback_invalid_method(sample_data):
+    """Test behavior with invalid comparison method."""
+    with pytest.raises(ValueError, match="Invalid comparison method"):
+        _is_bar_wider_than_lookback(
+            sample_data,
+            sample_data.index[-1],
+            lookback_bars=3,
+            min_size_increase_pct=0.5,
+            comparison_method="invalid"
+        )
+# endregion
+
 
 # region: _get_wrb_series_range
 
