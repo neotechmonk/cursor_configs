@@ -29,10 +29,11 @@ def _validate_lookup_bars(
             lookback for a WRB series.
         
     Returns:
-        bool: True if validation passes
+        bool: True if validation passes, False if there are insufficient bars
+            before the start index or if total bars are less than lookback_bars
         
     Raises:
-        ValueError: If data is empty or insufficient bars for lookback period
+        ValueError: If data is empty
         IndexError: If lookback_start_idx is not in data index
     """
     # Guard clause for empty data
@@ -40,7 +41,7 @@ def _validate_lookup_bars(
         raise ValueError("No data available")
     
     if len(data) < lookback_bars:
-        raise ValueError(f"Not enough bars for lookback period. Required: {lookback_bars}, Available: {len(data)}")
+        return False
     
     # If no start index provided, use the latest bar index
     if lookback_start_idx is None:
