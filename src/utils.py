@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 import pandas as pd
 
 from src.models.base import Direction, PriceLabel
-from src.models.strategy import StrategStepEvaluationResult, StrategyStep
+from src.models.strategy import StrategyStep, StrategyStepEvaluationResult
 
 
 def get_trend(price_feed: pd.DataFrame) -> Direction:
@@ -183,7 +183,7 @@ def create_success_result(
     step: StrategyStep,
     message: Optional[str] = None,
     step_output: Optional[Dict[str, Any]] = None
-) -> StrategStepEvaluationResult:
+) -> StrategyStepEvaluationResult:
     """Create a successful strategy step evaluation result.
     
     Args:
@@ -193,12 +193,12 @@ def create_success_result(
         step_output: Optional dictionary containing step output data
         
     Returns:
-        StrategStepEvaluationResult with success status
+        StrategyStepEvaluationResult with success status
     """
     if message is None:
         message = f"Successfully completed {step.name}"
         
-    return StrategStepEvaluationResult(
+    return StrategyStepEvaluationResult(
         is_success=True,
         message=message,
         timestamp=data.index[-1] if not data.empty else None,
@@ -212,7 +212,7 @@ def create_failure_result(
     error_msg: Optional[str] = None,
     e: Optional[Exception] = None,
     step_output: Optional[Dict[str, Any]] = None
-) -> StrategStepEvaluationResult:
+) -> StrategyStepEvaluationResult:
     """Create a failed strategy step evaluation result.
     
     Args:
@@ -223,7 +223,7 @@ def create_failure_result(
         step_output: Optional dictionary containing step output data
         
     Returns:
-        StrategStepEvaluationResult with failure status
+        StrategyStepEvaluationResult with failure status
     """
     if error_msg is None and e is None:
         message = f"Failed to complete {step.name}"
@@ -234,7 +234,7 @@ def create_failure_result(
     else:
         message = f"{error_msg}: {str(e)}"
         
-    return StrategStepEvaluationResult(
+    return StrategyStepEvaluationResult(
         is_success=False,
         message=message,
         timestamp=data.index[-1] if not data.empty else None,

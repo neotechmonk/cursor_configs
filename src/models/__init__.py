@@ -2,11 +2,11 @@
 
 from src.models.base import Direction, PriceLabel
 from src.models.strategy import (
-                                 StrategStepEvaluationResult,
                                  StrategyConfig,
                                  StrategyExecutionContext,
                                  StrategyStep,
                                  StrategyStepEvalFn,
+                                 StrategyStepEvaluationResult,
 )
 
 __all__ = [
@@ -16,5 +16,5 @@ __all__ = [
     StrategyExecutionContext,
     StrategyStep,
     StrategyStepEvalFn,
-    StrategStepEvaluationResult,
+    StrategyStepEvaluationResult,
 ]

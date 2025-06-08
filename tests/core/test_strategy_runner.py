@@ -12,10 +12,10 @@ import pytest
 
 from src.core.strategy_runner import run_strategy
 from src.models import (
-    StrategStepEvaluationResult,
     StrategyConfig,
     StrategyExecutionContext,
     StrategyStep,
+    StrategyStepEvaluationResult,
 )
 from tests.mocks.mock_strategy_step_functions import (
     EXTREME_BAR_INDEX_KEY,
@@ -26,20 +26,20 @@ from tests.mocks.mock_strategy_step_functions import (
 )
 
 
-def mock_eval_step_result_success(price_feed: pd.DataFrame, exp_ret_data: Dict[str, Any], step_id: str) -> StrategStepEvaluationResult:  # noqa: F821
+def mock_eval_step_result_success(price_feed: pd.DataFrame, exp_ret_data: Dict[str, Any], step_id: str) -> StrategyStepEvaluationResult:  # noqa: F821
     if not exp_ret_data: 
         raise ValueError(f"Expected return data for step {step_id}")
     
-    return StrategStepEvaluationResult(
+    return StrategyStepEvaluationResult(
         is_success=True,
         timestamp=price_feed.index[-1],
         message=f"Succesful result for {step_id}",
         step_output=exp_ret_data)
 
     
-def mock_eval_step_result_failure(price_feed: pd.DataFrame,  step_id: str) -> StrategStepEvaluationResult:  # noqa: F821
+def mock_eval_step_result_failure(price_feed: pd.DataFrame,  step_id: str) -> StrategyStepEvaluationResult:  # noqa: F821
     
-    return StrategStepEvaluationResult(
+    return StrategyStepEvaluationResult(
             timestamp=price_feed.index[-1],
             is_success=False,
             message=f"Failed result for {step_id}",
@@ -72,15 +72,15 @@ def test_run_strategy_with_multiple_bars():
     }, index=dates)
 
     # Define the evaluation functions
-    def step1_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult:
+    def step1_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategyStepEvaluationResult:
         """sucessful evaluation for all bars"""
         return mock_eval_step_result_success(price_feed, {"step1_data": True}, "step1")
 
-    def step2_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult:
+    def step2_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategyStepEvaluationResult:
         """sucessful evaluation for all bars"""
         return mock_eval_step_result_success(price_feed, {"step2_data": True}, "step2")
 
-    def step3_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult:
+    def step3_eval(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategyStepEvaluationResult:
         """sucessful evaluation for only the three bar"""
         last_bar = price_feed.index[-1]
         if last_bar in pd.to_datetime(['2024-01-01', '2024-01-02']):

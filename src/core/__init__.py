@@ -1,6 +1,10 @@
-"""Core functionality for strategy loading and execution."""
+"""Core package for strategy system."""
 
-from .registry_loader import RegistryLoader
+from .container import StepRegistryContainer, StrategyContainer
 from .strategy_loader import StrategyLoader
 
-__all__ = ['RegistryLoader', 'StrategyLoader']
+__all__ = [
+    'StepRegistryContainer',
+    'StrategyContainer',
+    'StrategyLoader'
+]

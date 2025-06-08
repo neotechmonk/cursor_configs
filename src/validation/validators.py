@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING, Dict
 import pandas as pd
 
 if TYPE_CHECKING:
-    from src.models.strategy import StrategStepEvaluationResult, StrategyStep
+    from src.models.strategy import StrategyStep, StrategyStepEvaluationResult
 
 
 def validate_step_output_keys_and_values(
     step: 'StrategyStep',
-    result: 'StrategStepEvaluationResult'
+    result: 'StrategyStepEvaluationResult'
 ) -> None:
     """Validate that step output keys and values are non-empty.
     
@@ -33,8 +33,8 @@ def validate_step_output_keys_and_values(
 
 def validate_no_duplicate_outputs_by_different_steps(
     cur_step: 'StrategyStep',
-    cur_step_result: 'StrategStepEvaluationResult',
-    prev_results: Dict[tuple[pd.Timestamp, 'StrategyStep'], 'StrategStepEvaluationResult']
+    cur_step_result: 'StrategyStepEvaluationResult',
+    prev_results: Dict[tuple[pd.Timestamp, 'StrategyStep'], 'StrategyStepEvaluationResult']
 ) -> None:
     """Ensure only one step produces a given output.
 
@@ -62,8 +62,8 @@ def validate_no_duplicate_outputs_by_different_steps(
 
 def validate_identical_output_by_different_steps(
     cur_step: 'StrategyStep',
-    cur_step_result: 'StrategStepEvaluationResult',
-    prev_results: Dict[tuple[pd.Timestamp, 'StrategyStep'], 'StrategStepEvaluationResult']
+    cur_step_result: 'StrategyStepEvaluationResult',
+    prev_results: Dict[tuple[pd.Timestamp, 'StrategyStep'], 'StrategyStepEvaluationResult']
 ) -> None:
     """Ensure that different StrategySteps do not produce identical output keys.
 

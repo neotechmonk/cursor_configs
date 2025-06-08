@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 import yaml
 
-from src.models.base import PriceLabel
+from models.base import PriceLabel
 
 # Update import path for the wrapper functions
 from tests.mocks.mock_strategy_step_functions import (

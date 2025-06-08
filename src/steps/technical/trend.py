@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 import pandas as pd
 
-from src.models.strategy import (StrategStepEvaluationResult,
+from src.models.strategy import (StrategyStepEvaluationResult,
                                  StrategyExecutionContext, StrategyStepEvalFn)
 
 
@@ -15,7 +15,7 @@ def detect_trend(
     data: pd.DataFrame,
     context: StrategyExecutionContext,
     config: Dict[str, Any]
-) -> StrategStepEvaluationResult:
+) -> StrategyStepEvaluationResult:
     """Detect the current market trend.
     
     Args:
@@ -27,7 +27,7 @@ def detect_trend(
         Result containing the detected trend information
     """
     # TODO: Implement trend detection logic
-    return StrategStepEvaluationResult(
+    return StrategyStepEvaluationResult(
         is_success=True,
         message="Trend detection not yet implemented",
         timestamp=data.index[-1] if not data.empty else None,

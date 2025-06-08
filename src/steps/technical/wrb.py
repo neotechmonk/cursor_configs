@@ -7,7 +7,7 @@ from typing import Any, Dict, Literal
 import pandas as pd
 
 from src.models.base import PriceLabel
-from src.models.strategy import StrategStepEvaluationResult, StrategyExecutionContext
+from src.models.strategy import StrategyExecutionContext, StrategyStepEvaluationResult
 from src.utils import create_failure_result, create_success_result
 
 # Type alias for comparison methods
@@ -225,7 +225,7 @@ def detect_wide_range_bar(
     context: StrategyExecutionContext,
     config: Dict[str, Any],
     success_result_schema: Dict[str, Any] = {"strategy_wrb_detected_wide_range_bar": False}
-) -> StrategStepEvaluationResult:
+) -> StrategyStepEvaluationResult:
     """Detect if the latest bar is significantly wider than recent bars.
     
     Args:

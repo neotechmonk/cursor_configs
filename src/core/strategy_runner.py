@@ -6,10 +6,10 @@ import pandas as pd
 
 # Import necessary types from models using absolute path from src
 from src.models import (
-    StrategStepEvaluationResult,
     StrategyConfig,
     StrategyExecutionContext,
     StrategyStep,
+    StrategyStepEvaluationResult,
 )
 
 
@@ -17,7 +17,7 @@ def _execute_strategy_step(
     step: StrategyStep, 
     price_feed: pd.DataFrame, 
     context: StrategyExecutionContext
-) -> StrategStepEvaluationResult:
+) -> StrategyStepEvaluationResult:
     """Executes a single strategy step using the provided context.
     
     Args:
@@ -30,24 +30,24 @@ def _execute_strategy_step(
         
     Note:
         The evaluation function is expected to have the signature:
-        (price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategStepEvaluationResult
+        (price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategyStepEvaluationResult
     """
     try:
-        result: StrategStepEvaluationResult = step.evaluation_fn(
+        result: StrategyStepEvaluationResult = step.evaluation_fn(
             price_feed=price_feed,
             context=context,
             **step.config
         )
     except Exception as e:
-        return StrategStepEvaluationResult(
+        return StrategyStepEvaluationResult(
             is_success=False, 
             message=f"Error executing step '{step.name}' wrapper: {e}"
         )
 
-    if not isinstance(result, StrategStepEvaluationResult):
-        return StrategStepEvaluationResult(
+    if not isinstance(result, StrategyStepEvaluationResult):
+        return StrategyStepEvaluationResult(
             is_success=False, 
-            message=f"Step '{step.name}' evaluation function returned {type(result).__name__}, expected StrategStepEvaluationResult"
+            message=f"Step '{step.name}' evaluation function returned {type(result).__name__}, expected StrategyStepEvaluationResult"
         )
     return result
 
@@ -94,7 +94,7 @@ def run_strategy(
         print(f"  Executing step {i}: {strategy.steps[i-1].name} (ID: {strategy.steps[i-1].id}) using context")
         
         # Execute step with the context as it is *at the start of this call*
-        result: StrategStepEvaluationResult = _execute_strategy_step(strategy.steps[i-1], incremental_price_feed, context=context)
+        result: StrategyStepEvaluationResult = _execute_strategy_step(strategy.steps[i-1], incremental_price_feed, context=context)
 
         # Add result to context using the latest bar's index
         try:

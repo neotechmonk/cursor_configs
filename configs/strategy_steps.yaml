@@ -34,9 +34,13 @@ steps:
     return_map:
       fib_valid: "_"  # Direct value from function return
 
-config_mapping:
-  frame_size: "frame_size"
-  min_bars: "min_bars"
-  max_bars: "max_bars"
-  min_fib_extension: "min_fib_extension"
-  max_fib_extension: "max_fib_extension" 
+  detect_wrb:
+    function: "src.steps.technical.wrb.detect_wide_range_bar"
+    # input_params_map:
+      # price_data: "price_data"  # Source determined by execution layer
+    return_map:
+      strategy_wrb_detected_wide_range_bar: "_"  # Direct value from function return
+    config_mapping:
+      lookback_bars: "lookback_bars"
+      min_size_increase_dec: "min_size_increase_dec"
+

@@ -17,10 +17,10 @@ from src.core.strategy_runner import _execute_strategy_step
 
 # Import the moved models and types
 from src.models import (
-    StrategStepEvaluationResult,
     StrategyConfig,
     StrategyExecutionContext,
     StrategyStep,
+    StrategyStepEvaluationResult,
 )
 
 
@@ -137,7 +137,7 @@ def load_strategy_config(strategy_name: str, config_dir: str = "configs/strategi
 def run_strategy(
     strategy: StrategyConfig, 
     price_feed: pd.DataFrame
-) -> Tuple[StrategyExecutionContext, Dict[pd.Timestamp, Tuple[str, StrategStepEvaluationResult]], List[Tuple[StrategyStep, StrategStepEvaluationResult]]]:
+) -> Tuple[StrategyExecutionContext, Dict[pd.Timestamp, Tuple[str, StrategyStepEvaluationResult]], List[Tuple[StrategyStep, StrategyStepEvaluationResult]]]:
     """Executes the strategy steps sequentially, managing execution context and history log.
     
     Args:
@@ -155,9 +155,9 @@ def run_strategy(
         - Handles timestamp collisions in the history log
         - Validates step outputs before adding to context
     """
-    executed_results_this_run: List[Tuple[StrategyStep, StrategStepEvaluationResult]] = []
+    executed_results_this_run: List[Tuple[StrategyStep, StrategyStepEvaluationResult]] = []
     current_context = StrategyExecutionContext() # Start with empty context (latest results)
-    full_history_log: Dict[pd.Timestamp, Tuple[str, StrategStepEvaluationResult]] = {} # Separate full log
+    full_history_log: Dict[pd.Timestamp, Tuple[str, StrategyStepEvaluationResult]] = {} # Separate full log
     
     print(f"Running strategy: {strategy.name}")
     try:

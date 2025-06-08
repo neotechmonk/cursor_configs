@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 import pandas as pd
 
-from src.models.strategy import (StrategStepEvaluationResult,
+from src.models.strategy import (StrategyStepEvaluationResult,
                                  StrategyExecutionContext, StrategyStepEvalFn)
 
 
@@ -16,7 +16,7 @@ def validate_data(
     data: pd.DataFrame,
     context: StrategyExecutionContext,
     config: Dict[str, Any]
-) -> StrategStepEvaluationResult:
+) -> StrategyStepEvaluationResult:
     """Validate the input price data.
     
     Args:
@@ -28,7 +28,7 @@ def validate_data(
         Result of the validation step
     """
     # TODO: Implement data validation logic
-    return StrategStepEvaluationResult(
+    return StrategyStepEvaluationResult(
         is_success=True,
         message="Data validation not yet implemented",
         timestamp=data.index[-1] if not data.empty else None,
