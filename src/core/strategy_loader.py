@@ -1,57 +1,74 @@
-"""Strategy loader for creating strategy configurations from YAML files."""
+"""Strategy loader module."""
 
-from typing import Dict
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import yaml
 
-from src.core.registry_loader import RegistryLoader
-from src.models import StrategyConfig, StrategyStep
-from src.sandbox.evaluator import StepEvaluator
+from src.models.strategy import StrategyConfig
+from src.models.system import StrategyStepRegistry
 
 
 class StrategyLoader:
-    def __init__(self, registry_loader: RegistryLoader):
-        self.registry_loader = registry_loader
+    """Loads and validates strategy configurations."""
+    
+    def __init__(self, registry: StrategyStepRegistry):
+        """Initialize strategy loader.
         
-    def load_strategy(self, strategy_name: str, config_dir: str = "configs/strategies") -> StrategyConfig:
-        """Load a specific strategy configuration."""
-        config_path = f"{config_dir}/{strategy_name}.yaml"
+        Args:
+            registry: Strategy step registry for validation
+        """
+        self.registry = registry
+    
+    def load_strategy(self, name: str, config_dir: str) -> StrategyConfig:
+        """Load a strategy by name.
         
-        with open(config_path, 'r') as f:
-            config_data = yaml.safe_load(f)
+        Args:
+            name: Strategy name (without .yaml extension)
+            config_dir: Directory containing strategy configs
             
-        if not isinstance(config_data, dict):
-            raise ValueError("Strategy YAML must be a dictionary")
+        Returns:
+            Loaded and validated strategy config
             
-        steps = []
-        step_map: Dict[str, StrategyStep] = {}
+        Raises:
+            FileNotFoundError: If strategy config not found
+            ValueError: If strategy config is invalid
+        """
+        config_path = Path(config_dir) / f"{name}.yaml"
+        if not config_path.exists():
+            raise FileNotFoundError(f"Strategy config not found: {config_path}")
+            
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+            
+        return self._create_strategy_config(name, config)
+    
+    def _create_strategy_config(self, name: str, config: Dict[str, Any]) -> StrategyConfig:
+        """Create a strategy config from config dict.
         
-        # First pass: Create all steps
-        for step_data in config_data["steps"]:
-            step_id = step_data["id"]
-            template = self.registry_loader.get_template(step_id)
-            function = template.load_function()
-            evaluator = StepEvaluator(template, function)
+        Args:
+            name: Strategy name
+            config: Strategy configuration
             
-            step = StrategyStep(
-                id=step_id,
-                name=step_data["name"],
-                evaluator=evaluator,
-                description=step_data.get("description"),
-                config=step_data.get("config", {}),
-                reevaluates=[]  # Will be populated in second pass
-            )
-            steps.append(step)
-            step_map[step_id] = step
+        Returns:
+            Created strategy config
             
-        # Second pass: Set up reevaluation relationships
-        for step_data, step in zip(config_data["steps"], steps):
-            for reevaluate_id in step_data.get("reevaluates", []):
-                if reevaluate_id not in step_map:
-                    raise ValueError(f"Step '{step.name}' references non-existent step ID: {reevaluate_id}")
-                step.reevaluates.append(step_map[reevaluate_id])
+        Raises:
+            ValueError: If config is invalid
+        """
+        # Validate required fields
+        required_fields = ["steps"]
+        for field in required_fields:
+            if field not in config:
+                raise ValueError(f"Missing required field: {field}")
                 
+        # Create strategy config
+        steps = []
+        for step_config in config["steps"]:
+            step = self.registry.get_step(step_config)
+            steps.append(step)
+        
         return StrategyConfig(
-            name=config_data["name"],
+            name=name,
             steps=steps
         ) 
