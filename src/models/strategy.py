@@ -3,8 +3,9 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.models.system import StrategyStepTemplate
 from src.validation.validators import (
     validate_identical_output_by_different_steps,
     validate_no_duplicate_outputs_by_different_steps,
@@ -44,41 +45,72 @@ class StrategyStep(BaseModel):
     Defined in ./config/strategies/[strategy_name].yaml
 
     Attributes:
-        id: Unique identifier for the step; mandatory
-        name: Human-readable name of the step; mandatory
-        evaluation_fn: Function that evaluates this step; mandatory
+        system_step_id: ID of the system step template to use (e.g. "detect_trend")
         description: Optional description of what the step does
-        config: Configuration parameters for the evaluation function
+        static_config: Static configuration parameters for the step
+        dynamic_config: Mapping of dynamic input parameters to their sources
         reevaluates: List of steps that must be re-evaluated before this step
+        template: Reference to the StrategyStepTemplate this step uses
 
     Example:
         ```yaml
         name: "Trend Following Strategy"
         steps:
-          - id: detect_trend
-            name: "Detect Trend"
-            description: "Determine if market is trending up, down, or ranging"
-            evaluation_fn: "utils.get_trend"
-            config: {}
-            reevaluates: []
+          - system_step_id: detect_trend
+            description: "Determine the current market trend direction"
+            static_config: {}
+            dynamic_config: {}
         ```
     """
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
     
-    id: str
-    name: str
-    evaluation_fn: StrategyStepEvalFn 
+    system_step_id: str
     description: Optional[str] = Field(default=None)
-    config: Dict[str, Any] = Field(default_factory=dict)
+    static_config: Dict[str, Any] = Field(default_factory=dict)
+    dynamic_config: Dict[str, str] = Field(default_factory=dict)
     reevaluates: List['StrategyStep'] = Field(default_factory=list)
+    template: StrategyStepTemplate  # Required field, no default
+
+    @model_validator(mode='after')
+    def validate_config_against_template(self) -> 'StrategyStep':
+        """Validate that the configuration matches the template requirements.
+        
+        Returns:
+            The validated model instance
+            
+        Raises:
+            ValueError: If configuration is invalid
+        """
+        errors = []
+        
+        # Validate static config matches template's config_mapping
+        for param_name in self.static_config:
+            if param_name not in self.template.config_mapping:
+                errors.append(
+                    f"Static config parameter '{param_name}' not found in template config_mapping"
+                )
+                
+        # Validate dynamic config matches template's input_params_map
+        for param_name in self.dynamic_config:
+            if param_name not in self.template.input_params_map:
+                errors.append(
+                    f"Dynamic config parameter '{param_name}' not found in template input_params_map"
+                )
+        
+        if errors:
+            raise ValueError("\n".join(errors))
+                    
+        return self
 
     def __hash__(self) -> int:
-        return hash((self.id, self.name, self.description))
+        return hash((self.system_step_id, self.description))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, StrategyStep):
             return NotImplemented
-        return (self.id, self.name, self.description) == (other.id, other.name, other.description)
+        return (self.system_step_id, self.description) == (
+            other.system_step_id, other.description
+        )
 
 
 class StrategyConfig(BaseModel):
