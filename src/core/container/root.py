@@ -25,13 +25,9 @@ class RootContainer(containers.DeclarativeContainer):
     # Strategy container
     strategies = providers.Container(
         StrategiesContainer,
-        config=config.strategies,
-        step_registry=steps.registry
+        config=config,
+        step_registry=steps.registry,
+        strategies_dir=config.strategies.dir
     )
 
-    wiring_config = containers.WiringConfiguration(
-    modules=[
-        "main",  # entry point module
-        # add other modules needing @inject or Provide[] here
-    ]
-) 
+    
