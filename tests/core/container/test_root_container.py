@@ -47,7 +47,7 @@ def test_root_container_integration(temp_registry_file, temp_strategies_dir):
     container = RootContainer()
     container.config.step_registry.registry_file.from_value(temp_registry_file)
     # Use the correct config path for strategies directory
-    container.config.strategy.strategies_dir.from_value(str(temp_strategies_dir))
+    container.config.strategies.strategies_dir.from_value(str(temp_strategies_dir))
     container.wire()
     
     # Test that the step registry is properly injected into the strategy container

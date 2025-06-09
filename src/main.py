@@ -1,84 +1,55 @@
-"""Main application entry point."""
-
-import argparse
+# app/main.py
+import os
 from pathlib import Path
-from typing import Any, Dict
 
-import yaml
+from dependency_injector.wiring import Provide, inject
+from dotenv import load_dotenv
 
-from src.core.container import StepRegistryContainer, StrategyContainer
-from src.core.strategy_runner import StrategyRunner
+from core.container.root import RootContainer
+from loaders.strategy_config_loader import StrategyConfigLoader
+from models.strategy import StrategyExecutionContext
+from models.system import StrategyStepRegistry
 
 
-def load_price_data(file_path: str) -> Dict[str, Any]:
-    """Load price data from file.
-    
-    Args:
-        file_path: Path to price data file
-        
-    Returns:
-        Price data dictionary
-        
-    Raises:
-        FileNotFoundError: If file not found
-        ValueError: If file format is invalid
+@inject
+def run_app(
+    strategies_dir: str = Provide[RootContainer.config.strategies.strategies_dir],
+    registry: StrategyStepRegistry = Provide[RootContainer.steps.registry]
+):
     """
-    path = Path(file_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Price data file not found: {file_path}")
-        
-    with open(path) as f:
-        data = yaml.safe_load(f)
-        
-    if not isinstance(data, dict):
-        raise ValueError("Price data must be a dictionary")
-        
-    return data
+    Entry point for the application. Dependencies are injected.
+    """
+    print(f"Using strategies directory: {strategies_dir}")
+    loader = StrategyConfigLoader(
+        config_dir=Path(strategies_dir),
+        step_registry=registry
+    )
+    strategy = loader.load_strategy("sample_strategy")
+    context = StrategyExecutionContext()
 
-
-def main():
-    """Main application entry point."""
-    parser = argparse.ArgumentParser(description="Trading Strategy System")
-    parser.add_argument("--config", default="configs/config.yaml", help="Path to config file")
-    parser.add_argument("--strategy", required=True, help="Strategy name to run")
-    parser.add_argument("--data", required=True, help="Path to price data file")
-    args = parser.parse_args()
-    
-    # Load config
-    with open(args.config) as f:
-        config = yaml.safe_load(f)
-    
-    # Initialize containers
-    step_registry = StepRegistryContainer()
-    step_registry.config.from_dict({
-        "steps_dir": config["steps_dir"],
-        "steps_config": config["steps_config"]
-    })
-    
-    strategy_container = StrategyContainer()
-    strategy_container.config.from_dict({
-        "strategies_dir": config["strategies_dir"]
-    })
-    strategy_container.step_registry.override(step_registry.registry)
-    
-    # Load strategy
-    strategy = strategy_container.strategy(args.strategy)
-    
-    # Load price data
-    price_data = load_price_data(args.data)
-    
-    # Run strategy
-    runner = StrategyRunner()
-    results = runner.run_strategy(strategy, price_data)
-    
-    # Print results
-    print(f"\nStrategy Results for {args.strategy}:")
-    print("=" * 50)
     for step in strategy.steps:
-        print(f"\nStep: {step.name}")
-        print(f"Description: {step.description}")
-        print(f"Result: {results[step.id]}")
+        template = registry.get_step_template(step.system_step_id)
+        print(f"Executing step: {step.system_step_id}")
+        print(f"  Description: {step.description}")
+        print(f"  Template: {template.function}")
 
 
 if __name__ == "__main__":
-    main() 
+    # Load environment variables
+    load_dotenv()
+    
+    # Get paths from environment variables
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    strategies_dir = os.path.join(project_root, os.getenv("STRATEGIES_DIR", "configs/strategies"))
+    registry_file = os.path.join(project_root, os.getenv("STEP_REGISTRY_FILE", "configs/strategy_steps.yaml"))
+    
+    # Initialize container with paths from environment
+    container = RootContainer()
+    container.config.strategies.strategies_dir.from_value(strategies_dir)
+    container.config.step_registry.registry_file.from_value(registry_file)
+    
+    # Wire the container to this module
+    container.wire(modules=[__name__])
+    
+    # Run the application
+    run_app()
