@@ -11,13 +11,10 @@ def test_step_registry_loading():
     # Get the project root directory
     project_root = Path(__file__).parent.parent.parent.parent
         
-    # # Initialize container
-    container = StepRegistryContainer()
-    
-    # Configure container
-    container.config.from_dict({
-        "registry_file": str(project_root / "configs" / "strategy_steps.yaml")
-    })
+    # Initialize container
+    container = StepRegistryContainer(
+        registry_file=project_root / "configs" / "strategy_steps.yaml"
+    )
     
     # Get registry instance
     registry: StrategyStepRegistry = container.registry()

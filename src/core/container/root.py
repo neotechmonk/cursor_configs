@@ -19,7 +19,8 @@ class RootContainer(containers.DeclarativeContainer):
     # Step registry container
     steps = providers.Container(
         StepRegistryContainer,
-        config=config.step_registry
+        config=config.step_registry,
+        registry_file=config.step_registry.registry_file
     )
     
     # Strategy container

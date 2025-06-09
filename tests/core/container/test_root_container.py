@@ -43,11 +43,13 @@ def temp_strategies_dir(tmp_path):
 
 def test_root_container_integration(temp_registry_file, temp_strategies_dir):
     """Test that the root container properly wires up the step registry and strategy containers."""
-    # Debug: Check if temp_strategies_dir exists
     container = RootContainer()
+    
+    # Configure container
     container.config.step_registry.registry_file.from_value(temp_registry_file)
-    # Use the correct config path for strategies directory
-    container.config.strategies.strategies_dir.from_value(str(temp_strategies_dir))
+    container.config.strategies.dir.from_value(temp_strategies_dir)
+    
+    # Wire container
     container.wire()
     
     # Test that the step registry is properly injected into the strategy container

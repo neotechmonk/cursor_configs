@@ -1,4 +1,3 @@
-
 import pytest
 import yaml
 
@@ -37,8 +36,8 @@ def temp_strategies_dir(tmp_path):
 
 def test_strategy_container_wiring(mock_step_registry, temp_strategies_dir):
     container = StrategiesContainer(
-        config={"strategies_dir": temp_strategies_dir},
-        step_registry=mock_step_registry
+        step_registry=mock_step_registry,
+        strategies_dir=temp_strategies_dir
     )
     container.wire()
     
