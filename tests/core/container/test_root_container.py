@@ -1,12 +1,10 @@
 """Tests for the root container."""
 
-from pathlib import Path
 
 import pytest
 import yaml
 
 from src.core.container.root import RootContainer
-from src.models.system import StrategyStepRegistry
 
 
 @pytest.fixture
@@ -45,13 +43,15 @@ def temp_strategies_dir(tmp_path):
 
 def test_root_container_integration(temp_registry_file, temp_strategies_dir):
     """Test that the root container properly wires up the step registry and strategy containers."""
+    # Debug: Check if temp_strategies_dir exists
     container = RootContainer()
     container.config.step_registry.registry_file.from_value(temp_registry_file)
-    container.config.strategy.strategies_dir.from_value(temp_strategies_dir)
+    # Use the correct config path for strategies directory
+    container.config.strategy.strategies_dir.from_value(str(temp_strategies_dir))
     container.wire()
     
     # Test that the step registry is properly injected into the strategy container
-    strategy = container.strategy.strategy("test_strategy")
+    strategy = container.strategies.strategy("test_strategy")
     assert strategy.steps[0].template.system_step_id == "mock_step"
     
     # Test that the strategy container can access the step registry's templates
