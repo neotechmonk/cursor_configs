@@ -13,25 +13,13 @@ from models.system import StrategyStepRegistry
 
 @inject
 def run_app(
-    strategies_dir: str = Provide[RootContainer.config.strategies.strategies_dir],
-    registry: StrategyStepRegistry = Provide[RootContainer.steps.registry]
+    
+    strats = Provide[RootContainer.strategies.strategies]
 ):
     """
     Entry point for the application. Dependencies are injected.
     """
-    print(f"Using strategies directory: {strategies_dir}")
-    loader = StrategyConfigLoader(
-        config_dir=Path(strategies_dir),
-        step_registry=registry
-    )
-    strategy = loader.load_strategy("sample_strategy")
-    context = StrategyExecutionContext()
-
-    for step in strategy.steps:
-        template = registry.get_step_template(step.system_step_id)
-        print(f"Executing step: {step.system_step_id}")
-        print(f"  Description: {step.description}")
-        print(f"  Template: {template.function}")
+    print(strats.get("Trend Following Strategy"))
 
 
 if __name__ == "__main__":
@@ -39,16 +27,15 @@ if __name__ == "__main__":
     load_dotenv()
     
     # Get paths from environment variables
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    strategies_dir = os.path.join(project_root, os.getenv("STRATEGIES_DIR", "configs/strategies"))
-    registry_file = os.path.join(project_root, os.getenv("STEP_REGISTRY_FILE", "configs/strategy_steps.yaml"))
+    project_root = Path(__file__).parent.parent
+    strategies_dir = project_root / os.getenv("STRATEGIES_DIR", "configs/strategies")
+    registry_file = project_root / os.getenv("STEP_REGISTRY_FILE", "configs/strategy_steps.yaml")
     
     # Initialize container with paths from environment
     container = RootContainer()
-    container.config.strategies.strategies_dir.from_value(strategies_dir)
+    container.config.strategies_dir.from_value(strategies_dir)
     container.config.step_registry.registry_file.from_value(registry_file)
     
-    # Wire the container to this module
     container.wire(modules=[__name__])
     
     # Run the application
