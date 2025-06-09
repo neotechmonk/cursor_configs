@@ -1,3 +1,5 @@
+"""Registry of available strategy step templates."""
+
 import os
 from typing import Dict, List
 
@@ -12,6 +14,7 @@ class StrategyStepTemplate(BaseModel):
     """A template for a single strategy step.
     
     Attributes:
+        system_step_id: Unique identifier for the step in the system (e.g. "trend_following_detect_trend")
         function: The name of the function to execute
         input_params_map: Mapping of function parameter names to their source names
         return_map: Mapping of return value names (use "_" for direct value)
@@ -19,17 +22,27 @@ class StrategyStepTemplate(BaseModel):
     """
     model_config = ConfigDict(frozen=True)
     
+    system_step_id: str = Field(..., description="Unique identifier for the step in the system")
     function: str = Field(..., description="Name of the function to execute")
     input_params_map: Dict[str, str] = Field(default_factory=dict, description="Function parameter name to source name mapping")
     return_map: Dict[str, str] = Field(default_factory=dict, description="Return value name mapping (use '_' for direct value)")
     config_mapping: Dict[str, str] = Field(default_factory=dict, description="Configuration parameter name to source name mapping")
 
+    @classmethod
+    def _validate_not_empty(cls, v: str, field_name: str) -> str:
+        if not v or not v.strip():
+            raise ValueError(f"{field_name} cannot be empty")
+        return v
+
     @field_validator('function')
     @classmethod
     def function_not_empty(cls, v):
-        if not v or not v.strip():
-            raise ValueError("Function name cannot be empty")
-        return v
+        return cls._validate_not_empty(v, "Function name")
+        
+    @field_validator('system_step_id')
+    @classmethod
+    def system_step_id_not_empty(cls, v):
+        return cls._validate_not_empty(v, "System step ID")
 
 
 class StrategyStepRegistry(BaseModel):
@@ -40,8 +53,8 @@ class StrategyStepRegistry(BaseModel):
     
     ```yaml
     steps:
-      step_name_1:
-        function: function_name
+      trend_following_detect_trend:
+        function: "src.utils.get_trend"
         input_params_map:
           param1: source1
         return_map:
@@ -83,16 +96,16 @@ class StrategyStepRegistry(BaseModel):
             raise ValueError("YAML must contain a 'steps' key with step definitions")
             
         steps = {}
-        for step_name, step_data in data['steps'].items():
-            steps[step_name] = StrategyStepTemplate(**step_data)
+        for system_step_id, step_data in data['steps'].items():
+            steps[system_step_id] = StrategyStepTemplate(system_step_id=system_step_id, **step_data)
             
         return cls(steps=steps)
 
-    def get_step_template(self, step_name: str) -> StrategyStepTemplate:
-        """Get a step template by name.
+    def get_step_template(self, system_step_id: str) -> StrategyStepTemplate:
+        """Get a step template by system step ID.
         
         Args:
-            step_name: Name of the step template to retrieve
+            system_step_id: System ID of the step template to retrieve
             
         Returns:
             The requested step template
@@ -100,13 +113,13 @@ class StrategyStepRegistry(BaseModel):
         Raises:
             KeyError: If the step template doesn't exist
         """
-        if step_name not in self.steps:
-            raise KeyError(f"Step '{step_name}' not found in registry")
-        return self.steps[step_name]
+        if system_step_id not in self.steps:
+            raise KeyError(f"Step '{system_step_id}' not found in registry")
+        return self.steps[system_step_id]
 
     @property
     def step_template_names(self) -> List[str]:
-        """Get a list of all step template names."""
+        """Get a list of all system step IDs."""
         return list(self.steps.keys())
 
     @property

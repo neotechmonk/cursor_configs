@@ -3,7 +3,7 @@
 This package provides containers for managing dependencies in the strategy system.
 """
 
-from .step_registry import StepRegistryContainer
-from .strategy import StrategyContainer
+from .steps import StepRegistryContainer
+from .strategies import StrategiesContainer
 
-__all__ = ['StepRegistryContainer', 'StrategyContainer'] 
+__all__ = ['StepRegistryContainer', 'StrategiesContainer'] 

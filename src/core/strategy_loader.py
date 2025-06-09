@@ -1,7 +1,7 @@
 """Strategy loader module."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import yaml
 
@@ -35,6 +35,8 @@ class StrategyLoader:
             ValueError: If strategy config is invalid
         """
         config_path = Path(config_dir) / f"{name}.yaml"
+
+        print(f"config_path in LOADER: {config_path}")
         if not config_path.exists():
             raise FileNotFoundError(f"Strategy config not found: {config_path}")
             

@@ -24,7 +24,9 @@ class StrategyConfigLoader:
             config_dir: Directory containing strategy YAML files
             step_registry: Registry to resolve step templates
         """
-        self.config_dir = config_dir
+        # Convert config_dir to Path if it is a string
+        print(f"config_dir in loader: {config_dir}")
+        self.config_dir = Path(config_dir) if isinstance(config_dir, str) else config_dir
         self.step_registry = step_registry
         
         if not self.config_dir.exists():

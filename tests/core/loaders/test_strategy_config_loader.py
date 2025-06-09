@@ -1,6 +1,5 @@
 """Tests for the strategy configuration loader."""
 
-from pathlib import Path
 
 import pytest
 from pydantic import ValidationError

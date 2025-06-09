@@ -4,6 +4,7 @@
 #   - For input_params_map: Name to look up in the execution context
 #   - For return_map: "_" means use function's return value directly, otherwise rename the return value
 #   - For config_mapping: Name to look up in the config
+# Note: The step keys (e.g. "detect_trend") are the system_step_ids used in strategy configurations
 steps:
   detect_trend:
     function: "src.utils.get_trend"

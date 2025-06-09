@@ -12,17 +12,21 @@ from src.models.strategy import (
 def step1() -> StrategyStep:
     return StrategyStep(id="step1", name="Step One", description="", evaluation_fn=lambda p,c,**kw: None, config={}, reevaluates=[])
 
+
 @pytest.fixture
 def step2() -> StrategyStep:
     return StrategyStep(id="step2", name="Step Two", description="", evaluation_fn=lambda p,c,**kw: None, config={}, reevaluates=[])
+
 
 @pytest.fixture
 def ts1() -> pd.Timestamp:
     return pd.Timestamp("2023-01-01 10:00:00")
 
+
 @pytest.fixture
 def ts2() -> pd.Timestamp:
     return pd.Timestamp("2023-01-01 10:01:00")
+
 
 def test_add_single_result(step1, ts1):
     context = StrategyExecutionContext()
@@ -33,6 +37,7 @@ def test_add_single_result(step1, ts1):
     assert len(context.latest_results_cache) == 1
     assert key in context.strategy_steps_results
     assert context.strategy_steps_results[key] == result
+
 
 def test_add_multiple_unique_results(step1, step2, ts1, ts2):
     context = StrategyExecutionContext()
@@ -51,6 +56,7 @@ def test_add_multiple_unique_results(step1, step2, ts1, ts2):
     assert context.strategy_steps_results[key1] == result1
     assert context.strategy_steps_results[key2] == result2
 
+
 def test_add_overwriting_result_upon_success(step1, ts1, ts2):
     context = StrategyExecutionContext()
     result1 = StrategyStepEvaluationResult(is_success=True, message="First run", step_output={"trend": "UP"})
@@ -67,6 +73,7 @@ def test_add_overwriting_result_upon_success(step1, ts1, ts2):
     key2 = (ts2, step1)
     assert context.strategy_steps_results[key1] == result1
     assert context.strategy_steps_results[key2] == result2
+
 
 def test_preserve_successful_result_upon_sebsequent_failure(step1, ts1, ts2):
     context = StrategyExecutionContext()
@@ -86,6 +93,7 @@ def test_preserve_successful_result_upon_sebsequent_failure(step1, ts1, ts2):
     assert context.strategy_steps_results[key2] == result_failure
     latest_result = context.get_latest_strategey_step_output_result("trend")
     assert latest_result == "UP"
+
 
 def test_reject_duplicate_output_from_different_steps():
     """Test that adding the same output from different steps raises ValueError."""

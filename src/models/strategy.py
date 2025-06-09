@@ -3,7 +3,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.models.system import StrategyStepTemplate
 from src.validation.validators import (
@@ -62,7 +62,7 @@ class StrategyStep(BaseModel):
             dynamic_config: {}
         ```
     """
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     system_step_id: str
     description: Optional[str] = Field(default=None)

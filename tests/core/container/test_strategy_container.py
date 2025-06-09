@@ -1,9 +1,8 @@
-from pathlib import Path
 
 import pytest
 import yaml
 
-from src.core.container.strategy import StrategyContainer
+from core.container.strategies import StrategiesContainer
 from src.models.system import StrategyStepRegistry, StrategyStepTemplate
 
 
@@ -18,6 +17,7 @@ def mock_step_registry():
         config_mapping={}
     )
     return StrategyStepRegistry(steps={"mock_step": template})
+
 
 @pytest.fixture
 def temp_strategies_dir(tmp_path):
@@ -34,8 +34,9 @@ def temp_strategies_dir(tmp_path):
         yaml.safe_dump(strategy, f)
     return strategies_dir
 
+
 def test_strategy_container_wiring(mock_step_registry, temp_strategies_dir):
-    container = StrategyContainer(
+    container = StrategiesContainer(
         config={"strategies_dir": temp_strategies_dir},
         step_registry=mock_step_registry
     )

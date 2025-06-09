@@ -1,4 +1,3 @@
-import pytest
 
 from src.models.strategy import StrategyStepEvaluationResult
 

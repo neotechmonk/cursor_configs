@@ -2,8 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from core.registry_loader import RegistryLoader
-from sandbox.models import StrategyStepTemplate
+from models.system import StrategyStepTemplate
 
 pytest.skip("Skipping all tests in this file for now", allow_module_level=True)
 
