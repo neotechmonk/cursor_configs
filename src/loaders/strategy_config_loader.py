@@ -113,14 +113,12 @@ class StrategyConfigLoader:
         Raises:
             ValidationError: If strategy data is invalid
         """
-        # First pass: Create all StrategyStep objects and track reevaluation relationships
         steps = []
         step_map = {}  # Map system_step_id to StrategyStep
-        reevaluation_map = {}  # Map step_id to list of steps that need to be reevaluated
         
         for step_data in data['steps']:
-            # Store reevaluates and remove from step_data before creating step
-            reevaluation_map[step_data['system_step_id']] = step_data.pop('reevaluates', [])
+            # Get reevaluates before creating step
+            reevaluates_ids = step_data.pop('reevaluates', [])
             
             # Create step without reevaluates
             template = self.step_registry.get_step_template(step_data['system_step_id'])
@@ -130,9 +128,8 @@ class StrategyConfigLoader:
             steps.append(step)
             step_map[step.system_step_id] = step
             
-        # Second pass: Apply all reevaluation relationships at once
-        for step_id, reevaluates_ids in reevaluation_map.items():
-            step_map[step_id].reevaluates = [
+            # Resolve reevaluates immediately using steps we've created so far
+            step.reevaluates = [
                 step_map[ref_id] for ref_id in reevaluates_ids
                 if ref_id in step_map
             ]
