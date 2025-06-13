@@ -4,6 +4,7 @@ from pathlib import Path
 
 from dependency_injector import containers, providers
 
+from src.loaders.step_registry_loader import load_step_registry
 from src.models.system import StrategyStepRegistry
 
 
@@ -24,8 +25,8 @@ class StepRegistryContainer(containers.DeclarativeContainer):
     
     # Registry singleton
     registry = providers.Singleton(
-        StrategyStepRegistry.from_yaml,
-        yaml_file=registry_file
+        load_step_registry,
+        registry_file=registry_file
     )
     
     def wire(self, *args, **kwargs) -> None:

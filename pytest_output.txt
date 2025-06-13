@@ -1,4 +1,0 @@
-ImportError while loading conftest '/Users/ntm/projects/tradex_strategy_pc/tests/conftest.py'.
-tests/conftest.py:8: in <module>
-    from .mocks.mock_strategy_step_functions import (
-E   ImportError: attempted relative import with no known parent package

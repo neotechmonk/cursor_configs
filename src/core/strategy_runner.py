@@ -33,21 +33,35 @@ def _execute_strategy_step(
         (price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategyStepEvaluationResult
     """
     try:
-        result: StrategyStepEvaluationResult = step.evaluation_fn(
+        # Get the evaluation function (this will load it if not already loaded)
+        eval_fn = step.evaluation_fn
+        
+        # Execute the function with the provided context and config
+        result: StrategyStepEvaluationResult = eval_fn(
             price_feed=price_feed,
             context=context,
-            **step.config
+            **step.static_config
+        )
+    except ImportError as e:
+        return StrategyStepEvaluationResult(
+            is_success=False, 
+            message=f"Failed to import evaluation function for step '{step.system_step_id}': {e}"
+        )
+    except AttributeError as e:
+        return StrategyStepEvaluationResult(
+            is_success=False, 
+            message=f"Failed to find evaluation function for step '{step.system_step_id}': {e}"
         )
     except Exception as e:
         return StrategyStepEvaluationResult(
             is_success=False, 
-            message=f"Error executing step '{step.name}' wrapper: {e}"
+            message=f"Error executing step '{step.system_step_id}': {e}"
         )
 
     if not isinstance(result, StrategyStepEvaluationResult):
         return StrategyStepEvaluationResult(
             is_success=False, 
-            message=f"Step '{step.name}' evaluation function returned {type(result).__name__}, expected StrategyStepEvaluationResult"
+            message=f"Step '{step.system_step_id}' evaluation function returned {type(result).__name__}, expected StrategyStepEvaluationResult"
         )
     return result
 
@@ -91,16 +105,17 @@ def run_strategy(
 
     for i in range(1, len(price_feed) + 1):  # start at 1, include last bar
         incremental_price_feed = price_feed.iloc[:i]  # Now first slice will have one row
-        print(f"  Executing step {i}: {strategy.steps[i-1].name} (ID: {strategy.steps[i-1].id}) using context")
+        current_step = strategy.steps[i-1]
+        print(f"  Executing step {i}: {current_step.system_step_id} using context")
         
         # Execute step with the context as it is *at the start of this call*
-        result: StrategyStepEvaluationResult = _execute_strategy_step(strategy.steps[i-1], incremental_price_feed, context=context)
+        result: StrategyStepEvaluationResult = _execute_strategy_step(current_step, incremental_price_feed, context=context)
 
         # Add result to context using the latest bar's index
         try:
-            context.add_result(latest_bar_index, strategy.steps[i-1], result)
+            context.add_result(latest_bar_index, current_step, result)
         except ValueError as ve: # Catch potential validation errors from add_result
-            print(f"  Validation Error during add_result for step '{strategy.steps[i-1].name}': {ve}")
+            print(f"  Validation Error during add_result for step '{current_step.system_step_id}': {ve}")
             print("  Stopping step processing for this call due to validation error.")
             break # Stop processing further steps for this call
         

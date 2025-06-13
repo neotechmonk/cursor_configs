@@ -29,6 +29,19 @@ def run_app(
     Entry point for the application. Dependencies are injected.
     """
     strategy = strategies.get("Trend Following Strategy")
+
+    """
+    Steps to run:
+    1. Load price data 
+        ? Design to associate a given price feed with a given strategy.
+        ? How to handle multiple price feeds?
+        ? How to associate a given price feed with a given ticker that will use a given strategy?
+    2. Load strategy config
+    3. Run each step in the strategy
+    4. Print results
+    5. Save results
+    
+    """
     print(strategy)
 
 

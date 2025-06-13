@@ -8,6 +8,7 @@ from src.models.strategy import (
                                  StrategyStepEvalFn,
                                  StrategyStepEvaluationResult,
 )
+from src.models.system import StrategyStepTemplate
 
 __all__ = [
     Direction,
@@ -17,4 +18,5 @@ __all__ = [
     StrategyStep,
     StrategyStepEvalFn,
     StrategyStepEvaluationResult,
+    StrategyStepTemplate,
 ]

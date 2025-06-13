@@ -1,9 +1,45 @@
-"""Test script for StepRegistryContainer."""
+"""Tests for the step registry container."""
 
 from pathlib import Path
 
-from models.system import StrategyStepRegistry
+import pytest
+import yaml
+
 from src.core.container import StepRegistryContainer
+from src.models.system import StrategyStepRegistry
+
+
+@pytest.fixture
+def mock_registry_file(tmp_path):
+    """Create a mock registry file."""
+    registry_file = tmp_path / "registry.yaml"
+    registry = {
+        "steps": {
+            "mock_step": {
+                "function": "mock.func",
+                "input_params_map": {},
+                "return_map": {},
+                "config_mapping": {}
+            }
+        }
+    }
+    with open(registry_file, "w") as f:
+        yaml.safe_dump(registry, f)
+    return registry_file
+
+
+def test_step_registry_container_creation(mock_registry_file):
+    """Test creating a step registry container."""
+    # Create container with required dependencies
+    container = StepRegistryContainer()
+    container.registry_file.override(mock_registry_file)
+    
+    # Wire container
+    container.wire()
+    
+    # Verify registry is created
+    assert container.registry() is not None
+    assert isinstance(container.registry(), StrategyStepRegistry)
 
 
 def test_step_registry_loading():

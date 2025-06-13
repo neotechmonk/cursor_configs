@@ -7,26 +7,29 @@ from src.models.system import StrategyStepTemplate
 
 
 def test_strategy_step_template_instantiation():
-    """Test basic instantiation of StrategyStepTemplate with valid data."""
+    """Test basic StrategyStepTemplate instantiation."""
     step = StrategyStepTemplate(
+        system_step_id="trend_analysis",
         function="src.utils.get_trend",
-        input_params_map={},
-        return_map={"trend": "_"},
-        config_mapping={}
+        input_params_map={"price_data": "market.prices"},
+        return_map={"trend": "_"}
     )
+    
+    assert step.system_step_id == "trend_analysis"
     assert step.function == "src.utils.get_trend"
-    assert step.return_map["trend"] == "_"
-    assert step.input_params_map == {}
+    assert step.input_params_map == {"price_data": "market.prices"}
+    assert step.return_map == {"trend": "_"}
     assert step.config_mapping == {}
-
 
 def test_strategy_step_template_with_complex_mappings():
     """Test StrategyStepTemplate with complex input/output mappings."""
     step = StrategyStepTemplate(
-        function="src.utils.analyze_market",
+        system_step_id="trend_analysis",
+        function="src.utils.analyze_trend",
         input_params_map={
             "price_data": "market.prices",
-            "volume_data": "market.volumes"
+            "volume_data": "market.volumes",
+            "indicators": "analysis.indicators"
         },
         return_map={
             "trend": "_",
@@ -39,63 +42,73 @@ def test_strategy_step_template_with_complex_mappings():
         }
     )
     
-    assert step.function == "src.utils.analyze_market"
-    assert step.input_params_map["price_data"] == "market.prices"
-    assert step.return_map["trend"] == "_"
-    assert step.config_mapping["window_size"] == "window_size"
-
+    assert step.system_step_id == "trend_analysis"
+    assert step.function == "src.utils.analyze_trend"
+    assert len(step.input_params_map) == 3
+    assert len(step.return_map) == 3
+    assert len(step.config_mapping) == 2
 
 def test_strategy_step_template_empty_function():
     """Test that empty function raises ValueError."""
     with pytest.raises(ValueError, match="Function name cannot be empty"):
         StrategyStepTemplate(
+            system_step_id="trend_analysis",
             function="",
             input_params_map={},
             return_map={},
             config_mapping={}
         )
 
-
 def test_strategy_step_template_whitespace_function():
     """Test that whitespace-only function raises ValueError."""
     with pytest.raises(ValueError, match="Function name cannot be empty"):
         StrategyStepTemplate(
+            system_step_id="trend_analysis",
             function="   ",
             input_params_map={},
             return_map={},
             config_mapping={}
         )
 
-
 def test_strategy_step_template_default_values():
-    """Test that optional fields default to empty dicts."""
+    """Test StrategyStepTemplate with minimal required fields."""
     step = StrategyStepTemplate(
+        system_step_id="trend_analysis",
         function="src.utils.get_trend"
     )
+    
+    assert step.system_step_id == "trend_analysis"
+    assert step.function == "src.utils.get_trend"
     assert step.input_params_map == {}
     assert step.return_map == {}
     assert step.config_mapping == {}
 
-
 def test_strategy_step_template_immutability():
-    """Test that StrategyStepTemplate instances are immutable."""
+    """Test that StrategyStepTemplate is immutable.
+    
+    Note: In Pydantic v2, the model instance itself is frozen (preventing attribute reassignment),
+    but the dictionary attributes (input_params_map, return_map, config_mapping) are not frozen.
+    This means you can't replace the entire dictionary, but you can modify its contents.
+    This test verifies the model-level immutability by attempting to replace attributes.
+    """
     step = StrategyStepTemplate(
+        system_step_id="trend_analysis",
         function="src.utils.get_trend",
-        input_params_map={"input": "value"},
-        return_map={"output": "_"},
+        input_params_map={"price_data": "market.prices"},
+        return_map={"trend": "_"},
         config_mapping={"config": "value"}
     )
     
-    # Attempt to modify fields
-    with pytest.raises(ValidationError):
+    # Test model-level immutability
+    with pytest.raises(ValidationError, match="Instance is frozen"):
         step.function = "new_function"
     
-    # Test dictionary immutability by attempting to modify the model
-    with pytest.raises(ValidationError):
-        step.input_params_map = {"new_input": "new_value"}
+    # Test that we can't replace the entire dictionary
+    with pytest.raises(ValidationError, match="Instance is frozen"):
+        step.input_params_map = {"new_param": "new_value"}
     
-    with pytest.raises(ValidationError):
-        step.return_map = {"new_output": "_"}
+    with pytest.raises(ValidationError, match="Instance is frozen"):
+        step.return_map = {"new_output": "new_value"}
     
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="Instance is frozen"):
         step.config_mapping = {"new_config": "new_value"} 

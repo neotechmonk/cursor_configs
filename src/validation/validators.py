@@ -54,7 +54,7 @@ def validate_no_duplicate_outputs_by_different_steps(
             and existing_result.step_output 
             and existing_result.step_output == cur_step_result.step_output):
             raise ValueError(
-                f"Steps '{cur_step.name}' and '{existing_step.name}' "
+                f"Steps '{cur_step.system_step_id}' and '{existing_step.system_step_id}' "
                 f"produced identical output: {list(cur_step_result.step_output.keys())}. "
                 "Two StrategySteps cannot produce the same output."
             )
@@ -87,7 +87,7 @@ def validate_identical_output_by_different_steps(
             overlapping_keys = set(cur_step_result.step_output.keys()) & set(existing_result.step_output.keys())
             if overlapping_keys:
                 raise ValueError(
-                    f"Steps '{cur_step.name}' and '{existing_step.name}' "
+                    f"Steps '{cur_step.system_step_id}' and '{existing_step.system_step_id}' "
                     f"produced identical output keys: {list(overlapping_keys)}. "
                     "Two different StrategySteps cannot produce the same output key."
                 )

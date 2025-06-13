@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from src.loaders.step_registry_loader import load_step_registry
 from src.models.system import StrategyStepRegistry
 
 # Add src to Python path
@@ -17,6 +18,7 @@ if src_path not in sys.path:
 VALID_YAML = '''
 steps:
   trend_analysis:
+    system_step_id: trend_analysis
     function: src.utils.get_trend
     input_params_map:
       price_data: market.prices
@@ -32,6 +34,7 @@ steps:
 INVALID_YAML_MISSING_FIELD = '''
 steps:
   trend_analysis:
+    system_step_id: trend_analysis
     input_params_map:
       price_data: market.prices
     return_map:
@@ -41,6 +44,7 @@ steps:
 INVALID_YAML_EMPTY_FUNCTION = '''
 steps:
   trend_analysis:
+    system_step_id: trend_analysis
     function: ""
     input_params_map:
       price_data: market.prices
@@ -56,6 +60,7 @@ def test_load_valid_registry():
     
     assert "trend_analysis" in registry.step_template_names
     step = registry.get_step_template("trend_analysis")
+    assert step.system_step_id == "trend_analysis"
     assert step.function == "src.utils.get_trend"
     assert step.input_params_map["price_data"] == "market.prices"
     assert step.input_params_map["volume_data"] == "market.volumes"
@@ -94,7 +99,7 @@ def test_registry_properties():
 
 def test_load_from_actual_yaml():
     """Test loading registry from the actual YAML file."""
-    registry = StrategyStepRegistry.from_yaml()
+    registry = load_step_registry()
     assert isinstance(registry, StrategyStepRegistry)
     assert isinstance(registry.steps, dict)
     assert len(registry.steps) > 0

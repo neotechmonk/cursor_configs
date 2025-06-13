@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/ntm/projects/tradex_strategy_pc/tests/core/container/test_step_registry.py", line 6, in <module>
-    from src.core.container import StepRegistryContainer
-ModuleNotFoundError: No module named 'src'

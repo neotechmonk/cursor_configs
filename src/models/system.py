@@ -71,35 +71,35 @@ class StrategyStepRegistry(BaseModel):
         description="Step names and mapping of parameters and result payload"
     )
 
-    @classmethod
-    def from_yaml(cls, yaml_file: str = DEFAULT_REGISTRY_FILE) -> 'StrategyStepRegistry':
-        """Create a registry from a YAML file.
+    # @classmethod
+    # def from_yaml(cls, yaml_file: str = DEFAULT_REGISTRY_FILE) -> 'StrategyStepRegistry':
+    #     """Create a registry from a YAML file.
         
-        Args:
-            yaml_file: Path to the YAML file
+    #     Args:
+    #         yaml_file: Path to the YAML file
             
-        Returns:
-            A new StrategyStepRegistry instance
+    #     Returns:
+    #         A new StrategyStepRegistry instance
             
-        Raises:
-            FileNotFoundError: If the YAML file doesn't exist
-            yaml.YAMLError: If the YAML file is invalid
-            ValueError: If the YAML content is invalid
-        """
-        if not os.path.exists(yaml_file):
-            raise FileNotFoundError(f"YAML file not found: {yaml_file}")
+    #     Raises:
+    #         FileNotFoundError: If the YAML file doesn't exist
+    #         yaml.YAMLError: If the YAML file is invalid
+    #         ValueError: If the YAML content is invalid
+    #     """
+    #     if not os.path.exists(yaml_file):
+    #         raise FileNotFoundError(f"YAML file not found: {yaml_file}")
             
-        with open(yaml_file, 'r') as f:
-            data = yaml.safe_load(f)
+    #     with open(yaml_file, 'r') as f:
+    #         data = yaml.safe_load(f)
             
-        if not isinstance(data, dict) or 'steps' not in data:
-            raise ValueError("YAML must contain a 'steps' key with step definitions")
+    #     if not isinstance(data, dict) or 'steps' not in data:
+    #         raise ValueError("YAML must contain a 'steps' key with step definitions")
             
-        steps = {}
-        for system_step_id, step_data in data['steps'].items():
-            steps[system_step_id] = StrategyStepTemplate(system_step_id=system_step_id, **step_data)
+    #     steps = {}
+    #     for system_step_id, step_data in data['steps'].items():
+    #         steps[system_step_id] = StrategyStepTemplate(system_step_id=system_step_id, **step_data)
             
-        return cls(steps=steps)
+    #     return cls(steps=steps)
 
     def get_step_template(self, system_step_id: str) -> StrategyStepTemplate:
         """Get a step template by system step ID.

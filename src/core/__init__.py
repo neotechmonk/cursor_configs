@@ -1,10 +1,13 @@
-"""Core package for strategy system."""
+"""Core module for strategy execution."""
+
+from src.loaders.strategy_config_loader import load_strategies
+from src.loaders.step_registry_loader import load_step_registry
 
 from .container import StepRegistryContainer, StrategiesContainer
-from .strategy_loader import StrategyLoader
 
 __all__ = [
     'StepRegistryContainer',
     'StrategiesContainer',
-    'StrategyLoader'
+    'load_strategies',
+    'load_step_registry'
 ]

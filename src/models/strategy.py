@@ -1,5 +1,6 @@
 """Strategy-specific models for the strategy execution framework."""
 
+from importlib import import_module
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -51,6 +52,7 @@ class StrategyStep(BaseModel):
         dynamic_config: Mapping of dynamic input parameters to their sources
         reevaluates: List of steps that must be re-evaluated before this step
         template: Reference to the StrategyStepTemplate this step uses
+        evaluation_fn: The function that evaluates this step (loaded from template.function)
 
     Example:
         ```yaml
@@ -70,6 +72,42 @@ class StrategyStep(BaseModel):
     dynamic_config: Dict[str, str] = Field(default_factory=dict)
     reevaluates: List['StrategyStep'] = Field(default_factory=list)
     template: StrategyStepTemplate  # Required field, no default
+    _evaluation_fn: Optional[StrategyStepEvalFn] = None  # Private field for caching
+
+    @property
+    def evaluation_fn(self) -> StrategyStepEvalFn:
+        """Get the evaluation function for this step.
+        
+        The function is loaded from the template's function path if not already loaded.
+        
+        Returns:
+            The evaluation function for this step
+            
+        Raises:
+            ImportError: If the function cannot be imported
+            AttributeError: If the function is not found in the module
+        """
+        if self._evaluation_fn is None:
+            module_path, fn_name = self.template.function.rsplit(".", 1)
+            try:
+                module = import_module(module_path)
+                self._evaluation_fn = getattr(module, fn_name)
+            except ImportError as e:
+                raise ImportError(f"Could not import module {module_path} for step {self.system_step_id}: {e}")
+            except AttributeError as e:
+                raise AttributeError(f"Function {fn_name} not found in module {module_path} for step {self.system_step_id}: {e}")
+        return self._evaluation_fn
+
+    @evaluation_fn.setter
+    def evaluation_fn(self, fn: StrategyStepEvalFn) -> None:
+        """Set the evaluation function for this step.
+        
+        This is primarily used for testing.
+        
+        Args:
+            fn: The evaluation function to use
+        """
+        self._evaluation_fn = fn
 
     @model_validator(mode='after')
     def validate_config_against_template(self) -> 'StrategyStep':

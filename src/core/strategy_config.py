@@ -1,10 +1,15 @@
 """
-For a each new Bar
-- keep track of steps
-- need to know if a prior steps need to be revalidated
-- transient info for future needs
+DEPRECATED: This module is deprecated and will be removed in a future version.
+Please use the new strategy loading system from src.loaders.strategy_config_loader instead.
+
+The new system provides:
+- Better validation through StrategyStepRegistry
+- Improved type safety with Pydantic models
+- Centralized step template management
+- Better error handling and reporting
 """
 
+import warnings
 from enum import StrEnum
 from importlib import import_module
 from pathlib import Path
@@ -49,7 +54,9 @@ class StrategyStatus(StrEnum):
 
 
 def load_strategy_config(strategy_name: str, config_dir: str = "configs/strategies") -> StrategyConfig:
-    """Load strategy configuration from a YAML file.
+    """DEPRECATED: Use src.loaders.strategy_config_loader.load_strategies instead.
+    
+    Load strategy configuration from a YAML file.
     
     Args:
         strategy_name: Name of the strategy to load
@@ -67,6 +74,12 @@ def load_strategy_config(strategy_name: str, config_dir: str = "configs/strategi
             - Invalid reevaluation references
             - Invalid YAML format
     """
+    warnings.warn(
+        "load_strategy_config is deprecated. Use src.loaders.strategy_config_loader.load_strategies instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
     # Construct the full path to the config file
     config_path = Path(config_dir) / f"{strategy_name}.yaml"
     
@@ -138,7 +151,9 @@ def run_strategy(
     strategy: StrategyConfig, 
     price_feed: pd.DataFrame
 ) -> Tuple[StrategyExecutionContext, Dict[pd.Timestamp, Tuple[str, StrategyStepEvaluationResult]], List[Tuple[StrategyStep, StrategyStepEvaluationResult]]]:
-    """Executes the strategy steps sequentially, managing execution context and history log.
+    """DEPRECATED: Use src.core.strategy_runner.run_strategy instead.
+    
+    Executes the strategy steps sequentially, managing execution context and history log.
     
     Args:
         strategy: The strategy configuration to execute
@@ -155,6 +170,12 @@ def run_strategy(
         - Handles timestamp collisions in the history log
         - Validates step outputs before adding to context
     """
+    warnings.warn(
+        "run_strategy in strategy_config.py is deprecated. Use src.core.strategy_runner.run_strategy instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
     executed_results_this_run: List[Tuple[StrategyStep, StrategyStepEvaluationResult]] = []
     current_context = StrategyExecutionContext() # Start with empty context (latest results)
     full_history_log: Dict[pd.Timestamp, Tuple[str, StrategyStepEvaluationResult]] = {} # Separate full log

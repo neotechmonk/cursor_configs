@@ -4,7 +4,7 @@ from pathlib import Path
 
 from dependency_injector import containers, providers
 
-from src.loaders.strategy_config_loader import load_strategy_configs
+from src.loaders.strategy_config_loader import load_strategies
 from src.models.system import StrategyStepRegistry
 
 
@@ -36,7 +36,7 @@ class StrategiesContainer(containers.DeclarativeContainer):
     
     # Loaded strategies
     strategies = providers.Singleton(
-        lambda config_dir, registry: load_strategy_configs(config_dir, registry),
+        lambda config_dir, registry: load_strategies(config_dir, registry),
         strategies_dir,
         step_registry
     )
@@ -55,14 +55,14 @@ class StrategiesContainer(containers.DeclarativeContainer):
     
     # Strategy reloader
     reload_strategies = providers.Factory(
-        lambda config_dir, registry: load_strategy_configs(config_dir, registry),
+        lambda config_dir, registry: load_strategies(config_dir, registry),
         strategies_dir,
         step_registry
     )
     
     # Strategy validator (reloads and validates a single strategy by name)
     validate_strategy = providers.Factory(
-        lambda config_dir, registry, name: load_strategy_configs(config_dir, registry)[name],
+        lambda config_dir, registry, name: load_strategies(config_dir, registry)[name],
         strategies_dir,
         step_registry
     )
