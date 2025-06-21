@@ -178,7 +178,7 @@ def test_csv_provider_initialization(csv_config):
     assert CustomTimeframe(1, TimeframeUnit.DAY) in provider.capabilities.supported_timeframes
 
 
-@pytest.mark.skip(reason="Pydantic validation issues with CustomTimeframe")
+# @pytest.mark.skip(reason="Pydantic validation issues with CustomTimeframe")
 def test_csv_provider_load_symbols(csv_config):
     """Test loading supported symbols from CSV files."""
     provider = CSVPriceFeedProvider(csv_config)
