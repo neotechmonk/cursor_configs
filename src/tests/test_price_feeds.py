@@ -6,8 +6,8 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import pytest
 
+from core.protocols import PriceFeedProvider, SymbolError, Timeframe, TimeframeError
 from src.core.price_feeds import YahooFinanceProvider
-from src.core.protocols import PriceFeedProvider, SymbolError, Timeframe, TimeframeError
 
 
 @pytest.fixture

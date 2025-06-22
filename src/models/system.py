@@ -3,7 +3,6 @@
 import os
 from typing import Dict, List
 
-import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Always resolve path relative to this file

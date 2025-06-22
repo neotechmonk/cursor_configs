@@ -6,17 +6,13 @@ Tests cover:
 - Multiple bars with step reevaluation
 - Context management and data passing
 """
-from typing import Any, Dict
 
 import pandas as pd
-import pytest
 
 from src.core.strategy_runner import run_strategy
 from src.models import (
     StrategyConfig,
-    StrategyExecutionContext,
     StrategyStep,
-    StrategyStepEvaluationResult,
     StrategyStepTemplate,
 )
 from tests.mocks.mock_strategy_step_functions import (

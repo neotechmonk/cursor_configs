@@ -58,6 +58,7 @@ def context():
     """Create a test context."""
     return StrategyExecutionContext()
 
+
 # @pytest.mark.skip()
 def test_add_single_result(context, step1, ts1):
     """Test adding a single result to the context."""

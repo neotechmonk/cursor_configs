@@ -24,6 +24,7 @@ def _get_latest_timestamp(price_feed: pd.DataFrame) -> pd.Timestamp:
 
 # --- Mock Wrapper Functions ---
 
+
 def step1_wrapper(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategyStepEvaluationResult:
     """Mock step1 wrapper that always succeeds."""
     return StrategyStepEvaluationResult(
@@ -33,6 +34,7 @@ def step1_wrapper(price_feed: pd.DataFrame, context: StrategyExecutionContext, *
         step_output={"step1_data": True}
     )
 
+
 def step2_wrapper(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategyStepEvaluationResult:
     """Mock step2 wrapper that always succeeds."""
     return StrategyStepEvaluationResult(
@@ -41,6 +43,7 @@ def step2_wrapper(price_feed: pd.DataFrame, context: StrategyExecutionContext, *
         message="Successful result for step2",
         step_output={"step2_data": True}
     )
+
 
 def step3_wrapper(price_feed: pd.DataFrame, context: StrategyExecutionContext, **config) -> StrategyStepEvaluationResult:
     """Mock step3 wrapper that succeeds only on the last bar."""
@@ -57,6 +60,7 @@ def step3_wrapper(price_feed: pd.DataFrame, context: StrategyExecutionContext, *
         message="Successful result for step3",
         step_output={"step3_data": True}
     )
+
 
 def mock_detect_trend_wrapper(price_feed: pd.DataFrame, **kwargs) -> Dict[str, Any]:
     """Mock trend detection wrapper."""

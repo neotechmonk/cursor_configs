@@ -21,6 +21,7 @@ def test_strategy_step_template_instantiation():
     assert step.return_map == {"trend": "_"}
     assert step.config_mapping == {}
 
+
 def test_strategy_step_template_with_complex_mappings():
     """Test StrategyStepTemplate with complex input/output mappings."""
     step = StrategyStepTemplate(
@@ -48,6 +49,7 @@ def test_strategy_step_template_with_complex_mappings():
     assert len(step.return_map) == 3
     assert len(step.config_mapping) == 2
 
+
 def test_strategy_step_template_empty_function():
     """Test that empty function raises ValueError."""
     with pytest.raises(ValueError, match="Function name cannot be empty"):
@@ -59,6 +61,7 @@ def test_strategy_step_template_empty_function():
             config_mapping={}
         )
 
+
 def test_strategy_step_template_whitespace_function():
     """Test that whitespace-only function raises ValueError."""
     with pytest.raises(ValueError, match="Function name cannot be empty"):
@@ -69,6 +72,7 @@ def test_strategy_step_template_whitespace_function():
             return_map={},
             config_mapping={}
         )
+
 
 def test_strategy_step_template_default_values():
     """Test StrategyStepTemplate with minimal required fields."""
@@ -82,6 +86,7 @@ def test_strategy_step_template_default_values():
     assert step.input_params_map == {}
     assert step.return_map == {}
     assert step.config_mapping == {}
+
 
 def test_strategy_step_template_immutability():
     """Test that StrategyStepTemplate is immutable.

@@ -1,7 +1,6 @@
 """Loader for step registry configurations."""
 
 from pathlib import Path
-from typing import Dict
 
 import yaml
 from pydantic import ValidationError

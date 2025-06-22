@@ -5,7 +5,6 @@ from pathlib import Path
 from dependency_injector import containers, providers
 
 from src.loaders.step_registry_loader import load_step_registry
-from src.models.system import StrategyStepRegistry
 
 
 class StepRegistryContainer(containers.DeclarativeContainer):
