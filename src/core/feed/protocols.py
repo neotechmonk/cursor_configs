@@ -82,9 +82,6 @@ class PriceFeedCapabilities(BaseModel):
     """Capabilities and limitations of a price feed provider."""
     supported_timeframes: Set[CustomTimeframe]
     supported_symbols: Set[str]
-    rate_limits: Dict[str, int]  # e.g., {"requests_per_minute": 60}
-    requires_auth: bool
-    auth_type: Optional[AuthType]  # e.g., "api_key", "oauth2"
 
 
 class ResampleStrategy(BaseModel):

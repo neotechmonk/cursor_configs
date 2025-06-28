@@ -106,8 +106,6 @@ def test_csv_provider_initialization(csv_config):
     provider = CSVPriceFeedProvider(csv_config)
     
     assert provider.name == "csv"
-    assert provider.capabilities.requires_auth is False
-    assert provider.capabilities.auth_type is None
     assert len(provider.capabilities.supported_timeframes) == 7
     assert CustomTimeframe("1m") in provider.capabilities.supported_timeframes
     assert CustomTimeframe("1d") in provider.capabilities.supported_timeframes
