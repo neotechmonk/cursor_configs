@@ -112,12 +112,63 @@ def test_csv_provider_initialization(csv_config):
     assert CustomTimeframe("1d") in provider.capabilities.supported_timeframes
 
 
-def test_csv_provider_load_symbols(csv_config):
+def test_csv_provider_load_one_symbol(csv_config):
     """Test loading supported symbols from CSV files."""
     provider = CSVPriceFeedProvider(csv_config)
     
     # Check if test data symbols are loaded
     assert "CL_5min_sample" in provider.capabilities.supported_symbols
+
+def test_csv_provider_load_multiple_symbols(tmp_path, csv_price_time_config):
+    """Test loading multiple instruments from CSV files."""
+    # Create multiple CSV files for different instruments
+    instruments = ["AAPL", "MSFT", "GOOGL", "TSLA"]
+    mult_file_dir = tmp_path / "multi_csv"
+    mult_file_dir.mkdir()
+    for symbol in instruments:
+        # Create sample data for each instrument
+        dates = pd.date_range(start='2024-01-01', periods=50, freq='1min')
+        data = {
+            'timestamp': dates,
+            'open': [100 + i * 0.1 for i in range(50)],
+            'high': [100.5 + i * 0.1 for i in range(50)],
+            'low': [99.5 + i * 0.1 for i in range(50)],
+            'close': [100.2 + i * 0.1 for i in range(50)],
+            'volume': [1000 + i * 10 for i in range(50)]
+        }
+        df = pd.DataFrame(data)
+        
+        # Save each instrument to its own CSV file
+
+        csv_file = mult_file_dir / f"{symbol}.csv"
+        df.to_csv(csv_file, index=False)
+    
+    # Create provider config pointing to directory with multiple files
+    config = CSVPriceFeedConfig(
+        name="csv",
+        timeframes=csv_price_time_config,
+        data_dir=str(mult_file_dir),
+        file_pattern="*.csv",
+        date_format="%Y-%m-%d %H:%M:%S"
+    )
+    
+    provider = CSVPriceFeedProvider(config)
+    
+    # # Verify all instruments are loaded
+    assert len(provider.capabilities.supported_symbols) == 4
+    for symbol in instruments:
+        assert symbol in provider.capabilities.supported_symbols
+    
+    # Test getting data for each instrument
+    for symbol in instruments:
+        df = provider.get_price_data(
+            symbol=symbol,
+            timeframe=CustomTimeframe("1m")
+        )
+        assert isinstance(df, pd.DataFrame)
+        assert not df.empty
+        assert len(df) == 50  # Should have 50 rows
+
 
 def test_csv_provider_load_symbols_empty_directory(csv_price_time_config, tmp_path):
     """Test loading symbols from empty directory."""
@@ -129,7 +180,7 @@ def test_csv_provider_load_symbols_empty_directory(csv_price_time_config, tmp_pa
         name="csv",
         timeframes=csv_price_time_config,
         data_dir=str(temp_dir),
-        file_pattern="*.csv", 
+        file_pattern="*.csv",
         date_format="%Y-%m-%d %H:%M:%S"
     )
     
