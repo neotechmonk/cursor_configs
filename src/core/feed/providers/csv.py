@@ -5,15 +5,21 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+from pydantic import BaseModel, ConfigDict
 
-from src.core.feed.config import PriceFeedConfig
+from src.core.feed.config import PricefeedTimeframeConfig
 from src.core.feed.protocols import PriceFeedCapabilities, SymbolError, TimeframeError
 from src.core.time import CustomTimeframe
 
 
-class CSVPriceFeedConfig(PriceFeedConfig):
-    """CSV price feed specific configuration."""
-
+class CSVPriceFeedConfig(BaseModel):
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra='forbid'
+    )
+    
+    name: Optional[str] = None
+    timeframes: PricefeedTimeframeConfig
     data_dir: str
     file_pattern: str = "*.csv"
     date_format: str = "%Y-%m-%d %H:%M:%S" 

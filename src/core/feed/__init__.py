@@ -1,7 +1,6 @@
 """Feed module for price data providers."""
 
 from .config import (
-                     PriceFeedConfig,
                      PricefeedTimeframeConfig,
 )
 from .protocols import (
@@ -17,7 +16,6 @@ from .protocols import (
 )
 
 __all__ = [
-    "PriceFeedConfig",
     "PricefeedTimeframeConfig",
     "AuthError",
     "AuthType",

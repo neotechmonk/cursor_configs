@@ -20,8 +20,10 @@ class PricefeedTimeframeConfig(BaseModel):
     resample_strategy: ResampleStrategy
 
 
-class PriceFeedConfig(BaseModel):
-    """Base configuration for price feed providers."""
+
+
+class YahooFinanceConfig():
+    """Yahoo Finance specific configuration."""
     model_config = ConfigDict(
         validate_assignment=True,
         extra='forbid'
@@ -29,10 +31,6 @@ class PriceFeedConfig(BaseModel):
     
     name: Optional[str] = None
     timeframes: PricefeedTimeframeConfig
-
-
-class YahooFinanceConfig(PriceFeedConfig):
-    """Yahoo Finance specific configuration."""
     api_key: str | None = None
     cache_duration: str = "1h"
     rate_limits: Dict[str, int]
