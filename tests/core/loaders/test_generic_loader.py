@@ -2,20 +2,17 @@
 
 """Tests for the generic YAML configuration loader."""
 
-from pathlib import Path
-from typing import Set
-from unittest.mock import Mock
 
 import pytest
 import yaml
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError
 
 from src.loaders.generic import load_yaml_config
-
 
 # =============================================================================
 # TEST CONFIG CLASSES
 # =============================================================================
+
 
 class SimpleConfig(BaseModel):
     """Simple test configuration."""
@@ -29,8 +26,6 @@ class NestedConfig(BaseModel):
     name: str
     settings: SimpleConfig
     tags: list[str] = []
-
-
 
 
 # =============================================================================
