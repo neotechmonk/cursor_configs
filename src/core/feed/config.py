@@ -1,11 +1,17 @@
 """Feed configuration models."""
 
-from typing import Dict, Optional, Set
+from typing import Annotated, Dict, Optional, Set
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, PlainValidator
 
 from ..time import CustomTimeframe
 from .protocols import ResampleStrategy
+
+
+def validate_timeframe(v) -> CustomTimeframe:
+    if isinstance(v, str):
+        return CustomTimeframe(v)
+    return v
 
 
 class PricefeedTimeframeConfig(BaseModel):
@@ -15,11 +21,9 @@ class PricefeedTimeframeConfig(BaseModel):
         extra='forbid'
     )
     
-    supported_timeframes: Set[CustomTimeframe] 
-    native_timeframe: CustomTimeframe 
+    supported_timeframes:  Set[Annotated[CustomTimeframe, PlainValidator(validate_timeframe)]]
+    native_timeframe: Annotated[CustomTimeframe, PlainValidator(validate_timeframe)]
     resample_strategy: ResampleStrategy
-
-
 
 
 class YahooFinanceConfig():
