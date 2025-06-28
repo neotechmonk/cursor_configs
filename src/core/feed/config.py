@@ -1,11 +1,11 @@
 """Feed configuration models."""
 
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
 from pydantic import BaseModel, ConfigDict
 
-from src.core.protocols import ResampleStrategy
-from src.core.time import CustomTimeframe
+from ..time import CustomTimeframe
+from .protocols import ResampleStrategy
 
 
 class PricefeedTimeframeConfig(BaseModel):
@@ -27,7 +27,7 @@ class PriceFeedConfig(BaseModel):
         extra='forbid'
     )
     
-    name: str
+    name: Optional[str] = None
     timeframes: PricefeedTimeframeConfig
 
 
@@ -37,9 +37,3 @@ class YahooFinanceConfig(PriceFeedConfig):
     cache_duration: str = "1h"
     rate_limits: Dict[str, int]
 
-
-class CSVPriceFeedConfig(PriceFeedConfig):
-    """CSV price feed specific configuration."""
-    data_dir: str
-    file_pattern: str = "*.csv"
-    date_format: str = "%Y-%m-%d %H:%M:%S" 

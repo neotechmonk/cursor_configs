@@ -6,9 +6,9 @@ from typing import Optional
 import pandas as pd
 import yfinance as yf
 
+from core.feed.protocols import AuthType, PriceFeedCapabilities
 from src.core.time import CustomTimeframe
 
-from ...protocols import AuthType, PriceFeedCapabilities, SymbolError, TimeframeError
 from ..config import YahooFinanceConfig
 
 

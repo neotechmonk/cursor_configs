@@ -1,8 +1,7 @@
 """Protocols (interfaces) for the trading system components."""
 
-from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Optional, Protocol
+from typing import Dict, List, Protocol
 
 import pandas as pd
 from pydantic import BaseModel

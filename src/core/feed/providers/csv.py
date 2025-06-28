@@ -6,10 +6,17 @@ from typing import Optional
 
 import pandas as pd
 
+from src.core.feed.config import PriceFeedConfig
+from src.core.feed.protocols import PriceFeedCapabilities, SymbolError, TimeframeError
 from src.core.time import CustomTimeframe
 
-from ...protocols import PriceFeedCapabilities, SymbolError, TimeframeError
-from ..config import CSVPriceFeedConfig
+
+class CSVPriceFeedConfig(PriceFeedConfig):
+    """CSV price feed specific configuration."""
+
+    data_dir: str
+    file_pattern: str = "*.csv"
+    date_format: str = "%Y-%m-%d %H:%M:%S" 
 
 
 class CSVPriceFeedProvider:
