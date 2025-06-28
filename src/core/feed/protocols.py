@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Optional, Protocol, Set
+from typing import Optional, Protocol, Set
 
 import pandas as pd
 from pydantic import BaseModel
@@ -78,12 +78,14 @@ class AuthError(PriceFeedError):
     pass
 
 
+#FIX: check if this is needed
 class PriceFeedCapabilities(BaseModel):
     """Capabilities and limitations of a price feed provider."""
     supported_timeframes: Set[CustomTimeframe]
     supported_symbols: Set[str]
 
 
+#FIX: move this to provider specific resampling for now and later make generic if needed
 class ResampleStrategy(BaseModel):
     """Strategy for resampling price data.
     

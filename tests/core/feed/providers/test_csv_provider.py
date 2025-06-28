@@ -119,6 +119,7 @@ def test_csv_provider_load_one_symbol(csv_config):
     # Check if test data symbols are loaded
     assert "CL_5min_sample" in provider.capabilities.supported_symbols
 
+
 def test_csv_provider_load_multiple_symbols(tmp_path, csv_price_time_config):
     """Test loading multiple instruments from CSV files."""
     # Create multiple CSV files for different instruments
@@ -189,6 +190,7 @@ def test_csv_provider_load_symbols_empty_directory(csv_price_time_config, tmp_pa
     # Should have no symbols in empty directory
     assert len(provider.capabilities.supported_symbols) == 0
     assert provider.capabilities.supported_symbols == set()
+
 
 def test_csv_provider_get_price_data(csv_config):
     """Test fetching price data from CSV files."""
@@ -274,6 +276,7 @@ def test_csv_provider_time_range_filtering(csv_config):
     if not df.empty:
         assert df.index.min() >= start_time
         assert df.index.max() <= end_time 
+
 
 def test_csv_provider_load_symbols_with_mixed_files(csv_config, temp_data_dir):
     """Test loading symbols when directory has mixed file types."""
