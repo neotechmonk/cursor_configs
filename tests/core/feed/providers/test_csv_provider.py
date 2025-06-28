@@ -2,6 +2,7 @@
 
 
 from datetime import datetime
+
 import pandas as pd
 import pytest
 
@@ -111,13 +112,32 @@ def test_csv_provider_initialization(csv_config):
     assert CustomTimeframe("1d") in provider.capabilities.supported_timeframes
 
 
-# def test_csv_provider_load_symbols(csv_config):
-#     """Test loading supported symbols from CSV files."""
-#     provider = CSVPriceFeedProvider(csv_config)
+def test_csv_provider_load_symbols(csv_config):
+    """Test loading supported symbols from CSV files."""
+    provider = CSVPriceFeedProvider(csv_config)
     
-#     # Check if test data symbols are loaded
-#     assert "CL_5min_sample" in provider.capabilities.supported_symbols
+    # Check if test data symbols are loaded
+    assert "CL_5min_sample" in provider.capabilities.supported_symbols
 
+def test_csv_provider_load_symbols_empty_directory(csv_price_time_config, tmp_path):
+    """Test loading symbols from empty directory."""
+    # Create empty temp directory
+    temp_dir = tmp_path / "empty_data"
+    temp_dir.mkdir()
+    
+    config = CSVPriceFeedConfig(
+        name="csv",
+        timeframes=csv_price_time_config,
+        data_dir=str(temp_dir),
+        file_pattern="*.csv", 
+        date_format="%Y-%m-%d %H:%M:%S"
+    )
+    
+    provider = CSVPriceFeedProvider(config)
+    
+    # Should have no symbols in empty directory
+    assert len(provider.capabilities.supported_symbols) == 0
+    assert provider.capabilities.supported_symbols == set()
 
 def test_csv_provider_get_price_data(csv_config):
     """Test fetching price data from CSV files."""

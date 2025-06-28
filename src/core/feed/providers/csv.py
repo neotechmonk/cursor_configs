@@ -45,10 +45,7 @@ class CSVPriceFeedProvider:
         """Get the provider's capabilities."""
         return PriceFeedCapabilities(
             supported_timeframes=self._config.timeframes.supported_timeframes,
-            supported_symbols=self._supported_symbols,
-            rate_limits={},
-            requires_auth=False,
-            auth_type=None,
+            supported_symbols=self._supported_symbols    
         )
     
     def _load_supported_symbols(self) -> None:
