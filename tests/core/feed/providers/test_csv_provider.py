@@ -274,3 +274,29 @@ def test_csv_provider_time_range_filtering(csv_config):
     if not df.empty:
         assert df.index.min() >= start_time
         assert df.index.max() <= end_time 
+
+def test_csv_provider_load_symbols_with_mixed_files(csv_config, temp_data_dir):
+    """Test loading symbols when directory has mixed file types."""
+    # Add additional CSV files to existing directory
+    csv_symbols = ["BTC", "GOOG"]
+    for symbol in csv_symbols:
+        csv_file = temp_data_dir / f"{symbol}.csv"
+        pd.DataFrame({'timestamp': [pd.Timestamp('2024-01-01')], 'open': [100]}).to_csv(csv_file, index=False)
+    
+    # Add non-CSV files (should be ignored)
+    other_files = ["README.txt", "config.json", "data.parquet"]
+    for filename in other_files:
+        other_file = temp_data_dir / filename
+        other_file.write_text("dummy content")
+    
+    # Use existing csv_config (which already points to temp_data_dir)
+    provider = CSVPriceFeedProvider(csv_config)
+    
+    # Should load original CL_5min_sample + new CSV files, but ignore non-CSV
+    expected_symbols = {"CL_5min_sample", "BTC", "GOOG"}
+    assert provider.capabilities.supported_symbols == expected_symbols
+    
+    # Non-CSV files should be ignored
+    for filename in other_files:
+        symbol = filename.replace('.txt', '').replace('.json', '').replace('.parquet', '')
+        assert symbol not in provider.capabilities.supported_symbols 
