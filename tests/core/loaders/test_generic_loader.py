@@ -7,7 +7,7 @@ import pytest
 import yaml
 from pydantic import BaseModel, ValidationError
 
-from src.loaders.generic import load_yaml_config
+from loaders.generic import load_yaml_config
 
 # =============================================================================
 # TEST CONFIG CLASSES
@@ -94,42 +94,6 @@ def timeframe_yaml_file(tmp_path):
     return yaml_file
 
 
-@pytest.fixture
-def complex_yaml_file(tmp_path):
-    """Create a complex YAML file for testing."""
-    yaml_file = tmp_path / "complex_config.yaml"
-    
-    config_data = {
-        "name": "complex_test",
-        "version": "1.0.0",
-        "settings": {
-            "cache_enabled": True,
-            "max_retries": 3,
-            "timeout": 30
-        },
-        "timeframes": {
-            "name": "timeframe_config",
-            "supported_timeframes": ["1m", "5m", "15m"],
-            "native_timeframe": "1m",
-            "resample_strategy": {
-                "open": "first",
-                "high": "max",
-                "low": "min",
-                "close": "last",
-                "volume": "sum"
-            }
-        },
-        "metadata": {
-            "author": "test_user",
-            "created": "2024-01-01",
-            "description": "Test configuration"
-        }
-    }
-    
-    with open(yaml_file, 'w') as f:
-        yaml.dump(config_data, f)
-    
-    return yaml_file
 
 
 # =============================================================================
