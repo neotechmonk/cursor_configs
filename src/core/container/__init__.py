@@ -3,7 +3,7 @@
 This package provides containers for managing dependencies in the strategy system.
 """
 
-from .price_provider import PriceFeedsContainer
+from ..feed.container import PriceFeedsContainer
 from .steps import StepRegistryContainer
 from .strategies import StrategiesContainer
 

@@ -6,9 +6,9 @@ import pytest
 import yaml
 from dependency_injector.errors import Error as DIError
 
-from core.container.price_provider import PriceFeedsContainer
-from src.core.feed.providers.csv import CSVPriceFeedProvider
-from src.loaders.generic import load_yaml_config
+from core.feed.container import PriceFeedsContainer
+from core.feed.providers.csv import CSVPriceFeedProvider
+from loaders.generic import load_yaml_config
 
 # =============================================================================
 # FIXTURES
