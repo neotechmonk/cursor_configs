@@ -1,6 +1,6 @@
 """Feed configuration models."""
 
-from typing import Annotated, Dict, Optional, Set
+from typing import Annotated, Set
 
 from pydantic import BaseModel, ConfigDict, PlainValidator
 
@@ -26,16 +26,5 @@ class PricefeedTimeframeConfig(BaseModel):
     resample_strategy: ResampleStrategy
 
 
-class YahooFinanceConfig():
-    """Yahoo Finance specific configuration."""
-    model_config = ConfigDict(
-        validate_assignment=True,
-        extra='forbid'
-    )
-    
-    name: Optional[str] = None
-    timeframes: PricefeedTimeframeConfig
-    api_key: str | None = None
-    cache_duration: str = "1h"
-    rate_limits: Dict[str, int]
+
 

@@ -1,15 +1,29 @@
 """Yahoo Finance price feed provider."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 import pandas as pd
 import yfinance as yf
+from pydantic import ConfigDict
 
-from core.feed.protocols import AuthType, PriceFeedCapabilities
+from core.feed.config import PricefeedTimeframeConfig
+from core.feed.error import SymbolError, TimeframeError
 from core.time import CustomTimeframe
 
-from ..config import YahooFinanceConfig
+
+class YahooFinanceConfig():
+    """Yahoo Finance specific configuration."""
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra='forbid'
+    )
+    
+    name: Optional[str] = None
+    timeframes: PricefeedTimeframeConfig
+    api_key: str | None = None
+    cache_duration: str = "1h"
+    rate_limits: Dict[str, int] 
 
 
 class YahooFinanceProvider:
@@ -26,17 +40,6 @@ class YahooFinanceProvider:
     def name(self) -> str:
         """Get the provider name."""
         return self._config.name
-    
-    @property
-    def capabilities(self) -> PriceFeedCapabilities:
-        """Get the provider's capabilities."""
-        return PriceFeedCapabilities(
-            supported_timeframes=self._config.timeframes.supported_timeframes,
-            supported_symbols=self._supported_symbols,
-            rate_limits=self._config.rate_limits,
-            requires_auth=bool(self._config.api_key),
-            auth_type=AuthType.API_KEY if self._config.api_key else None,
-        )
     
     def get_price_data(
         self,
@@ -103,5 +106,7 @@ class YahooFinanceProvider:
             ticker = yf.Ticker(symbol)
             info = ticker.info
             return bool(info and 'regularMarketPrice' in info)
-        except:
-            return False 
+        except Exception:
+            return False
+
+

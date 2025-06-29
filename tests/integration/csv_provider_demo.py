@@ -11,8 +11,8 @@ from pathlib import Path
 # Add src to path for imports
 from dependency_injector.wiring import Provide, inject
 
-from core.container.price_provider import PriceFeedsContainer
-from core.feed.providers.csv import CSVPriceFeedProvider
+from core.feed.container import PriceFeedsContainer
+from core.feed.providers.csv_file import CSVPriceFeedProvider
 from core.time import CustomTimeframe
 
 
@@ -61,20 +61,20 @@ def demo_resampling(
     original_df = csv_provider.get_price_data(symbol, original_timeframe)
     resampled_df = csv_provider.get_price_data(symbol, resampled_timeframe)
     
-    print(f"✓ Resampled data retrieved!")
+    print("✓ Resampled data retrieved!")
     print(f"  - Original data shape: {original_df.shape}")
     print(f"  - Resampled data shape: {resampled_df.shape}")
     print(f"  - Resampling ratio: {len(original_df) / len(resampled_df):.1f}:1")
     print(f"  - Date range: {resampled_df.index.min()} to {resampled_df.index.max()}")
     
     # Show sample of original vs resampled data
-    print(f"  - Sample original data (5m):")
+    print("  - Sample original data (5m):")
     print(original_df.head(3).to_string())
-    print(f"  - Sample resampled data (15m):")
+    print("  - Sample resampled data (15m):")
     print(resampled_df.head(3).to_string())
     
     # Verify resampling logic - check that 15m data aggregates 5m data correctly
-    print(f"\n  - Resampling verification:")
+    print("\n  - Resampling verification:")
     print(f"    Original 5m periods in first 15m: {len(original_df.head(3))}")
     print(f"    First 15m open: {resampled_df.iloc[0]['open']:.2f}")
     print(f"    First 15m high: {resampled_df.iloc[0]['high']:.2f}")
@@ -90,7 +90,7 @@ def demo_resampling(
     expected_close = first_three_5m.iloc[-1]['close']
     expected_volume = first_three_5m['volume'].sum()
     
-    print(f"\n  - Manual verification:")
+    print("\n  - Manual verification:")
     print(f"    Expected open: {expected_open:.2f} ✓" if abs(expected_open - resampled_df.iloc[0]['open']) < 0.01 else f"    Expected open: {expected_open:.2f} ✗")
     print(f"    Expected high: {expected_high:.2f} ✓" if abs(expected_high - resampled_df.iloc[0]['high']) < 0.01 else f"    Expected high: {expected_high:.2f} ✗")
     print(f"    Expected low: {expected_low:.2f} ✓" if abs(expected_low - resampled_df.iloc[0]['low']) < 0.01 else f"    Expected low: {expected_low:.2f} ✗")

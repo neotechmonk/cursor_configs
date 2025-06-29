@@ -3,13 +3,16 @@
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from core.feed.config import PricefeedTimeframeConfig
-from core.feed.protocols import PriceFeedCapabilities, SymbolError, TimeframeError
+
+# from core.feed.error import PriceFeedCapabilities, SymbolError, TimeframeError
+# from core.feed.error import  SymbolError, TimeframeError
+from core.feed.error import SymbolError, TimeframeError
 from core.time import CustomTimeframe
 
 
@@ -20,10 +23,17 @@ class CSVPriceFeedConfig(BaseModel):
     )
     
     name: Optional[str] = None
-    timeframes: PricefeedTimeframeConfig
+    timeframes: Union[PricefeedTimeframeConfig, dict]
     data_dir: str
     file_pattern: str = "*.csv"
-    date_format: str = "%Y-%m-%d %H:%M:%S" 
+    date_format: str = "%Y-%m-%d %H:%M:%S"
+    
+    @field_validator('timeframes', mode='before')
+    @classmethod
+    def validate_timeframes(cls, v):
+        if isinstance(v, dict):
+            return PricefeedTimeframeConfig(**v)
+        return v
 
 
 class CSVPriceFeedProvider:
@@ -44,31 +54,15 @@ class CSVPriceFeedProvider:
     @property
     def timeframes(self) -> set[CustomTimeframe]:
         """Get the supported timeframes (both supported and native)."""
-        return set(self._config.timeframes.supported_timeframes) | {self._config.timeframes.native_timeframe}
+        timeframes = set(self._config.timeframes.supported_timeframes)
+        timeframes.add(self._config.timeframes.native_timeframe)
+        return timeframes
 
     @property 
     def symbols(self) -> set[str]:
         """Get the supported symbols."""
         return self._supported_symbols
 
-    @property
-    def capabilities(self) -> PriceFeedCapabilities:
-        """Get the provider's capabilities.
-        
-        Deprecated: Use supported_timeframes and supported_symbols properties directly instead.
-        """
-        import warnings
-        warnings.warn(
-            "capabilities property is deprecated. Use supported_timeframes and supported_symbols directly.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        # FIX: Remove this property once all usages are updated to use direct properties
-        return PriceFeedCapabilities(
-            supported_timeframes=self.timeframes,
-            supported_symbols=self.symbols
-        )
-    
     def _load_supported_symbols(self) -> None:
         """Load supported symbols from CSV files with SYMBOL_xxxx naming convention."""
         # Naming convention: SYMBOL_xxxx where SYMBOL is uppercase letters only
@@ -136,7 +130,7 @@ class CSVPriceFeedProvider:
             raise SymbolError(f"Symbol {symbol} not supported")
         
         # Validate timeframe
-        if timeframe not in self._config.timeframes.supported_timeframes:
+        if timeframe not in self.timeframes:
             raise TimeframeError(f"Timeframe {timeframe} not supported")
         
         # Load data from CSV

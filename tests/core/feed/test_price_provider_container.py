@@ -7,7 +7,7 @@ import yaml
 from dependency_injector.errors import Error as DIError
 
 from core.feed.container import PriceFeedsContainer
-from core.feed.providers.csv import CSVPriceFeedProvider
+from core.feed.providers.csv_file import CSVPriceFeedProvider
 from loaders.generic import load_yaml_config
 
 # =============================================================================
@@ -151,7 +151,7 @@ def test_price_feeds_container_wire_nonexistent_providers_dir(tmp_path):
 
 def test_integration_yaml_validation(temp_providers_dir):
     """Test YAML config validation with real provider classes."""
-    from src.core.feed.providers.csv import CSVPriceFeedConfig
+    from core.feed.providers.csv_file import CSVPriceFeedConfig
 
     csv_config = load_yaml_config(temp_providers_dir / "csv.yaml", CSVPriceFeedConfig)
     assert isinstance(csv_config, CSVPriceFeedConfig)

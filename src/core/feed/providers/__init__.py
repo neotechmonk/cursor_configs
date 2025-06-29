@@ -1,6 +1,6 @@
 """Price feed provider implementations."""
 
-from .csv import CSVPriceFeedProvider
+from .csv_file import CSVPriceFeedProvider
 from .yahoo import YahooFinanceProvider
 
 __all__ = [

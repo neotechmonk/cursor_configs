@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Protocol, Set
+from typing import Optional, Protocol
 
 import pandas as pd
 from pydantic import BaseModel
@@ -51,38 +51,6 @@ class AuthType(Enum):
     API_KEY = "api_key"
     OAUTH2 = "oauth2"
     # Add other auth types as needed
-
-
-class PriceFeedError(Exception):
-    """Base class for price feed errors."""
-    pass
-
-
-class SymbolError(PriceFeedError):
-    """Error raised when a symbol is invalid or not supported."""
-    pass
-
-
-class TimeframeError(PriceFeedError):
-    """Error raised when a timeframe is not supported."""
-    pass
-
-
-class RateLimitError(PriceFeedError):
-    """Error raised when rate limits are exceeded."""
-    pass
-
-
-class AuthError(PriceFeedError):
-    """Error raised when authentication fails."""
-    pass
-
-
-#FIX: check if this is needed
-class PriceFeedCapabilities(BaseModel):
-    """Capabilities and limitations of a price feed provider."""
-    supported_timeframes: Set[CustomTimeframe]
-    supported_symbols: Set[str]
 
 
 #FIX: move this to provider specific resampling for now and later make generic if needed

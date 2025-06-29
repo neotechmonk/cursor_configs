@@ -6,10 +6,11 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from src.core.feed import PricefeedTimeframeConfig
-from src.core.feed.protocols import ResampleStrategy, SymbolError, TimeframeError
-from src.core.feed.providers.csv import CSVPriceFeedConfig, CSVPriceFeedProvider
-from src.core.time import CustomTimeframe
+from core.feed.config import PricefeedTimeframeConfig
+from core.feed.error import SymbolError, TimeframeError
+from core.feed.protocols import ResampleStrategy
+from core.feed.providers.csv_file import CSVPriceFeedConfig, CSVPriceFeedProvider
+from core.time import CustomTimeframe, TimeframeUnit
 
 
 @pytest.fixture
@@ -52,6 +53,7 @@ def csv_price_time_config():
             CustomTimeframe("1d"),
         },
         native_timeframe=CustomTimeframe("1m"),
+        # native_timeframe="1m",
         resample_strategy=ResampleStrategy(
             open="first",
             high="max",
@@ -63,11 +65,21 @@ def csv_price_time_config():
 
 
 @pytest.fixture
-def csv_config(temp_data_dir, csv_price_time_config):
+def csv_config(temp_data_dir):
     """Create a test configuration for CSV price feed provider."""
     return CSVPriceFeedConfig(
         name="csv",
-        timeframes=csv_price_time_config,
+        timeframes={
+            "supported_timeframes": ["1m", "5m", "15m", "30m", "1h", "4h", "1d"],
+            "native_timeframe": "1m",
+            "resample_strategy": {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum"
+            }
+        },
         data_dir=str(temp_data_dir),
         file_pattern="*.csv",
         date_format="%Y-%m-%d %H:%M:%S"
@@ -107,9 +119,9 @@ def test_csv_provider_initialization(csv_config):
     provider = CSVPriceFeedProvider(csv_config)
     
     assert provider.name == "csv"
-    assert len(provider.capabilities.supported_timeframes) == 7
-    assert CustomTimeframe("1m") in provider.capabilities.supported_timeframes
-    assert CustomTimeframe("1d") in provider.capabilities.supported_timeframes
+    assert len(provider.timeframes) == 7
+    assert CustomTimeframe(1, TimeframeUnit.MINUTE) in provider.timeframes
+    assert CustomTimeframe("1d") in provider.timeframes
 
 
 def test_csv_provider_load_one_symbol(csv_config):
@@ -117,7 +129,7 @@ def test_csv_provider_load_one_symbol(csv_config):
     provider = CSVPriceFeedProvider(csv_config)
     
     # Check if test data symbols are loaded
-    assert "CL_5min_sample" in provider.capabilities.supported_symbols
+    assert "CL" in provider.symbols
 
 
 def test_csv_provider_load_multiple_symbols(tmp_path, csv_price_time_config):
@@ -141,7 +153,7 @@ def test_csv_provider_load_multiple_symbols(tmp_path, csv_price_time_config):
         
         # Save each instrument to its own CSV file
 
-        csv_file = mult_file_dir / f"{symbol}.csv"
+        csv_file = mult_file_dir / f"{symbol}_xxxx.csv"
         df.to_csv(csv_file, index=False)
     
     # Create provider config pointing to directory with multiple files
@@ -156,9 +168,9 @@ def test_csv_provider_load_multiple_symbols(tmp_path, csv_price_time_config):
     provider = CSVPriceFeedProvider(config)
     
     # # Verify all instruments are loaded
-    assert len(provider.capabilities.supported_symbols) == 4
+    assert len(provider.symbols) == 4
     for symbol in instruments:
-        assert symbol in provider.capabilities.supported_symbols
+        assert symbol in provider.symbols
     
     # Test getting data for each instrument
     for symbol in instruments:
@@ -188,8 +200,8 @@ def test_csv_provider_load_symbols_empty_directory(csv_price_time_config, tmp_pa
     provider = CSVPriceFeedProvider(config)
     
     # Should have no symbols in empty directory
-    assert len(provider.capabilities.supported_symbols) == 0
-    assert provider.capabilities.supported_symbols == set()
+    assert len(provider.symbols) == 0
+    assert provider.symbols == set()
 
 
 def test_csv_provider_get_price_data(csv_config):
@@ -198,7 +210,7 @@ def test_csv_provider_get_price_data(csv_config):
     
     # Test with valid symbol and timeframe
     df = provider.get_price_data(
-        symbol="CL_5min_sample",
+        symbol="CL",
         timeframe=CustomTimeframe("5m")
     )
     
@@ -224,7 +236,7 @@ def test_csv_provider_unsupported_timeframe(csv_config):
     
     with pytest.raises(TimeframeError):
         provider.get_price_data(
-            symbol="CL_5min_sample",
+            symbol="CL",
             timeframe=CustomTimeframe("2h")
         )
 
@@ -232,16 +244,18 @@ def test_csv_provider_unsupported_timeframe(csv_config):
 def test_csv_provider_resample_data(csv_config):
     """Test resampling price data to different timeframes."""
     provider = CSVPriceFeedProvider(csv_config)
+
+    print([tf for tf in provider.timeframes])
     
     # Get 1-minute data
     df_1m = provider.get_price_data(
-        symbol="CL_5min_sample",
-        timeframe=CustomTimeframe("1m")
+        symbol="CL",
+        timeframe=CustomTimeframe("5m")
     )
     
     # Get 5-minute data
     df_5m = provider.get_price_data(
-        symbol="CL_5min_sample",
+        symbol="CL",
         timeframe=CustomTimeframe("5m")
     )
     
@@ -254,7 +268,7 @@ def test_csv_provider_validate_symbol(csv_config):
     """Test symbol validation for CSV provider."""
     provider = CSVPriceFeedProvider(csv_config)
     
-    assert provider.validate_symbol("CL_5min_sample") is True
+    assert provider.validate_symbol("CL"    ) is True
     assert provider.validate_symbol("INVALID") is False
 
 
@@ -266,7 +280,7 @@ def test_csv_provider_time_range_filtering(csv_config):
     end_time = datetime(2024, 1, 1, 13, 0, 0)
     
     df = provider.get_price_data(
-        symbol="CL_5min_sample",
+        symbol="CL",
         timeframe=CustomTimeframe("1m"),
         start_time=start_time,
         end_time=end_time
@@ -283,7 +297,7 @@ def test_csv_provider_load_symbols_with_mixed_files(csv_config, temp_data_dir):
     # Add additional CSV files to existing directory
     csv_symbols = ["BTC", "GOOG"]
     for symbol in csv_symbols:
-        csv_file = temp_data_dir / f"{symbol}.csv"
+        csv_file = temp_data_dir / f"{symbol}_yyyy_xxxx.csv"
         pd.DataFrame({'timestamp': [pd.Timestamp('2024-01-01')], 'open': [100]}).to_csv(csv_file, index=False)
     
     # Add non-CSV files (should be ignored)
@@ -296,10 +310,10 @@ def test_csv_provider_load_symbols_with_mixed_files(csv_config, temp_data_dir):
     provider = CSVPriceFeedProvider(csv_config)
     
     # Should load original CL_5min_sample + new CSV files, but ignore non-CSV
-    expected_symbols = {"CL_5min_sample", "BTC", "GOOG"}
-    assert provider.capabilities.supported_symbols == expected_symbols
+    expected_symbols = {"CL", "BTC", "GOOG"}
+    assert provider.symbols  == expected_symbols
     
     # Non-CSV files should be ignored
     for filename in other_files:
         symbol = filename.replace('.txt', '').replace('.json', '').replace('.parquet', '')
-        assert symbol not in provider.capabilities.supported_symbols 
+        assert symbol not in provider.symbols 

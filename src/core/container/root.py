@@ -2,7 +2,7 @@
 
 from dependency_injector import containers, providers
 
-from .price_provider import PriceFeedsContainer
+from ..feed.container import PriceFeedsContainer
 from .steps import StepRegistryContainer
 from .strategies import StrategiesContainer
 
