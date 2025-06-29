@@ -143,7 +143,8 @@ class CustomTimeframe(BaseModel):
         return f"{self.value}{self.unit.short}"
 
     def __repr__(self) -> str:
-        return f"CustomTimeframe(value={self.value}, unit={self.unit.name})" 
+        return self.__str__()
+    
     @classmethod
     def parse_str_input(cls, data):
         if isinstance(data, str):
