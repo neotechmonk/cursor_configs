@@ -6,8 +6,8 @@ from typing import Dict, Optional
 import yaml
 from pydantic import ValidationError
 
-from src.models.strategy import StrategyConfig, StrategyStep
-from src.models.system import StrategyStepRegistry
+from models.strategy import StrategyConfig, StrategyStep
+from models.system import StrategyStepRegistry
 
 
 def create_new_strategy(strategy_data: dict, step_registry: StrategyStepRegistry) -> StrategyConfig:

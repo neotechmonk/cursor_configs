@@ -4,7 +4,7 @@ from pathlib import Path
 
 from dependency_injector import containers, providers
 
-from src.loaders.step_registry_loader import load_step_registry
+from loaders.step_registry_loader import load_step_registry
 
 
 class StepRegistryContainer(containers.DeclarativeContainer):

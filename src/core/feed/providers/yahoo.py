@@ -7,7 +7,7 @@ import pandas as pd
 import yfinance as yf
 
 from core.feed.protocols import AuthType, PriceFeedCapabilities
-from src.core.time import CustomTimeframe
+from core.time import CustomTimeframe
 
 from ..config import YahooFinanceConfig
 

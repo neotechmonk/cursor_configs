@@ -6,8 +6,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.models.system import StrategyStepTemplate
-from src.validation.validators import (
+from models.system import StrategyStepTemplate
+from validation.validators import (
     validate_identical_output_by_different_steps,
     validate_no_duplicate_outputs_by_different_steps,
     validate_step_output_keys_and_values,

@@ -6,13 +6,13 @@ from typing import Dict
 
 from dependency_injector import containers, providers
 
-from src.core.feed.protocols import PriceFeedProvider
+from core.feed.protocols import PriceFeedProvider
 
 # Import provider classes
-from src.core.feed.providers.csv import CSVPriceFeedConfig, CSVPriceFeedProvider
+from core.feed.providers.csv import CSVPriceFeedConfig, CSVPriceFeedProvider
 
-# from src.core.feed.providers.yahoo import YahooFinanceConfig, YahooFinanceProvider
-from src.loaders.generic import load_yaml_config
+# from core.feed.providers.yahoo import YahooFinanceConfig, YahooFinanceProvider
+from loaders.generic import load_yaml_config
 
 # Provider mapping - easy to update when adding new providers
 PROVIDERS = {

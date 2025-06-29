@@ -4,8 +4,8 @@ from pathlib import Path
 
 from dependency_injector import containers, providers
 
-from src.loaders.strategy_config_loader import load_strategies
-from src.models.system import StrategyStepRegistry
+from loaders.strategy_config_loader import load_strategies
+from models.system import StrategyStepRegistry
 
 
 class StrategiesContainer(containers.DeclarativeContainer):

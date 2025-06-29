@@ -1,7 +1,7 @@
 """Core module for strategy execution."""
 
-from src.loaders.step_registry_loader import load_step_registry
-from src.loaders.strategy_config_loader import load_strategies
+from loaders.step_registry_loader import load_step_registry
+from loaders.strategy_config_loader import load_strategies
 
 from .container import StepRegistryContainer, StrategiesContainer
 

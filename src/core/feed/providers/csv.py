@@ -7,9 +7,9 @@ from typing import Optional
 import pandas as pd
 from pydantic import BaseModel, ConfigDict
 
-from src.core.feed.config import PricefeedTimeframeConfig
-from src.core.feed.protocols import PriceFeedCapabilities, SymbolError, TimeframeError
-from src.core.time import CustomTimeframe
+from core.feed.config import PricefeedTimeframeConfig
+from core.feed.protocols import PriceFeedCapabilities, SymbolError, TimeframeError
+from core.time import CustomTimeframe
 
 
 class CSVPriceFeedConfig(BaseModel):

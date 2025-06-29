@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
-from src.models.system import StrategyStepRegistry, StrategyStepTemplate
+from models.system import StrategyStepRegistry, StrategyStepTemplate
 
 
 def create_step_template(template_data: dict) -> StrategyStepTemplate:
