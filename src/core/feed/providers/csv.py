@@ -1,5 +1,6 @@
 """CSV price feed provider."""
 
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -41,18 +42,72 @@ class CSVPriceFeedProvider:
         return self._config.name
     
     @property
+    def timeframes(self) -> set[CustomTimeframe]:
+        """Get the supported timeframes (both supported and native)."""
+        return set(self._config.timeframes.supported_timeframes) | {self._config.timeframes.native_timeframe}
+
+    @property 
+    def symbols(self) -> set[str]:
+        """Get the supported symbols."""
+        return self._supported_symbols
+
+    @property
     def capabilities(self) -> PriceFeedCapabilities:
-        """Get the provider's capabilities."""
+        """Get the provider's capabilities.
+        
+        Deprecated: Use supported_timeframes and supported_symbols properties directly instead.
+        """
+        import warnings
+        warnings.warn(
+            "capabilities property is deprecated. Use supported_timeframes and supported_symbols directly.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        # FIX: Remove this property once all usages are updated to use direct properties
         return PriceFeedCapabilities(
-            supported_timeframes=self._config.timeframes.supported_timeframes,
-            supported_symbols=self._supported_symbols    
+            supported_timeframes=self.timeframes,
+            supported_symbols=self.symbols
         )
     
     def _load_supported_symbols(self) -> None:
-        """Load supported symbols from CSV files."""
-        self._supported_symbols = {
-            f.stem for f in self._data_dir.glob(self._config.file_pattern)
-        }
+        """Load supported symbols from CSV files with SYMBOL_xxxx naming convention."""
+        # Naming convention: SYMBOL_xxxx where SYMBOL is uppercase letters only
+        symbol_pattern = re.compile(r'^([A-Z]+)_[A-Za-z0-9_]+$', re.IGNORECASE)
+        
+        self._supported_symbols = set()
+        
+        for file_path in self._data_dir.glob(self._config.file_pattern):
+            filename = file_path.stem  # Get filename without extension
+            
+            # Check if filename matches SYMBOL_xxxx pattern (case insensitive)
+            match = symbol_pattern.match(filename)
+            if match:
+                symbol = match.group(1).upper()  # Extract the symbol part and convert to uppercase
+                self._supported_symbols.add(symbol)
+            else:
+                print(f"Warning: Skipping file '{file_path.name}' - doesn't match SYMBOL_xxxx naming convention")
+    
+    def _find_data_file(self, symbol: str) -> Path:
+        """Find the data file for a symbol (case insensitive)."""
+        # Try exact match first
+        file_path = self._data_dir / f"{symbol}.csv"
+        if file_path.exists():
+            return file_path
+        
+        # Try case insensitive match
+        for file_path in self._data_dir.glob("*.csv"):
+            if file_path.stem.upper() == symbol.upper():
+                return file_path
+        
+        # If still not found, try pattern matching
+        for file_path in self._data_dir.glob("*.csv"):
+            filename = file_path.stem
+            if '_' in filename:
+                file_symbol = filename.split('_')[0].upper()
+                if file_symbol == symbol.upper():
+                    return file_path
+        
+        raise FileNotFoundError(f"No data file found for symbol {symbol}")
     
     def get_price_data(
         self,
@@ -85,9 +140,7 @@ class CSVPriceFeedProvider:
             raise TimeframeError(f"Timeframe {timeframe} not supported")
         
         # Load data from CSV
-        file_path = self._data_dir / f"{symbol}.csv"
-        if not file_path.exists():
-            raise SymbolError(f"Data file for symbol {symbol} not found")
+        file_path = self._find_data_file(symbol)
         
         df = pd.read_csv(file_path, parse_dates=["timestamp"])
         
