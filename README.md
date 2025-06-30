@@ -1,4 +1,5 @@
-# TradeX Strategy Platform
+impl dondone# TradeX Strategy Platform
+ne 
 
 Based on LOM lesson (Inside the Pressure Cooker)[https://languageofmarkets.com/inside-the-pressure-cooker/]
 

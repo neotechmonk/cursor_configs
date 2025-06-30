@@ -1,0 +1,33 @@
+name: "Day Trading Session"
+description: "High-frequency trading session for intraday strategies"
+
+# Portfolio reference
+portfolio: "main_account"
+capital_allocation: 30000.00
+
+# Strategies to run in this session
+strategies:
+  - "trend_following"
+  - "mean_reversion"
+
+# Session-level execution constraints
+execution_limits:
+  max_open_positions: 3
+  max_order_size: 5000.00
+  trading_hours:
+    start: "09:30"
+    end: "16:00"
+
+# Symbol mapping - connects strategies to providers
+symbol_mapping:
+  AAPL:
+    data_provider: "csv"
+    execution_provider: "ib"
+    timeframe: "5m"
+    enabled: true
+  
+  SPY:
+    data_provider: "yahoo"
+    execution_provider: "alpaca"
+    timeframe: "1m"
+    enabled: true
