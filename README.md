@@ -131,20 +131,20 @@ Planned support for:
 
 ### 3. Portfolios (Capital Management)
 
-**Purpose**: Manage capital allocation and risk across multiple trading sessions
+**Purpose**: Manage capital allocation and centralized risk across multiple trading sessions
 
 **Responsibilities**:
 - Initial capital management
-- Risk limits and position sizing
+- **Centralized risk limits** (drawdown, position size, VaR)
 - P&L tracking and reporting
 - Account balance management
 - Cross-session risk monitoring
 
 **Characteristics**:
 - **Multi-session support**: One portfolio can fund multiple sessions
-- **Risk isolation**: Sessions can have different risk profiles
+- **Centralized risk management**: All risk limits managed at portfolio level
 - **Capital allocation**: Control how much money goes to each session
-- **Centralized risk management**: Portfolio-level risk limits
+- **Total portfolio protection**: Risk limits apply across all sessions
 
 #### Portfolio Configuration Example
 
@@ -157,11 +157,11 @@ description: "Primary trading account for multiple strategies"
 initial_capital: 100000.00
 currency: "USD"
 
-# Portfolio-level risk limits
+# Portfolio-level risk limits (apply across ALL sessions)
 risk_limits:
-  max_drawdown: 0.20          # 20% max drawdown across all sessions
-  max_leverage: 1.0           # No leverage
-  max_correlation: 0.7        # Maximum correlation between positions
+  max_drawdown: 0.20          # 20% max loss across all sessions
+  max_position_size: 10000.00 # Max $10K in any position
+  var_limit: 5000.00          # Max $5K Value at Risk
 
 # Session allocations
 session_allocations:
@@ -177,7 +177,7 @@ session_allocations:
 **Responsibilities**:
 - **Provider Mapping**: Map strategy symbols to specific data and execution providers
 - **Symbol Configuration**: Define which symbols are available and how they're configured
-- **Session Constraints**: Apply session-level limits and rules
+- **Execution Constraints**: Apply session-level execution limits
 - **Strategy Execution**: Coordinate strategy execution with available data/execution
 - **Capital Management**: Operate within allocated portfolio capital
 
@@ -202,11 +202,13 @@ strategies:
   - "scalping"
   - "mean_reversion"
 
-# Session-level risk limits (within portfolio allocation)
-risk_limits:
-  max_position_size: 5000.00  # Max $5K per position
-  max_drawdown: 0.10          # 10% max drawdown for this session
+# Session-level execution constraints (not risk limits)
+execution_limits:
   max_open_positions: 3       # Max 3 concurrent positions
+  max_order_size: 5000.00     # Max order size for this session
+  trading_hours:
+    start: "09:30"
+    end: "16:00"
 
 # Symbol mapping - connects strategies to providers
 symbol_mapping:
@@ -215,24 +217,12 @@ symbol_mapping:
     execution_provider: "ib"       # Where to execute trades
     timeframe: "5m"               # Data timeframe
     enabled: true
-    risk_config:
-      max_position_size: 2000.00  # Symbol-specific limits
-      stop_loss_pct: 0.015
   
   SPY:
     data_provider: "yahoo"
     execution_provider: "alpaca"
     timeframe: "1m"               # Higher frequency for SPY
     enabled: true
-    risk_config:
-      max_position_size: 3000.00
-
-# Session-level constraints
-constraints:
-  trading_hours:
-    start: "09:30"
-    end: "16:00"
-  correlation_limit: 0.5          # Lower correlation limit for day trading
 ```
 
 ## Real-World Constraints
@@ -262,11 +252,10 @@ This single configuration handles:
 - Execution provider mapping  
 - Timeframe configuration
 - Symbol enable/disable
-- Symbol-specific risk limits (when needed)
 
 ## Configuration Flow
 
-1. **Portfolio Definition**: Define capital and risk limits
+1. **Portfolio Definition**: Define capital and centralized risk limits
 2. **Strategy Definition**: Define decision logic (agnostic to providers/symbols)
 3. **Session Configuration**: Map strategy symbols to available providers and allocate capital
 4. **Provider Setup**: Configure data and execution providers
@@ -281,7 +270,9 @@ portfolios:
     name: "Main Trading Account"
     initial_capital: 100000.00
     risk_limits:
-      max_drawdown: 0.20
+      max_drawdown: 0.20          # 20% max loss across all sessions
+      max_position_size: 10000.00 # Max $10K in any position
+      var_limit: 5000.00          # Max $5K Value at Risk
 
 # Strategy (Decision Logic) - Completely agnostic
 strategies:
@@ -309,6 +300,13 @@ trading_sessions:
         execution_provider: "alpaca"
         timeframe: "1m"
         enabled: true
+    
+    # Execution constraints (not risk limits)
+    execution_limits:
+      max_open_positions: 3
+      trading_hours:
+        start: "09:30"
+        end: "16:00"
 
 # Providers (Infrastructure)
 providers:
@@ -343,8 +341,13 @@ providers:
 ### Portfolio-Session Relationship
 - **One-to-Many**: One portfolio can fund multiple sessions
 - **Capital Allocation**: Sessions operate within allocated portfolio capital
-- **Risk Isolation**: Sessions can have different risk profiles
-- **Centralized Risk**: Portfolio-level risk limits across all sessions
+- **Centralized Risk**: All risk management at portfolio level
+- **Execution Constraints**: Session-level execution limits only
+
+### Risk Management Approach
+- **Portfolio Level**: All risk limits (drawdown, position size, VaR)
+- **Session Level**: Only execution constraints (position count, trading hours, order size)
+- **Rationale**: Protect total portfolio value regardless of which session is trading
 
 ## Benefits of This Architecture
 
@@ -356,7 +359,8 @@ providers:
 6. **Strategy Portability**: Strategies can be moved between different trading environments without modification
 7. **Simplicity**: Single configuration point for all symbol-to-provider mapping
 8. **Capital Management**: Proper separation of capital management from strategy execution
-9. **Risk Isolation**: Different sessions can have different risk profiles within the same portfolio
+9. **Centralized Risk**: Portfolio-level risk management protects total capital across all sessions
+10. **Clear Separation**: Risk limits vs execution constraints are clearly separated
 
 ## Getting Started
 
