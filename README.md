@@ -23,7 +23,7 @@ The platform follows a clear separation of concerns:
 │                 │    │                 │    │                 │
 │ • Decision      │◄──►│ • Orchestration │◄──►│ • Data Sources  │
 │ • Analysis      │    │ • Symbol Mapping│    │ • Execution     │
-│ • Signals       │    │ • Risk Mgmt     │    │ • Order Mgmt    │
+│ • Signals       │    │ • P&L Tracking  │    │ • Order Mgmt    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼
@@ -32,7 +32,7 @@ The platform follows a clear separation of concerns:
                     │                 │
                     │ • Capital Mgmt  │
                     │ • Risk Limits   │
-                    │ • P&L Tracking  │
+                    │ • P&L Rollup    │
                     └─────────────────┘
 ```
 
@@ -136,7 +136,7 @@ Planned support for:
 **Responsibilities**:
 - Initial capital management
 - **Centralized risk limits** (drawdown, position size, VaR)
-- P&L tracking and reporting
+- P&L aggregation from all sessions
 - Account balance management
 - Cross-session risk monitoring
 
@@ -145,6 +145,7 @@ Planned support for:
 - **Centralized risk management**: All risk limits managed at portfolio level
 - **Capital allocation**: Control how much money goes to each session
 - **Total portfolio protection**: Risk limits apply across all sessions
+- **P&L rollup**: Aggregates P&L from all sessions
 
 #### Portfolio Configuration Example
 
@@ -156,6 +157,9 @@ description: "Primary trading account for multiple strategies"
 # Capital configuration
 initial_capital: 100000.00
 currency: "USD"
+
+# Allocation strategy (extensible for future complex strategies)
+allocation_strategy: "fixed"  # Current: fixed allocation based on initial capital
 
 # Portfolio-level risk limits (apply across ALL sessions)
 risk_limits:
@@ -179,7 +183,7 @@ session_allocations:
 - **Symbol Configuration**: Define which symbols are available and how they're configured
 - **Execution Constraints**: Apply session-level execution limits
 - **Strategy Execution**: Coordinate strategy execution with available data/execution
-- **Capital Management**: Operate within allocated portfolio capital
+- **Session P&L Tracking**: Track session-specific P&L for portfolio rollup
 
 **Key Principle**: **Session-Based Mapping**
 - All provider mapping decisions are made at the session level
@@ -225,6 +229,22 @@ symbol_mapping:
     enabled: true
 ```
 
+## P&L and Capital Management Architecture
+
+### P&L Tracking Hierarchy
+```
+Session P&L → Portfolio P&L Rollup
+```
+
+- **Session Level**: Tracks session-specific P&L and equity
+- **Portfolio Level**: Aggregates P&L from all sessions
+- **Single Source of Truth**: Portfolio level for total P&L
+
+### Capital Allocation Strategy
+- **Current**: Fixed allocation based on initial capital
+- **Extensible**: API designed to support complex allocation strategies
+- **Risk Limits**: Always based on initial capital (conservative approach)
+
 ## Real-World Constraints
 
 ### Data vs Execution Separation
@@ -269,6 +289,7 @@ portfolios:
   main_account:
     name: "Main Trading Account"
     initial_capital: 100000.00
+    allocation_strategy: "fixed"
     risk_limits:
       max_drawdown: 0.20          # 20% max loss across all sessions
       max_position_size: 10000.00 # Max $10K in any position
@@ -349,6 +370,11 @@ providers:
 - **Session Level**: Only execution constraints (position count, trading hours, order size)
 - **Rationale**: Protect total portfolio value regardless of which session is trading
 
+### P&L and Capital Management
+- **P&L Hierarchy**: Session P&L rolls up to portfolio level
+- **Allocation Strategy**: Fixed allocation based on initial capital (extensible API)
+- **Risk Limits**: Always based on initial capital (conservative approach)
+
 ## Benefits of This Architecture
 
 1. **Flexibility**: Strategies can work with any combination of data/execution providers
@@ -361,6 +387,8 @@ providers:
 8. **Capital Management**: Proper separation of capital management from strategy execution
 9. **Centralized Risk**: Portfolio-level risk management protects total capital across all sessions
 10. **Clear Separation**: Risk limits vs execution constraints are clearly separated
+11. **P&L Transparency**: Clear hierarchy of P&L tracking from session to portfolio
+12. **Extensible Allocation**: API designed to support future complex allocation strategies
 
 ## Getting Started
 
