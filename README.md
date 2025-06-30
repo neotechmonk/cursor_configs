@@ -12,6 +12,8 @@ The platform follows a clear separation of concerns:
 
 - **Strategies** = Trade Decision Logic
 - **Providers** = Trade Execution Infrastructure
+- **Portfolios** = Capital Management
+- **Sessions** = Strategy Orchestration
 
 ### Architecture Overview
 
@@ -23,6 +25,15 @@ The platform follows a clear separation of concerns:
 │ • Analysis      │    │ • Symbol Mapping│    │ • Execution     │
 │ • Signals       │    │ • Risk Mgmt     │    │ • Order Mgmt    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │   Portfolio     │
+                    │                 │
+                    │ • Capital Mgmt  │
+                    │ • Risk Limits   │
+                    │ • P&L Tracking  │
+                    └─────────────────┘
 ```
 
 ## Key Components
@@ -118,15 +129,57 @@ Planned support for:
 - Interactive Brokers
 - Binance
 
-### 3. Trading Sessions (Orchestration)
+### 3. Portfolios (Capital Management)
 
-**Purpose**: Coordinate between strategies and providers
+**Purpose**: Manage capital allocation and risk across multiple trading sessions
+
+**Responsibilities**:
+- Initial capital management
+- Risk limits and position sizing
+- P&L tracking and reporting
+- Account balance management
+- Cross-session risk monitoring
+
+**Characteristics**:
+- **Multi-session support**: One portfolio can fund multiple sessions
+- **Risk isolation**: Sessions can have different risk profiles
+- **Capital allocation**: Control how much money goes to each session
+- **Centralized risk management**: Portfolio-level risk limits
+
+#### Portfolio Configuration Example
+
+```yaml
+# configs/portfolios/main_account.yaml
+name: "Main Trading Account"
+description: "Primary trading account for multiple strategies"
+
+# Capital configuration
+initial_capital: 100000.00
+currency: "USD"
+
+# Portfolio-level risk limits
+risk_limits:
+  max_drawdown: 0.20          # 20% max drawdown across all sessions
+  max_leverage: 1.0           # No leverage
+  max_correlation: 0.7        # Maximum correlation between positions
+
+# Session allocations
+session_allocations:
+  day_trading: 30000.00       # $30K for day trading
+  swing_trading: 40000.00     # $40K for swing trading
+  options_trading: 30000.00   # $30K for options
+```
+
+### 4. Trading Sessions (Orchestration)
+
+**Purpose**: Coordinate between strategies and providers within allocated capital
 
 **Responsibilities**:
 - **Provider Mapping**: Map strategy symbols to specific data and execution providers
 - **Symbol Configuration**: Define which symbols are available and how they're configured
-- **Session Constraints**: Apply session-level limits and rules (to be defined)
+- **Session Constraints**: Apply session-level limits and rules
 - **Strategy Execution**: Coordinate strategy execution with available data/execution
+- **Capital Management**: Operate within allocated portfolio capital
 
 **Key Principle**: **Session-Based Mapping**
 - All provider mapping decisions are made at the session level
@@ -136,59 +189,50 @@ Planned support for:
 #### Trading Session Configuration Example
 
 ```yaml
-# configs/trading_sessions/main_session.yaml
-name: "Main Trading Session"
-description: "Primary trading session for equity strategies"
+# configs/trading_sessions/day_trading.yaml
+name: "Day Trading Session"
+description: "High-frequency trading session for intraday strategies"
+
+# Portfolio reference
+portfolio: "main_account"
+capital_allocation: 30000.00  # $30K from main account
 
 # Strategies to run in this session
 strategies:
-  - "trend_following"
+  - "scalping"
   - "mean_reversion"
 
-# Portfolio configuration
-portfolio:
-  name: "Main Portfolio"
-  initial_capital: 100000.00
-  risk_limits:
-    max_position_size: 10000.00
-    max_drawdown: 0.10
-    stop_loss_pct: 0.02
-    take_profit_pct: 0.04
+# Session-level risk limits (within portfolio allocation)
+risk_limits:
+  max_position_size: 5000.00  # Max $5K per position
+  max_drawdown: 0.10          # 10% max drawdown for this session
+  max_open_positions: 3       # Max 3 concurrent positions
 
 # Symbol mapping - connects strategies to providers
 symbol_mapping:
   AAPL:
     data_provider: "csv"           # Where to get market data
     execution_provider: "ib"       # Where to execute trades
-    timeframe: "1d"               # Data timeframe
+    timeframe: "5m"               # Data timeframe
     enabled: true
     risk_config:
-      max_position_size: 5000.00  # Symbol-specific limits
+      max_position_size: 2000.00  # Symbol-specific limits
       stop_loss_pct: 0.015
   
-  MSFT:
+  SPY:
     data_provider: "yahoo"
     execution_provider: "alpaca"
-    timeframe: "1d"
+    timeframe: "1m"               # Higher frequency for SPY
     enabled: true
     risk_config:
       max_position_size: 3000.00
-  
-  CL:  # Crude Oil futures
-    data_provider: "csv"
-    execution_provider: "ib"
-    timeframe: "5m"               # Different timeframe for futures
-    enabled: true
-    risk_config:
-      max_position_size: 2000.00  # Lower limits for futures
 
-# Session-level constraints (to be defined)
+# Session-level constraints
 constraints:
   trading_hours:
     start: "09:30"
     end: "16:00"
-  max_open_positions: 5
-  correlation_limit: 0.7
+  correlation_limit: 0.5          # Lower correlation limit for day trading
 ```
 
 ## Real-World Constraints
@@ -222,14 +266,23 @@ This single configuration handles:
 
 ## Configuration Flow
 
-1. **Strategy Definition**: Define decision logic (agnostic to providers/symbols)
-2. **Session Configuration**: Map strategy symbols to available providers
-3. **Provider Setup**: Configure data and execution providers
-4. **Runtime Execution**: Session orchestrates strategy execution using configured providers
+1. **Portfolio Definition**: Define capital and risk limits
+2. **Strategy Definition**: Define decision logic (agnostic to providers/symbols)
+3. **Session Configuration**: Map strategy symbols to available providers and allocate capital
+4. **Provider Setup**: Configure data and execution providers
+5. **Runtime Execution**: Session orchestrates strategy execution using configured providers within portfolio limits
 
 ## Example Configuration
 
 ```yaml
+# Portfolio (Capital Management)
+portfolios:
+  main_account:
+    name: "Main Trading Account"
+    initial_capital: 100000.00
+    risk_limits:
+      max_drawdown: 0.20
+
 # Strategy (Decision Logic) - Completely agnostic
 strategies:
   trend_following:
@@ -238,8 +291,10 @@ strategies:
 
 # Session (Orchestration) - Handles all mapping
 trading_sessions:
-  main_session:
-    name: "Main Trading Session"
+  day_trading:
+    name: "Day Trading Session"
+    portfolio: "main_account"
+    capital_allocation: 30000.00
     strategies: ["trend_following"]
     
     # Session handles all provider mapping
@@ -247,12 +302,12 @@ trading_sessions:
       AAPL:
         data_provider: "csv"        # Where to get data
         execution_provider: "ib"    # Where to execute trades
-        timeframe: "1d"            # Data timeframe
+        timeframe: "5m"            # Data timeframe
         enabled: true
-      MSFT:
+      SPY:
         data_provider: "yahoo"
         execution_provider: "alpaca"
-        timeframe: "1d"
+        timeframe: "1m"
         enabled: true
 
 # Providers (Infrastructure)
@@ -285,9 +340,11 @@ providers:
 - **Execution Provider Mapping**: Sessions decide which execution provider to use for each symbol
 - **Symbol Configuration**: Sessions define which symbols are available and their configurations
 
-### Trading Session Limits
-- **Status**: To be defined based on specific requirements
-- **Potential areas**: Risk limits, position size limits, trading hours, compliance rules
+### Portfolio-Session Relationship
+- **One-to-Many**: One portfolio can fund multiple sessions
+- **Capital Allocation**: Sessions operate within allocated portfolio capital
+- **Risk Isolation**: Sessions can have different risk profiles
+- **Centralized Risk**: Portfolio-level risk limits across all sessions
 
 ## Benefits of This Architecture
 
@@ -298,6 +355,8 @@ providers:
 5. **Real-world Compliance**: Handles the reality that data sources and execution venues are often separate
 6. **Strategy Portability**: Strategies can be moved between different trading environments without modification
 7. **Simplicity**: Single configuration point for all symbol-to-provider mapping
+8. **Capital Management**: Proper separation of capital management from strategy execution
+9. **Risk Isolation**: Different sessions can have different risk profiles within the same portfolio
 
 ## Getting Started
 
