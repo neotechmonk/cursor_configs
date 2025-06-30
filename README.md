@@ -52,15 +52,23 @@ name: "Trend Following Strategy"
 steps:
   - system_step_id: detect_trend
     description: "Determine the current market trend direction"
-    static_config: {}
+    static_config: {} # No config via yaml
     dynamic_config: {}
   
-  - system_step_id: find_extreme
-    description: "Identify extreme pivot points in the trend"
-    static_config: {}
+  # Step 4: Check Fibonacci extension
+  - system_step_id: check_fib
+    description: "Verify if price action meets Fibonacci extension criteria"
+    static_config: # preconfigured via yaml 
+      min: 0.50
+      max: 0.75  
     dynamic_config:
       trend: "trend"  # From detect_trend step
+      ref_swing_start_idx: "bar_index_start"  # From find_extreme step
+      ref_swing_end_idx: "bar_index_end"  # From find_extreme step
+    reevaluates:
+      - detect_trend # check if first step still passes
 ```
+
 
 **Key Features**:
 - **Step-based execution**: Strategies are composed of reusable steps
@@ -78,6 +86,8 @@ steps:
     return_map:
       trend: "_"  # Direct value from function return
 ```
+
+Therefore strategies are recipes created using steps as ingredients 
 
 ### 2. Providers (Execution Infrastructure)
 
@@ -98,15 +108,13 @@ steps:
 
 Currently supported:
 - **CSV Provider**: Load historical data from CSV files
-- **Yahoo Finance Provider**: Fetch real-time and historical data
+- **Yahoo Finance Provider**: Fetch real-time and historical data # TODO : needs refactoring. #YAGNI
 
-#### Execution Providers
+#### Execution Providers #TODO : borrow from previous codebase
 
 Planned support for:
 - Interactive Brokers
-- Alpaca
-- TD Ameritrade
-- Other brokers and exchanges
+- Binance
 
 ### 3. Trading Sessions (Orchestration)
 
