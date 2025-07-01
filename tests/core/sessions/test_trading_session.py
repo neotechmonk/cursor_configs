@@ -1,12 +1,17 @@
 """Tests for trading session implementation."""
 
 from decimal import Decimal
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
 
-from src.core.sessions.trading_session import TradingSessionImpl, SessionConfig, SymbolMapping, ExecutionLimits
+from core.sessions.trading_session import (
+    ExecutionLimits,
+    SessionConfig,
+    SymbolMapping,
+    TradingSessionImpl,
+)
 
 
 @pytest.fixture
@@ -14,7 +19,7 @@ def sample_session_config():
     """Create a sample session configuration."""
     return SessionConfig(
         name="test_session",
-        description="Test trading session",
+        description="Test trading session", 
         portfolio="test_portfolio",
         capital_allocation=30000.00,
         strategies=["trend_following"],
@@ -26,18 +31,102 @@ def sample_session_config():
         symbol_mapping={
             "AAPL": SymbolMapping(
                 data_provider="csv",
-                execution_provider="ib",
+                execution_provider="ib", 
                 timeframe="5m",
                 enabled=True
             ),
             "SPY": SymbolMapping(
                 data_provider="yahoo",
                 execution_provider="alpaca",
-                timeframe="1m",
+                timeframe="1m", 
                 enabled=False
             )
         }
     )
+
+
+@pytest.fixture()
+def sample_session_config_from_yaml():
+    """Create a sample session configuration from YAML."""
+    yaml_content = """
+    name: test_session
+    description: Test trading session
+    portfolio: test_portfolio 
+    capital_allocation: 30000.00
+    strategies: 
+      - trend_following
+    execution_limits:
+      max_open_positions: 3
+      max_order_size: 5000.00
+      trading_hours:
+        start: "09:30"
+        end: "16:00"
+    symbol_mapping:
+      AAPL:
+        data_provider: csv
+        execution_provider: ib
+        timeframe: 5m
+        enabled: true
+      SPY:
+        data_provider: yahoo
+        execution_provider: alpaca
+        timeframe: 1m
+        enabled: false
+    """
+    import yaml
+    config_dict = yaml.safe_load(yaml_content)
+    return SessionConfig(**config_dict)
+
+
+@pytest.fixture
+def sample_session_config_yaml(tmp_path):
+    """Create a sample session configuration from YAML file."""
+    yaml_content = """
+    name: test_session
+    description: Test trading session
+    portfolio: test_portfolio
+    capital_allocation: 30000.00
+    strategies: 
+      - trend_following
+    execution_limits:
+      max_open_positions: 3
+      max_order_size: 5000.00
+      trading_hours:
+        start: "09:30"
+        end: "16:00"
+    symbol_mapping:
+      AAPL:
+        data_provider: csv
+        execution_provider: ib
+        timeframe: 5m
+        enabled: true
+      SPY:
+        data_provider: yahoo
+        execution_provider: alpaca
+        timeframe: 1m
+        enabled: false
+    """
+    import yaml
+    config_dict = yaml.safe_load(yaml_content)
+    return SessionConfig(**config_dict)
+
+
+@pytest.mark.parametrize("config_fixture", [
+    "sample_session_config",
+    "sample_session_config_yaml"
+])
+def test_session_initialization(config_fixture, mock_data_providers, mock_execution_providers, request):
+    """Test session initialization with both direct and YAML-loaded configs."""
+    config = request.getfixturevalue(config_fixture)
+    trading_session = TradingSessionImpl(
+        config=config,
+        data_providers=mock_data_providers,
+        execution_providers=mock_execution_providers
+    )
+    assert trading_session.name == "test_session"
+    assert trading_session.portfolio_name == "test_portfolio"
+    assert trading_session.capital_allocation == Decimal('30000.00')
+    assert trading_session.strategies == ["trend_following"]
 
 
 @pytest.fixture
@@ -78,12 +167,6 @@ def trading_session(sample_session_config, mock_data_providers, mock_execution_p
     )
 
 
-def test_session_initialization(trading_session):
-    """Test session initialization."""
-    assert trading_session.name == "test_session"
-    assert trading_session.portfolio_name == "test_portfolio"
-    assert trading_session.capital_allocation == Decimal('30000.00')
-    assert trading_session.strategies == ["trend_following"]
 
 
 def test_get_symbol_config(trading_session):
