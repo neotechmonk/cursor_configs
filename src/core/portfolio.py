@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Dict
+from typing import Dict, List
 
 from .protocols import Position
 
@@ -18,7 +18,16 @@ class SimplePortfolio:
     current_capital: Decimal = field(init=False)
     
     def __post_init__(self):
-        self.current_capital = self.initial_capital
+        # Ensure current_capital is always a Decimal
+        if isinstance(self.initial_capital, float):
+            self.current_capital = Decimal(str(self.initial_capital))
+        else:
+            self.current_capital = self.initial_capital
+    
+    @property
+    def positions_by_symbol(self) -> Dict[str, Position]:
+        """Positions indexed by symbol."""
+        return self.positions
     
     def update_position(self, symbol: str, price: Decimal) -> None:
         """Update position with new price."""
@@ -54,4 +63,15 @@ class SimplePortfolio:
         if total_value < self.initial_capital * (1 - self.risk_limits["max_drawdown"]):
             return False
         
-        return True 
+        return True
+    
+    def get_total_pnl(self) -> Decimal:
+        """Get total portfolio P&L (realized + unrealized)."""
+        total_pnl = Decimal("0")
+        for position in self.positions.values():
+            total_pnl += position.realized_pnl + position.unrealized_pnl
+        return total_pnl
+    
+    def get_current_capital(self) -> Decimal:
+        """Get current portfolio capital including P&L."""
+        return self.current_capital + self.get_total_pnl() 

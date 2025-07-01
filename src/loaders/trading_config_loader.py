@@ -6,10 +6,11 @@ from typing import Dict, List, Optional
 import yaml
 from pydantic import BaseModel
 
+from core.feed.providers.csv_file import CSVPriceFeedConfig, CSVPriceFeedProvider
 from core.portfolio import SimplePortfolio
-from core.price_feeds import YahooFinanceProvider
-from core.protocols import SymbolConfig, Timeframe
+from core.protocols import SymbolConfig
 from core.session import SimpleTradingSession
+from core.time import CustomTimeframe
 
 
 class PriceFeedConfig(BaseModel):
@@ -54,6 +55,7 @@ class TradingConfig(BaseModel):
     price_feeds: Dict[str, PriceFeedConfig]
     portfolio: PortfolioConfig
     trading_sessions: Dict[str, TradingSessionConfig]
+    strategies: Optional[Dict[str, dict]] = None
 
 
 class TradingConfigLoader:
@@ -71,15 +73,33 @@ class TradingConfigLoader:
         self.config = TradingConfig.model_validate(config_dict)
         return self.config
     
-    def create_price_feeds(self) -> Dict[str, YahooFinanceProvider]:
+    def create_price_feeds(self) -> Dict[str, CSVPriceFeedProvider]:
         """Create price feed providers from configuration."""
         if not self.config:
             raise ValueError("Configuration not loaded")
         
         feeds = {}
         for name, feed_config in self.config.price_feeds.items():
-            if feed_config.provider == "yahoo":
-                feeds[name] = YahooFinanceProvider(feed_config.config)
+            if feed_config.provider == "csv":
+                # Create proper CSV config with timeframes from the providers directory
+                csv_config = CSVPriceFeedConfig(
+                    name=feed_config.config.get("name", "csv"),
+                    data_dir=feed_config.config.get("data_dir", "tests/data"),
+                    file_pattern=feed_config.config.get("file_pattern", "*.csv"),
+                    date_format=feed_config.config.get("date_format", "%Y-%m-%d %H:%M:%S"),
+                    timeframes={
+                        "supported_timeframes": ["1m", "5m", "15m", "30m", "1h", "4h", "1d"],
+                        "native_timeframe": "1m",
+                        "resample_strategy": {
+                            "open": "first",
+                            "high": "max",
+                            "low": "min",
+                            "close": "last",
+                            "volume": "sum"
+                        }
+                    }
+                )
+                feeds[name] = CSVPriceFeedProvider(csv_config)
             else:
                 raise ValueError(f"Unsupported price feed provider: {feed_config.provider}")
         return feeds
@@ -97,7 +117,7 @@ class TradingConfigLoader:
     
     def create_trading_sessions(
         self,
-        price_feeds: Dict[str, YahooFinanceProvider],
+        price_feeds: Dict[str, CSVPriceFeedProvider],
         portfolio: SimplePortfolio
     ) -> Dict[str, SimpleTradingSession]:
         """Create trading sessions from configuration."""
@@ -112,15 +132,23 @@ class TradingConfigLoader:
                 symbols[symbol_name] = SymbolConfig(
                     symbol=symbol_config.symbol,
                     price_feed=symbol_config.price_feed,
-                    timeframe=Timeframe(symbol_config.timeframe),
+                    timeframe=CustomTimeframe(symbol_config.timeframe),
                     feed_config=symbol_config.feed_config
                 )
+            
+            # Find strategies associated with this session
+            strategies = []
+            if hasattr(self.config, 'strategies'):
+                for strategy_name, strategy_config in self.config.strategies.items():
+                    if strategy_config.get('session') == name:
+                        strategies.append(strategy_name)
             
             # Create session
             sessions[name] = SimpleTradingSession(
                 name=session_config.name,
                 symbols=symbols,
                 portfolio=portfolio,
-                price_feeds={name: price_feeds[name] for name in session_config.price_feeds}
+                price_feeds={name: price_feeds[name] for name in session_config.price_feeds},
+                strategies=strategies
             )
         return sessions 

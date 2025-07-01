@@ -3,14 +3,13 @@
 
 # Price Feed Configuration
 price_feeds:
-  yahoo:
-    provider: "yahoo"
+  csv:
+    provider: "csv"
     config:
-      api_key: "${YAHOO_API_KEY}"  # Load from environment variable
-      cache_duration: "1h"
-      supported_timeframes:
-        - "1d"
-        - "1w"
+      name: "csv"
+      data_dir: "tests/data"
+      file_pattern: "*.csv"
+      date_format: "%Y-%m-%d %H:%M:%S"
 
 # Portfolio Configuration
 portfolio:
@@ -27,21 +26,15 @@ trading_sessions:
   main_session:
     name: "Main Trading Session"
     symbols:
-      AAPL:
-        symbol: "AAPL"
-        price_feed: "yahoo"
-        timeframe: "1d"
-        feed_config:
-          cache_duration: "1h"
-      MSFT:
-        symbol: "MSFT"
-        price_feed: "yahoo"
-        timeframe: "1d"
+      CL:
+        symbol: "CL"
+        price_feed: "csv"
+        timeframe: "5m"
         feed_config:
           cache_duration: "1h"
     portfolio: "Main Portfolio"
     price_feeds:
-      - "yahoo"
+      - "csv"
 
 # Strategy Configuration
 strategies:
@@ -49,8 +42,7 @@ strategies:
     name: "Trend Following Strategy"
     session: "main_session"
     symbols:
-      - "AAPL"
-      - "MSFT"
+      - "CL"
     steps:
       - system_step_id: detect_trend
         description: "Determine the current market trend direction"

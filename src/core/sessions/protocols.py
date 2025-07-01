@@ -1,7 +1,7 @@
 """Protocols for trading sessions."""
 
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Protocol
 
 import pandas as pd
 

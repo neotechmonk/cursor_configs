@@ -1,7 +1,7 @@
 """Trading session implementation."""
 
 from decimal import Decimal
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from pydantic import BaseModel
@@ -21,7 +21,7 @@ class ExecutionLimits(BaseModel):
     """Execution limits for the session."""
     max_open_positions: int
     max_order_size: float
-    trading_hours: Dict[str, str]
+    trading_hours: Dict[str, str] # FIX : need a better way to handle days and hour windows
 
 
 class SessionConfig(BaseModel):

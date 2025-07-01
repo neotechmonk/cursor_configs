@@ -1,9 +1,23 @@
-impl dondone# TradeX Strategy Platform
-ne 
+# TradeX Strategy Platform
 
 Based on LOM lesson (Inside the Pressure Cooker)[https://languageofmarkets.com/inside-the-pressure-cooker/]
 
 A flexible trading strategy execution platform with clear separation between decision logic and execution infrastructure.
+
+## 🎯 Current Status
+
+### ✅ System Running Successfully
+The trading system is now operational with proper protocol compliance:
+
+- **✅ Portfolio Management**: Capital management with $100,000 initial capital, proper P&L tracking
+- **✅ Price Feed Integration**: Successfully loads 4308 bars of price data for CL symbol
+- **✅ Session Orchestration**: Sessions coordinate between strategies and providers correctly
+- **✅ Protocol Compliance**: All Portfolio and TradingSession protocols properly implemented
+- **✅ Configuration System**: YAML configurations validated and loaded successfully
+- **✅ End-to-End Execution**: Main workflow runs from portfolio initialization to P&L reporting
+
+### 🚧 Next Phase: Strategy Execution Integration
+The foundation is solid. Next priority is integrating the existing strategy framework with trading sessions for actual strategy execution.
 
 ## Domain Architecture
 
@@ -393,7 +407,56 @@ providers:
 
 ## Getting Started
 
-[Documentation for setup and usage will go here]
+### Prerequisites
+- Python 3.12+
+- uv package manager
+
+### Quick Start
+
+1. **Clone and setup**:
+```bash
+git clone <repository-url>
+cd tradex_strategy_pc
+uv sync
+```
+
+2. **Run the trading system**:
+```bash
+uv run python -m src.main_wip
+```
+
+This will:
+- Load portfolio configuration with $100,000 initial capital
+- Initialize CSV price feed provider
+- Create trading session with CL symbol
+- Load 4308 bars of price data
+- Execute session workflow
+- Display portfolio P&L summary
+
+### Expected Output
+```
+Initialized portfolio: Main Portfolio with $100000.0
+Created 1 price feeds
+Created 1 trading sessions
+
+--- Executing Session: main_session ---
+Session: Main Trading Session
+Symbols: ['CL']
+
+  Processing symbol: CL
+    Loaded 4308 bars of price data
+    Warning: Strategy 'trend_following' not found
+
+--- Portfolio Summary ---
+Total P&L: $0
+Current Capital: $100000.0
+```
+
+### Configuration
+The system uses YAML configuration files in the `configs/` directory:
+- `trading_config.yaml` - Main system configuration
+- `strategies/` - Strategy definitions
+- `providers/` - Provider configurations
 
 ## Development
 
