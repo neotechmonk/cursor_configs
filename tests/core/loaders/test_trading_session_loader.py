@@ -9,7 +9,9 @@ from typing import (
     List,
     Literal,
     Protocol,
+    TypeVar,
     Union,
+    overload,
     runtime_checkable,
 )
 from unittest.mock import Mock
@@ -20,10 +22,12 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 """
 TODO   : 
-1. [ ] Lock in the yaml format for the trading session
+1. [x] Lock in the yaml format for the trading session
 2. [ ] Seperate Portfolio out of this
 3. [ ] Utility function / pattern to validate str nested models vs obect nested models
 4. [ ] Can Trading session loader  itself be called by a container? whats the value compared to doing in manually
+5. [ ] Portfolio needs to be loaded from context like Symbol Condif
+6. [ ] What if DI calls are made to lazily load providers/strategies/etc?
 
 
 # """
@@ -48,8 +52,9 @@ def trading_session_data():
                 "end": "16:00"
             }
         },
-        "symbol_mapping": {
+        "symbols": {
             "CL": {
+                "symbol": "CL",
                 "providers": {
                     "data": "csv",
                     "execution": "ib"
@@ -58,8 +63,9 @@ def trading_session_data():
                 "enabled": True,
             }, 
             "AAPL": {
+                "symbol": "AAPL",
                 "providers": {
-                    "data": "csv",
+                    "data": "dummy",
                     "execution": "alpaca"
                 },
                 "timeframe": "1d",
@@ -73,65 +79,15 @@ def provider_context():
     """Fixture for provider context."""
     return {
         "providers.data": {
-            "csv": MockCSVDataProvider()
+            "csv": MockCSVDataProvider(),
+            "dummy": DummyDataProvider()
         },
         "providers.execution": {
             "ib": MockIBExecutionProvider(),
             "alpaca": MockAlpacaExecutionProvider()
         }
     }
-# # Test data
-PORTFOLIO_DATA = {
-    "portfolio": {
-        "name": "Main Portfolio",
-        "initial_capital": 100000.00,
-        "risk_limits": {
-            "max_position_size": 10000.00,
-            "max_drawdown": 0.10,
-            "stop_loss_pct": 0.02,
-            "take_profit_pct": 0.04
-        }
-    }
-}
-
-TRADING_SESSION_DATA = {
-    "name": "Main Trading Session",
-    "description": "Test trading session for validation",
-    "portfolio": "Main Portfolio",
-    "capital_allocation": 50000.00,
-    "strategies": [
-        "trend_following",
-        "mean_reversion"
-    ],
-    "execution_limits": {
-        "max_open_positions": 5,
-        "max_order_size": 10000.00,
-        "trading_hours": {
-            "start": "09:30",
-            "end": "16:00"
-        }
-    },
-    "symbols": {
-        "CL": {
-            "symbol": "CL",
-            "providers": {
-                "data": "csv",
-                "execution": "ib"
-            },
-            "timeframe": "5m",
-            "enabled": True,
-            "feed_config": {"cache_duration": "1h"}
-        }, 
-        "AAPL": {
-            "providers": {
-                "data": "csv",
-                "execution": "alpaca"
-            },
-            "timeframe": "1d",
-            "enabled": True
-        }
-    }
-}
+# Test data is now centralized in the trading_session_data fixture above
 
 # Protocol definition
 @runtime_checkable
@@ -230,9 +186,77 @@ class SymbolConfigModel(BaseModel):
             return v
         
         return v
+    
+
+# Define the generic type variable
+T = TypeVar('T')
+
+class ContainerProtocol(Protocol):
+    """Protocol for container-like objects with flexible get methods."""
+    
+    @overload
+    def get(self, *, key: str) -> Union[DataProvider, ExecutionProvider]:
+        """Get by single key."""
+        ...
+    
+    @overload
+    def get(self, *, key: str, type: Literal['data', 'execution']) -> Union[DataProvider, ExecutionProvider]:
+        """Get by provider type and name."""
+        ...
+    
+    
+
+@pytest.fixture
+def container_context() -> ContainerProtocol:
+    """Fixture for provider context."""
+    providers = {
+        "data": {
+            "csv": MockCSVDataProvider(),
+            "dummy": DummyDataProvider()
+        },
+        "execution": {
+            "ib": MockIBExecutionProvider(),
+            "alpaca": MockAlpacaExecutionProvider()
+        }
+    }
+    
+    class Container:
+        def get(self, *, key: str, type: Literal['data', 'execution']) -> Union[DataProvider, ExecutionProvider]:
+            return providers[type][key]
+    
+    return Container()
+    
+class SymbolConfigModelV2(BaseModel):
+    """Symbol configuration model."""
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    symbol: str
+    providers: dict[Literal['data', 'execution'], Union[DataProvider, ExecutionProvider]]
+    timeframe: str
+    enabled: bool
+    
+
+    @field_validator('providers', mode='before')
+    @classmethod
+    def validate_provider(cls, v, info):
+        """Convert string provider names to actual provider instances using context."""
+        if isinstance(v, dict):
+            context = info.context or {}
+            
+            for provider_type, provider_name in v.items():
+                if isinstance(provider_name, str):
+                    provider = context.get(key=provider_name, type=provider_type)
+                    # Find provider by name property
+                    if provider is None:
+                        raise ValueError(f"{provider_type.title()} provider '{provider_name}' not found")
+                    v[provider_type] = provider
+            
+            return v
+        
+        return v
 
 # @pytest.mark.skip(reason="TDD: Implementing step by step")
-def test_price_feed_protocol_validation(trading_session_data, provider_context):
+def test_price_feed_protocol_validation(container_context):
     """Test that objects conforming to DataProvider are accepted."""
     
     # Test with a simple symbol configuration
@@ -246,14 +270,14 @@ def test_price_feed_protocol_validation(trading_session_data, provider_context):
         "enabled": True
     }
     
-    config = SymbolConfigModel.model_validate(
+    config = SymbolConfigModelV2.model_validate(
         symbol_data,
-        context=provider_context
+        context=container_context
     )
     
     assert config.symbol == "CL"
     assert config.timeframe == "5m"
-    assert config.enabled == True
+    assert config.enabled 
     assert "data" in config.providers
     assert "execution" in config.providers
     assert isinstance(config.providers["data"], MockCSVDataProvider)
@@ -284,7 +308,7 @@ def test_string_to_provider_conversion():
     # Assert
     assert config.symbol == "TEST"
     assert config.timeframe == "1h"
-    assert config.enabled == True
+    assert config.enabled 
     assert "data" in config.providers
     assert "execution" in config.providers
     assert isinstance(config.providers["data"], MockCSVDataProvider)
@@ -315,45 +339,28 @@ def test_duck_typing_direct_object():
     assert config.providers["execution"].name == "ib"
     
 
+# Add this class definition before the test functions
+class TradingSessionConfig(BaseModel):
+    """Trading session configuration model."""
+    model_config = ConfigDict(frozen=True, extra="ignore", arbitrary_types_allowed=True)
+    
+    name: str
+    description: str
+    symbols: Dict[str, SymbolConfigModel]
+    portfolio: str
+    capital_allocation: float
+    # strategies: List[str]
+    # execution_limits: Dict[str, Any]
+
 # Test 4: Trading session with multiple symbols
-@pytest.mark.skip(reason="TDD: Implementing step by step")
-def test_trading_session_with_multiple_symbols():
+# @pytest.mark.skip(reason="TDD: Implementing step by step")
+def test_trading_session_with_multiple_symbols(trading_session_data, provider_context):
     """Test loading a complete trading session with multiple symbols."""
-    
-    # Arrange
-    class SymbolConfigModel(BaseModel):
-        model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
-        symbol: str
-        provider: DataProvider
-        timeframe: str
-        
-        @field_validator('provider', mode='before')
-        @classmethod
-        def validate_provider(cls, v, info):
-            if isinstance(v, str):
-                context = info.context or {}
-                providers = context.get('providers', {})
-                return providers.get(v)
-            return v
-    
-    class TradingSessionConfig(BaseModel):
-        model_config = ConfigDict(frozen=True, extra="ignore", arbitrary_types_allowed=True)
-        name: str
-        symbols: Dict[str, SymbolConfigModel]
-        portfolio: str
-    
-    providers = {
-        "csv": MockCSVDataProvider(),
-        "duck": DummyDataProvider()
-    }
-    
-    # Act
     session_config = TradingSessionConfig.model_validate(
-        TRADING_SESSION_DATA,
-        context={'providers': providers}
+        trading_session_data,
+        context=provider_context
     )
     
-    # Assert
     assert session_config.name == "Main Trading Session"
     assert session_config.portfolio == "Main Portfolio"
     assert len(session_config.symbols) == 2
@@ -362,16 +369,18 @@ def test_trading_session_with_multiple_symbols():
     cl_symbol = session_config.symbols["CL"]
     assert cl_symbol.symbol == "CL"
     assert cl_symbol.timeframe == "5m"
-    assert isinstance(cl_symbol.provider, MockCSVDataProvider)
+    assert isinstance(cl_symbol.providers["data"], MockCSVDataProvider)
+    assert isinstance(cl_symbol.providers["execution"], MockIBExecutionProvider)
     
     # Check AAPL symbol
     aapl_symbol = session_config.symbols["AAPL"]
     assert aapl_symbol.symbol == "AAPL"
     assert aapl_symbol.timeframe == "1d"
-    assert isinstance(aapl_symbol.provider, MockCSVDataProvider)
+    assert isinstance(aapl_symbol.providers["data"], DummyDataProvider)
+    assert isinstance(aapl_symbol.providers["execution"], MockAlpacaExecutionProvider)
 
 # Test 5: Error handling for invalid provider
-@pytest.mark.skip(reason="TDD: Implementing step by step")
+# @pytest.mark.skip(reason="TDD: Implementing step by step")
 def test_error_handling_invalid_provider():
     """Test error handling when provider string is not found."""
     

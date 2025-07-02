@@ -11,35 +11,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from core.container.provider import PriceFeedsContainer
 from core.feed.providers.csv_file import CSVPriceFeedProvider
 
-PORTFOLIO_DATA = {
-    "portfolio": {
-        "name": "Main Portfolio",
-        "initial_capital": 100000.00,
-        "risk_limits": {
-            "max_position_size": 10000.00,
-            "max_drawdown": 0.10,
-            "stop_loss_pct": 0.02,
-            "take_profit_pct": 0.04
-        }
-    }
-}
-
-TRADING_SESSION_DATA = {
-    "name": "Main Trading Session",
-    "symbols": {
-        "CL": {
-            "symbol": "CL",
-            "price_feed": "csv",
-            "timeframe": "5m",
-        }, 
-        "AAPL": {
-            "symbol": "AAPL",
-            "price_feed": "csv",
-            "timeframe": "1d",
-        }
-    },
-    "portfolio": "Main Portfolio"
-}
+# Test data moved to test fixtures - see tests/core/loaders/test_trading_session_loader.py
 
 # Simple Dummy provider for testing
 class DummyPriceFeedProvider:
@@ -120,27 +92,6 @@ class TradingSessionConfig(BaseModel):
     symbols: Dict[str, SymbolConfigModel]
     portfolio: str
 
-@inject
-def test_loading_trading_session(
-    data: dict, 
-    providers: Dict[str, Any] = Provide[PriceFeedsContainer.all_providers]
-):
-    """Test loading trading session with DI."""
-    session_config = TradingSessionConfig.model_validate(
-        data, 
-        context={'providers': providers}
-    )
-    
-    pprint(session_config)
-    print("✅ Trading session loaded successfully!")
-
-
-
-if __name__ == "__main__":
-    container = PriceFeedsContainer()
-    container.wire(modules=[__name__])
-    
-    print("\n" + "="*50 + "\n")
-    # test_loading_trading_session(TRADING_SESSION_DATA)
+# Test functions moved to test files - see tests/core/loaders/test_trading_session_loader.py
 
 
