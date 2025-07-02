@@ -5,8 +5,9 @@ from typing import Dict
 
 from dependency_injector import containers, providers
 
-from src.core.feed.protocols import PriceFeedProvider
-from src.loaders.load_providers import get_available_providers, load_provider
+from ..feed.protocols import PriceFeedProvider
+from ..loaders.load_providers import get_available_providers, load_provider
+
 
 
 def _load_all_providers(providers_dir: Path) -> Dict[str, PriceFeedProvider]:

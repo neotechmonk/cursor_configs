@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Dict, List
+from typing import Dict
 
 from .protocols import Position
 
