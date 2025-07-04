@@ -1,10 +1,12 @@
 """Tests for Portfolio class implementation."""
 
 from decimal import Decimal
+import inspect
 
 import pytest
 
 from core.portfolio.portfolio import Portfolio
+from core.portfolio.protocol import PortfolioProtocol
 
 
 def test_portfolio_basic_creation():
@@ -105,3 +107,52 @@ def test_get_unrealised_pnl():
     
     unrealised_pnl = portfolio.get_unrealised_pnl()
     assert isinstance(unrealised_pnl, Decimal) 
+
+def test_portfolio_implements_all_protocol_members():
+    """Ensure Portfolio correctly implements PortfolioProtocol.
+    
+    - Methods must be defined as methods.
+    - Properties (including annotated fields) can be satisfied by attributes or properties.
+    """
+
+    # --- Methods ---
+    protocol_methods = {
+        name for name, member in inspect.getmembers(PortfolioProtocol)
+        if inspect.isfunction(member)
+    }
+
+    portfolio_methods = {
+        name for name, member in inspect.getmembers(Portfolio)
+        if inspect.isfunction(member)
+    }
+
+    missing_methods = protocol_methods - portfolio_methods
+
+    # --- Attributes / Properties ---
+    protocol_props = {
+        name for name, member in inspect.getmembers(PortfolioProtocol)
+        if isinstance(member, property)
+    }
+
+    # Add any explicitly annotated attributes on the Protocol
+    protocol_props |= set(getattr(PortfolioProtocol, '__annotations__', {}).keys())
+
+    # Portfolio members: allow property or Pydantic field
+    portfolio_attrs = {
+        name for name, member in inspect.getmembers(Portfolio)
+        if not inspect.isroutine(member)  # includes property, descriptor, class var
+    }
+
+    # Also include Pydantic model fields (from __annotations__)
+    portfolio_attrs |= set(getattr(Portfolio, '__annotations__', {}).keys())
+
+    missing_attrs = protocol_props - portfolio_attrs
+
+    # --- Combined assertion ---
+    messages = []
+    if missing_methods:
+        messages.append(f"Missing methods: {missing_methods}")
+    if missing_attrs:
+        messages.append(f"Missing properties/attributes: {missing_attrs}")
+
+    assert not messages, "Portfolio is missing protocol members:\n" + "\n".join(messages)
