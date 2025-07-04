@@ -2,11 +2,12 @@
 """Tests for PortfolioContainer."""
 
 from unittest.mock import Mock
-import pytest
+
 from dependency_injector import providers
 
-from core.portfolio.container import PortfolioContainer
+from core.portfolio.container import PortfolioContainer, PortfolioService
 from core.portfolio.portfolio import PortfolioSettings
+
 
 def test_portfolio_container_initialization():
     """Test that PortfolioContainer initializes correctly."""
@@ -34,30 +35,22 @@ def test_portfolio_container_with_settings_provider():
     # # Check that settings provider is set
     assert container.settings() == mock_settings
 
-# def test_get_caches_portfolio(monkeypatch, tmp_path):
-#     """Test that portfolio is loaded once and cached."""
-#     # Create fake YAML
-#     yaml_path = tmp_path / "demo.yaml"
-#     yaml_path.write_text("description: Demo\ninitial_capital: 10000")
 
-#     # Fake settings with path to YAML
-#     mock_settings = Mock(spec=PortfolioSettings)
-#     mock_settings.config_dir = tmp_path
+def test_get_caches_portfolio(tmp_path, monkeypatch):
+    # Setup dummy YAML
+    (tmp_path / "demo.yaml").write_text("description: Demo\ninitial_capital: 10000")
 
-#     container = PortfolioContainer(settings=providers.Object(mock_settings))
+    mock_settings = Mock(spec=PortfolioSettings)
+    mock_settings.config_dir = tmp_path
 
-#     # Patch the loader to spy on it
-#     calls = []
+    service = PortfolioService(settings=mock_settings, cache={})
 
-#     def fake_loader(path, model_cls):
-#         calls.append(str(path))
-#         return Mock(description="Demo", initial_capital=10000)
+    monkeypatch.setattr(
+        "core.portfolio.container.load_yaml_config",
+        lambda path, model: Mock(description="Demo", initial_capital=10000)
+    )
 
-#     monkeypatch.setattr("core.portfolio.container.load_yaml_config", fake_loader)
+    p1 = service.get("demo")
+    p2 = service.get("demo")
 
-#     # # Call twice
-#     p1 = container.get("demo")
-#     p2 = container.get("demo")
-
-#     assert p1 is p2  # same object from cache
-#     assert len(calls) == 1
+    assert p1 is p2
