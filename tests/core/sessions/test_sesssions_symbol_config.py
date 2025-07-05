@@ -16,7 +16,7 @@ from core.time import CustomTimeframe
 
 # --- Mock Provider Classes as given ---
 @dataclass
-class MockIBExecutionProvider:
+class MockIBExecutionProvider():
     name: str = "ib"
     def submit_order(self, symbol: str, timeframe: str, order_type: str, quantity: int, price: float) -> pd.DataFrame:
         print(f"Submitting order for {symbol} on {timeframe} with {order_type} type, quantity {quantity} at {price}")
@@ -52,68 +52,49 @@ class DummyDataProvider:
 # --- Fixtures for mock services ---
 @pytest.fixture
 def mock_data_provider_service():
-    return SimpleNamespace(get=lambda key: MockCSVDataProvider() if key == "csv" else None)
-
+    return SimpleNamespace(
+        get=lambda key: {
+            "csv": MockCSVDataProvider(),
+            "dummy": DummyDataProvider(),
+        }.get(key)
+    )
 
 @pytest.fixture
 def mock_execution_provider_service():
-    return SimpleNamespace(get=lambda key: MockIBExecutionProvider() if key == "ib" else None)
+    return SimpleNamespace(
+        get=lambda key: {
+            "ib": MockIBExecutionProvider(),
+            "alpaca": MockAlpacaExecutionProvider(),
+        }.get(key)
+    )
 
 
-# @pytest.fixture
-# def syombol_config_data():
-#     return {
-#         "symbols": {
-#             "CL": {
-#                 "symbol": "CL",
-#                     "providers": {
-#                         "data": "csv",
-#                         "execution": "ib"
-#                     },
-#                 "timeframe": "5m",
-#                     "enabled": True,
-#             }, 
-#             "AAPL": {
-#                 "symbol": "AAPL",
-#                     "providers": {
-#                         "data": "dummy",
-#                         "execution": "alpaca"
-#                     },
-#                 "timeframe": "1d",
-#                     "enabled": True
-#                 }
-#             }
-#     }
+@pytest.fixture
+def symbol_config_data():
+    return {
+        "symbols": {
+            "CL": {
+                "symbol": "CL",
+                    "providers": {
+                        "data": "csv",
+                        "execution": "ib"
+                    },
+                "timeframe": "5m",
+                    "enabled": True,
+            }, 
+            "AAPL": {
+                "symbol": "AAPL",
+                    "providers": {
+                        "data": "dummy",
+                        "execution": "alpaca"
+                    },
+                "timeframe": "1d",
+                    "enabled": True
+                }
+            }
+    }
 
 
-# def test_di_coordinating_container_validation():
-#     """Test that DI-based coordinating container properly validates providers."""
-    
-#     # Test with a simple symbol configuration
-#     symbol_data = {
-#         "symbol": "CL",
-#         "providers": {
-#             "data": "csv",
-#             "execution": "ib"
-#         },
-#         "timeframe": "5m",
-#         "enabled": True
-#     }
-    
-#     config = SymbolConfigModel.model_validate(
-#         symbol_data,
-#         context={'container': coordinating_container}
-#     )
-    
-#     assert config.symbol == "CL"
-#     assert config.timeframe == "5m"
-#     assert config.enabled 
-#     assert "data" in config.providers
-#     assert "execution" in config.providers
-#     assert isinstance(config.providers["data"], MockCSVDataProvider)
-#     assert isinstance(config.providers["execution"], MockIBExecutionProvider)
-
-# Sample input as if loaded from YAML
 
 
 def test_raw_symbol_config_happy_path():
@@ -211,59 +192,34 @@ def test_symbol_config_model_validation():
     assert config.execution_provider.name == "ib"
 
 
-# def test_symbol_config_model_validation_missing_required_fields():
-#     """Test SymbolConfigModel validation with missing required fields."""
-    
-#     # Missing required fields
-#     invalid_data = {
-#         "symbol": "CL",
-#         # Missing providers, timeframe, enabled
-#     }
-    
-#     with pytest.raises(ValidationError):
-#         SymbolConfigModel.model_validate(invalid_data)
+# --- Integration test ---
+def test_full_symbol_config_resolution(
+    symbol_config_data,
+    mock_data_provider_service,
+    mock_execution_provider_service
+):
+    raw_dict = symbol_config_data["symbols"]
 
+    resolved_models = []
 
-# def test_symbol_config_model_validation_invalid_timeframe():
-#     """Test SymbolConfigModel validation with invalid timeframe."""
-    
-#     # Invalid timeframe
-#     invalid_data = {
-#         "symbol": "CL",
-#         "providers": {
-#             "data": "csv",
-#             "execution": "ib"
-#         },
-#         "timeframe": "invalid_timeframe",
-#         "enabled": True
-#     }
-    
-#     # This will either pass (if no validation) or raise ValidationError
-#     try:
-#         config = SymbolConfigModel.model_validate(invalid_data)
-#         # If it passes, check the timeframe
-#         assert config.timeframe == "invalid_timeframe"
-#     except ValidationError:
-#         # Expected if timeframe validation is implemented
-#         pass
+    for symbol_name, raw_cfg in raw_dict.items():
+        raw_model = RawSymbolConfig(**raw_cfg)
+        resolved_model = resolve_symbol_config_from_raw_model(
+            raw_model,
+            mock_data_provider_service,
+            mock_execution_provider_service
+        )
+        resolved_models.append(resolved_model)
 
+    assert len(resolved_models) == 2
 
-# def test_symbol_config_model_validation_defaults():
-#     """Test SymbolConfigModel validation with default values."""
-    
-#     # Minimal valid data (assuming some fields have defaults)
-#     minimal_data = {
-#         "symbol": "AAPL",
-#         "providers": {
-#             "data": "yahoo",
-#             "execution": "alpaca"
-#         },
-#         "timeframe": "1d"
-#         # enabled should default to True if it has a default
-#     }
-    
-#     config = SymbolConfigModel.model_validate(minimal_data)
-    
-#     assert config.symbol == "AAPL"
-#     assert config.providers["data"] == "yahoo"
-#     assert config.providers["execution"] == "alpaca"
+    cl = next(m for m in resolved_models if m.symbol == "CL")
+    aapl = next(m for m in resolved_models if m.symbol == "AAPL")
+
+    assert isinstance(cl.data_provider, MockCSVDataProvider)
+    assert isinstance(cl.execution_provider, MockIBExecutionProvider)
+    assert str(cl.timeframe) == "5m"  # Use str() instead of .interval
+
+    assert isinstance(aapl.data_provider, DummyDataProvider)
+    assert isinstance(aapl.execution_provider, MockAlpacaExecutionProvider)
+    assert str(aapl.timeframe) == "1d"  # Use str() instead of .interval
