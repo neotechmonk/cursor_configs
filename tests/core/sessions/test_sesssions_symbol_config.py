@@ -1,10 +1,13 @@
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 
 import pandas as pd
 
-from core.sessions.session import SymbolConfigModel
+from core.sessions.session import (
+    RawSymbolConfig,
+    SymbolConfigModel,
+    parse_raw_symbol_configs,
+)
 from core.time import CustomTimeframe
 
 
@@ -94,6 +97,56 @@ class DummyDataProvider:
 #     assert "execution" in config.providers
 #     assert isinstance(config.providers["data"], MockCSVDataProvider)
 #     assert isinstance(config.providers["execution"], MockIBExecutionProvider)
+
+# Sample input as if loaded from YAML
+
+
+def test_raw_symbol_config_happy_path():
+    raw_dict = {
+    "providers": {
+        "data": "csv",
+        "execution": "ib"
+    },
+    "timeframe": "5m",
+    "enabled": True
+}
+    
+    # Simulate injecting the key as symbol name
+    symbol_key = "AAPL" # real symbol name will be the key in the yaml file
+    model = RawSymbolConfig(**raw_dict, symbol=symbol_key)
+
+    assert model.symbol == "AAPL"
+    assert model.providers["data"] == "csv"
+    assert model.providers["execution"] == "ib"
+    assert model.timeframe == "5m"
+    assert model.enabled is True
+
+
+def test_parse_raw_symbol_configs_happy_path():
+    sample_raw_yaml_dict = {
+        "AAPL": {
+            "providers": {"data": "csv", "execution": "ib"},
+            "timeframe": "1d",
+            "enabled": True
+        },
+        "BTCUSD": {
+            "providers": {"data": "websocket", "execution": "mock"},
+            "timeframe": "1m"
+        }
+    }
+    models = parse_raw_symbol_configs(sample_raw_yaml_dict)
+
+    assert len(models) == 2
+
+    model_aapl = next(m for m in models if m.symbol == "AAPL")
+    assert model_aapl.providers["data"] == "csv"
+    assert model_aapl.timeframe == "1d"
+    assert model_aapl.enabled is True
+
+    model_btc = next(m for m in models if m.symbol == "BTCUSD")
+    assert model_btc.providers["execution"] == "mock"
+    assert model_btc.timeframe == "1m"
+    assert model_btc.enabled is True  # default
 
 
 def test_symbol_config_model_validation():
