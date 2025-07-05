@@ -1,16 +1,20 @@
 
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 import pandas as pd
+import pytest
 
 from core.sessions.session import (
     RawSymbolConfig,
     SymbolConfigModel,
     parse_raw_symbol_configs,
+    resolve_symbol_config_from_raw_model,
 )
 from core.time import CustomTimeframe
 
 
+# --- Mock Provider Classes as given ---
 @dataclass
 class MockIBExecutionProvider:
     name: str = "ib"
@@ -43,6 +47,17 @@ class DummyDataProvider:
     def get_price_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         print(f"Getting price data for {symbol} on {timeframe}")
         return pd.DataFrame()
+
+    
+# --- Fixtures for mock services ---
+@pytest.fixture
+def mock_data_provider_service():
+    return SimpleNamespace(get=lambda key: MockCSVDataProvider() if key == "csv" else None)
+
+
+@pytest.fixture
+def mock_execution_provider_service():
+    return SimpleNamespace(get=lambda key: MockIBExecutionProvider() if key == "ib" else None)
 
 
 # @pytest.fixture
@@ -147,6 +162,31 @@ def test_parse_raw_symbol_configs_happy_path():
     assert model_btc.providers["execution"] == "mock"
     assert model_btc.timeframe == "1m"
     assert model_btc.enabled is True  # default
+
+
+def test_resolve_symbol_config_from_raw_model_happy_path(
+    mock_data_provider_service,
+    mock_execution_provider_service
+):
+    raw = RawSymbolConfig(
+        symbol="AAPL",
+        providers={"data": "csv", "execution": "ib"},
+        timeframe="5m",
+        enabled=True
+    )
+
+    resolved = resolve_symbol_config_from_raw_model(
+        raw,
+        data_provider_service=mock_data_provider_service,
+        execution_provider_service=mock_execution_provider_service
+    )
+
+    assert isinstance(resolved, SymbolConfigModel)
+    assert resolved.symbol == "AAPL"
+    assert isinstance(resolved.data_provider, MockCSVDataProvider)
+    assert isinstance(resolved.execution_provider, MockIBExecutionProvider)
+    assert str(resolved.timeframe) == "5m"
+    assert resolved.enabled is True
 
 
 def test_symbol_config_model_validation():
