@@ -2,8 +2,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.providers.data.protocol import DataProvider
-from core.providers.execution.protocol import ExecutionProvider
+from core.data_provider.protocol import DataProvider
+from core.execution_provider.protocol import ExecutionProvider
 from core.time import CustomTimeframe
 
 
