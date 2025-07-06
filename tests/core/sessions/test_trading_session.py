@@ -1,4 +1,5 @@
 
+from decimal import Decimal
 import pytest
 
 from core.sessions.session import (
@@ -6,7 +7,7 @@ from core.sessions.session import (
     TradingSessionConfig,
     resolve_session_config,
 )
-from core.sessions.symbol import SymbolConfigModel
+from core.sessions.symbol import RawSymbolConfig, SymbolConfigModel
 from tests.mocks.portfolio import MockPortfolio
 from tests.mocks.providers import (
     DummyDataProvider,
@@ -45,6 +46,37 @@ def full_session_config_dict():
         }
     }
 
+def test_raw_session_config_model():
+    test_data = {
+        "name": "Test Session",
+        "description": "Unit test session config",
+        "portfolio": "test_portfolio",
+        "capital_allocation": Decimal("10000.00"),
+        "symbols": {
+            "BTCUSD": RawSymbolConfig(
+                providers={"data": "dummy", "execution": "mock_exec"},
+                timeframe="1m",
+                enabled=True,
+                symbol="BTCUSD"
+            ),
+            "AAPL": RawSymbolConfig(
+                providers={"data": "csv", "execution": "ib"},
+                timeframe="5m",
+                enabled=False,
+                symbol="AAPL"
+            )
+        }
+    }
+    model = RawSessionConfig(**test_data)
+
+    assert model.name == "Test Session"
+    assert model.description == "Unit test session config"
+    assert model.portfolio == "test_portfolio"
+    assert model.capital_allocation == Decimal("10000.00")
+    assert isinstance(model.symbols, dict)
+    assert "BTCUSD" in model.symbols
+    assert model.symbols["BTCUSD"].symbol == "BTCUSD"
+    assert model.symbols["AAPL"].enabled is False
 
 def test_resolve_session_config(
     full_session_config_dict,
