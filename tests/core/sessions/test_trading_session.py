@@ -6,6 +6,7 @@ from core.portfolio.protocol import PortfolioProtocol
 from core.sessions.session import (
     RawSessionConfig,
     TradingSessionConfig,
+    parse_raw_session_config,
     resolve_session_config,
 )
 from core.sessions.symbol import RawSymbolConfig, SymbolConfigModel
@@ -113,6 +114,50 @@ def test_trading_session_config_happy_path():
     assert "CL" in config.symbols
     assert isinstance(config.symbols["CL"], SymbolConfigModel)
     assert config.symbols["AAPL"].timeframe == CustomTimeframe("1d")
+
+
+def test_parse_raw_session_config_happy_path():
+    # Sample raw input dictionary mimicking YAML structure
+    raw_dict = {
+        "name": "Day Trading Session",
+        "description": "Intraday trading session",
+        "portfolio": "main_account",
+        "capital_allocation": 30000.00,
+        "symbols": {
+            "CL": {
+                "providers": {
+                    "data": "csv",
+                    "execution": "ib"
+                },
+                "timeframe": "5m",
+                "enabled": True
+            },
+            "AAPL": {
+                "providers": {
+                    "data": "dummy",
+                    "execution": "alpaca"
+                },
+                "timeframe": "1d",
+                "enabled": False
+            }
+        }
+    }
+
+    parsed = parse_raw_session_config(raw_dict)
+
+    assert isinstance(parsed, RawSessionConfig)
+    assert parsed.name == "Day Trading Session"
+    assert parsed.portfolio == "main_account"
+    assert parsed.capital_allocation == Decimal("30000.00")
+
+    assert "CL" in parsed.symbols
+    assert isinstance(parsed.symbols["CL"], RawSymbolConfig)
+    assert parsed.symbols["CL"].symbol == "CL"
+    assert parsed.symbols["CL"].providers["data"] == "csv"
+    assert parsed.symbols["CL"].enabled is True
+
+    assert parsed.symbols["AAPL"].symbol == "AAPL"
+    assert parsed.symbols["AAPL"].enabled is False
 
 def test_resolve_session_config(
     full_session_config_dict,
