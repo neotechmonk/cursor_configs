@@ -2,12 +2,14 @@
 from decimal import Decimal
 import pytest
 
+from core.portfolio.protocol import PortfolioProtocol
 from core.sessions.session import (
     RawSessionConfig,
     TradingSessionConfig,
     resolve_session_config,
 )
 from core.sessions.symbol import RawSymbolConfig, SymbolConfigModel
+from core.time import CustomTimeframe
 from tests.mocks.portfolio import MockPortfolio
 from tests.mocks.providers import (
     DummyDataProvider,
@@ -77,6 +79,40 @@ def test_raw_session_config_model():
     assert "BTCUSD" in model.symbols
     assert model.symbols["BTCUSD"].symbol == "BTCUSD"
     assert model.symbols["AAPL"].enabled is False
+
+def test_trading_session_config_happy_path():
+
+    sample_trading_session_config  =  {
+        "name": "Day Trading Session",
+        "description": "High-frequency trading session for intraday strategies",
+        "portfolio": MockPortfolio(),
+        "capital_allocation": 30000.00,
+        "symbols": {
+            "CL": SymbolConfigModel(
+                symbol="CL",
+                data_provider=MockCSVDataProvider(),
+                execution_provider=MockIBExecutionProvider(),
+                timeframe=CustomTimeframe("5m"),
+                enabled=True
+            ),
+            "AAPL": SymbolConfigModel(
+                symbol="AAPL",
+                data_provider=DummyDataProvider(),
+                execution_provider=MockAlpacaExecutionProvider(),
+                timeframe=CustomTimeframe("1d"),
+                enabled=True
+            )
+        }
+    }
+    config = TradingSessionConfig(**sample_trading_session_config)
+
+    assert config.name == "Day Trading Session"
+    assert config.description.startswith("High-frequency")
+    assert isinstance(config.portfolio, PortfolioProtocol)
+    assert config.capital_allocation == 30000.00
+    assert "CL" in config.symbols
+    assert isinstance(config.symbols["CL"], SymbolConfigModel)
+    assert config.symbols["AAPL"].timeframe == CustomTimeframe("1d")
 
 def test_resolve_session_config(
     full_session_config_dict,
