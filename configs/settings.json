@@ -1,0 +1,8 @@
+{
+  "portfolio": {
+    "config_dir": "configs/portfolios",
+  },
+  "sessions": {
+    "config_dir": "configs/sessions",
+  }
+} 

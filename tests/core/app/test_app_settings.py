@@ -38,6 +38,7 @@ def test_app_settings_defaults():
     """Test that AppSettings uses defaults when no JSON file."""
     settings = AppSettings()
     assert settings.portfolio.config_dir == Path("configs/portfolios")
+    assert settings.sessions.config_dir == Path("configs/sessions")
 
 
 def test_app_settings_from_dict():
@@ -45,10 +46,15 @@ def test_app_settings_from_dict():
     config_dict = {
         "portfolio": {
             "config_dir": "dict/portfolios"
+        },
+        "sessions": {
+            "config_dir": "dict/sessions"
         }
     }
 
     settings =AppSettings(**config_dict)
     assert settings.portfolio.config_dir == Path("dict/portfolios")
+    assert settings.sessions.config_dir == Path("dict/sessions")
+
 
 

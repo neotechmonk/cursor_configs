@@ -2,6 +2,7 @@ from pydantic import ConfigDict, Field
 from pydantic_settings import BaseSettings
 
 from core.portfolio.portfolio import PortfolioSettings
+from core.sessions.session import TradingSessionSettings
 
 
 class AppSettings(BaseSettings):
@@ -13,4 +14,8 @@ class AppSettings(BaseSettings):
     
     portfolio: PortfolioSettings = Field(
         default_factory=PortfolioSettings
+    )
+
+    sessions: TradingSessionSettings = Field(
+        default_factory=TradingSessionSettings
     )
