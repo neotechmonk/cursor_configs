@@ -6,7 +6,6 @@ import yaml
 
 from core.sessions.session import (
     TradingSession,
-    TradingSessionConfig,
     TradingSessionService,
 )
 from core.time import CustomTimeframe
