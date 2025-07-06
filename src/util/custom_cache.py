@@ -1,14 +1,13 @@
+from pathlib import Path
 from typing import Dict, Generic, Optional, TypeVar
 
-from pathlib import Path
-
 from watchdog.events import FileSystemEventHandler
-
 from watchdog.observers import Observer
+
 T = TypeVar("T")
 
 
-class MTimeCache(Generic[T]):
+class CustomCache(Generic[T]):
     def __init__(self):
         self._cache: Dict[str, T] = {}
 
@@ -28,24 +27,24 @@ class MTimeCache(Generic[T]):
         return list(self._cache.keys())
     
 
-
-
 class CacheInvalidationHandler(FileSystemEventHandler):
-    def __init__(self, cache: MTimeCache):
+    def __init__(self, cache: CustomCache):
         self.cache = cache
 
     def on_modified(self, event):
         if not event.is_directory:
             name = Path(event.src_path).stem
+            # print("on_modified: " + name)
             self.cache.remove(name)
 
     def on_deleted(self, event):
         if not event.is_directory:
             name = Path(event.src_path).stem
+            # print("on_deleted: " + name)
             self.cache.remove(name)
 
     @classmethod
-    def start(cls, config_dir: Path, cache: MTimeCache) -> Observer:
+    def start(cls, config_dir: Path, cache: CustomCache) -> Observer:
         handler = CacheInvalidationHandler(cache)
         observer = Observer()
         observer.schedule(handler, str(config_dir), recursive=False)

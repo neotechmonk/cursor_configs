@@ -1,10 +1,9 @@
-from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 from watchdog.events import FileSystemEvent
 
-from util.custom_cache import CacheInvalidationHandler, MTimeCache
+from util.custom_cache import CacheInvalidationHandler, CustomCache
 
 
 def make_mock_event(file_path: str, is_directory=False) -> FileSystemEvent:
@@ -19,12 +18,12 @@ class TestCacheInvalidationHandler:
     """Test suite for CacheInvalidationHandler."""
     
     @pytest.fixture
-    def cache(self)-> MTimeCache:
+    def cache(self)-> CustomCache:
         """Create a fresh cache for each test."""
-        return MTimeCache()
+        return CustomCache()
     
     @pytest.fixture
-    def handler(self, cache: MTimeCache)-> CacheInvalidationHandler:
+    def handler(self, cache: CustomCache)-> CacheInvalidationHandler:
         """Create a handler with the test cache."""
         return CacheInvalidationHandler(cache)
     
@@ -84,7 +83,7 @@ class TestCacheInvalidationHandler:
     def test_case_insensitive_filename_matching(self, cache, handler):
         """Test that filename matching is case-insensitive."""
         # Arrange
-        cache.add("Config1", "value")
+        cache.add("config1", "value")
         event = make_mock_event("/some/path/config1.yaml")
         
         # Act
