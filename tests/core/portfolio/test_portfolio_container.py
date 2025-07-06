@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 from dependency_injector import providers
 
-from core.portfolio.container import PortfolioContainer, PortfolioService
-from core.portfolio.portfolio import PortfolioSettings
+from core.portfolio.container import PortfolioContainer
+from core.portfolio.portfolio import PortfolioService, PortfolioSettings
 
 
 def test_portfolio_container_initialization():
@@ -46,7 +46,7 @@ def test_get_caches_portfolio(tmp_path, monkeypatch):
     service = PortfolioService(settings=mock_settings, cache={})
 
     monkeypatch.setattr(
-        "core.portfolio.container.load_yaml_config",
+        "core.portfolio.portfolio.load_yaml_config",
         lambda path, model: Mock(description="Demo", initial_capital=10000)
     )
 

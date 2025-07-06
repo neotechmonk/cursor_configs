@@ -1,5 +1,6 @@
 
 from decimal import Decimal
+
 import pytest
 
 from core.portfolio.protocol import PortfolioProtocol
@@ -49,6 +50,7 @@ def full_session_config_dict():
         }
     }
 
+
 def test_raw_session_config_model():
     test_data = {
         "name": "Test Session",
@@ -80,6 +82,7 @@ def test_raw_session_config_model():
     assert "BTCUSD" in model.symbols
     assert model.symbols["BTCUSD"].symbol == "BTCUSD"
     assert model.symbols["AAPL"].enabled is False
+
 
 def test_trading_session_config_happy_path():
 
@@ -158,6 +161,7 @@ def test_parse_raw_session_config_happy_path():
 
     assert parsed.symbols["AAPL"].symbol == "AAPL"
     assert parsed.symbols["AAPL"].enabled is False
+
 
 def test_resolve_session_config(
     full_session_config_dict,

@@ -1,7 +1,7 @@
 """Tests for Portfolio class implementation."""
 
-from decimal import Decimal
 import inspect
+from decimal import Decimal
 
 import pytest
 
@@ -107,6 +107,7 @@ def test_get_unrealised_pnl():
     
     unrealised_pnl = portfolio.get_unrealised_pnl()
     assert isinstance(unrealised_pnl, Decimal) 
+
 
 def test_portfolio_implements_all_protocol_members():
     """Ensure Portfolio correctly implements PortfolioProtocol.

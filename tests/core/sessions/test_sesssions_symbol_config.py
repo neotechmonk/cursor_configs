@@ -1,72 +1,26 @@
 
-from dataclasses import dataclass
-from types import SimpleNamespace
 
-import pandas as pd
 import pytest
 
-from core.sessions.session import (
+from core.sessions.symbol import (
     RawSymbolConfig,
     SymbolConfigModel,
     parse_raw_symbol_configs,
     resolve_symbol_config_from_raw_model,
 )
 from core.time import CustomTimeframe
-
+from tests.mocks.providers import (
+    DummyDataProvider,
+    MockAlpacaExecutionProvider,
+    MockCSVDataProvider,
+    MockIBExecutionProvider,
+)
 
 # --- Mock Provider Classes as given ---
-@dataclass
-class MockIBExecutionProvider():
-    name: str = "ib"
-    def submit_order(self, symbol: str, timeframe: str, order_type: str, quantity: int, price: float) -> pd.DataFrame:
-        print(f"Submitting order for {symbol} on {timeframe} with {order_type} type, quantity {quantity} at {price}")
-
-
-@dataclass
-class MockAlpacaExecutionProvider:
-    name: str = "alpaca"
-    def submit_order(self, symbol: str, timeframe: str, order_type: str, quantity: int, price: float) -> pd.DataFrame:
-        print(f"Submitting order for {symbol} on {timeframe} with {order_type} type, quantity {quantity} at {price}")
-    
-
-@dataclass
-class MockCSVDataProvider:
-    """Mock CSV provider for testing."""
-    name: str = "csv"
-    
-    def get_price_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        print(f"Getting price data for {symbol} on {timeframe}")
-        return pd.DataFrame()
-
-
-@dataclass
-class DummyDataProvider:
-    """A provider that follows the protocol but doesn't inherit."""
-    name: str = "dummy" 
-    
-    def get_price_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        print(f"Getting price data for {symbol} on {timeframe}")
-        return pd.DataFrame()
-
+# import from tests/mocks/providers.py
     
 # --- Fixtures for mock services ---
-@pytest.fixture
-def mock_data_provider_service():
-    return SimpleNamespace(
-        get=lambda key: {
-            "csv": MockCSVDataProvider(),
-            "dummy": DummyDataProvider(),
-        }.get(key)
-    )
-
-@pytest.fixture
-def mock_execution_provider_service():
-    return SimpleNamespace(
-        get=lambda key: {
-            "ib": MockIBExecutionProvider(),
-            "alpaca": MockAlpacaExecutionProvider(),
-        }.get(key)
-    )
+# auto imported from module level conftest.py in .sessions
 
 
 @pytest.fixture
@@ -93,8 +47,6 @@ def symbol_config_data():
                 }
             }
     }
-
-
 
 
 def test_raw_symbol_config_happy_path():
