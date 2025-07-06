@@ -390,6 +390,230 @@ providers:
 - **Allocation Strategy**: Fixed allocation based on initial capital (extensible API)
 - **Risk Limits**: Always based on initial capital (conservative approach)
 
+## Service Architecture Pattern
+
+The platform follows a clean service architecture pattern that separates business logic from infrastructure concerns:
+
+### Protocol → Service → Container Pattern
+
+Each component follows a three-layer architecture, using **Portfolio** as the example:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Protocol      │    │   Service       │    │   Container     │
+│                 │    │                 │    │                 │
+│ • Interface     │◄──►│ • Business      │◄──►│ • DI            │
+│ • Contract      │    │   Logic         │    │   Configuration │
+│ • Type Safety   │    │ • Pure Logic    │    │ • Dependencies  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+#### 1. Protocol Layer (Interface Definition)
+- **Purpose**: Define contracts and interfaces
+- **Characteristics**: Pure interface definitions, no implementation
+- **Portfolio Example**: `PortfolioProtocol`, `PortfolioServiceProtocol`
+- **Benefits**: Type safety, clear contracts, runtime checking
+
+```python
+# src/core/portfolio/protocol.py
+@runtime_checkable
+class PortfolioProtocol(Protocol):
+    """Protocol for portfolio implementations."""
+    
+    @property
+    def name(self) -> str: ...
+    @property
+    def initial_capital(self) -> Decimal: ...
+    def get_current_equity(self) -> Decimal: ...
+    def can_open_position(self, symbol: str, quantity: Decimal, price: Decimal) -> bool: ...
+
+class PortfolioServiceProtocol(Protocol):
+    """Protocol for portfolio services."""
+    def get(self, name: str) -> PortfolioProtocol: ...
+    def get_all(self) -> list[PortfolioProtocol]: ...
+```
+
+#### 2. Service Layer (Business Logic)
+- **Purpose**: Implement business logic and domain operations
+- **Characteristics**: Pure business logic, no infrastructure dependencies
+- **Portfolio Example**: `PortfolioService`, `Portfolio` (concrete implementation)
+- **Benefits**: Testable, reusable, infrastructure-agnostic
+
+```python
+# src/core/portfolio/portfolio.py
+class PortfolioService:
+    """Portfolio business logic service."""
+    
+    def __init__(self, settings: PortfolioSettings, cache: Dict[str, PortfolioProtocol]):
+        self.settings = settings
+        self.cache = cache
+
+    def get(self, name: str) -> PortfolioProtocol:
+        """Get portfolio by name with caching."""
+        if name not in self.cache:
+            self.cache[name] = self._load_portfolio_by_name(name)
+        return self.cache[name]
+
+    def _load_portfolio_by_name(self, name: str) -> PortfolioProtocol:
+        """Load portfolio from configuration."""
+        path = self.settings.config_dir / f"{name}.yaml"
+        config = load_yaml_config(path, PortfolioConfig)
+        return Portfolio(name=name, description=config.description, initial_capital=config.initial_capital)
+```
+
+#### 3. Container Layer (Dependency Injection)
+- **Purpose**: Configure dependencies and wire components together
+- **Characteristics**: Infrastructure concerns, dependency management
+- **Portfolio Example**: `PortfolioContainer`
+- **Benefits**: Loose coupling, testable, configurable
+
+```python
+# src/core/portfolio/container.py
+class PortfolioContainer(containers.DeclarativeContainer):
+    """Dependency injection container for portfolio components."""
+    
+    config = providers.Configuration()
+    settings = providers.Dependency(instance_of=PortfolioSettings)
+    portfolio_cache = providers.Singleton(dict)
+
+    service = providers.Factory(
+        PortfolioService,
+        settings=settings,
+        cache=portfolio_cache,
+    )
+```
+
+### Settings Management
+
+Settings follow a hierarchical configuration pattern:
+
+#### 1. Application Settings
+- **Purpose**: Global application configuration
+- **Source**: Environment variables, config files, command line
+- **Example**: `AppSettings`
+
+```python
+# src/core/app/settings.py
+class AppSettings(BaseSettings):
+    """Global application settings."""
+    portfolio: PortfolioSettings
+    # Other component settings...
+```
+
+#### 2. Component Settings
+- **Purpose**: Component-specific configuration
+- **Source**: YAML files, environment variables
+- **Portfolio Example**: `PortfolioSettings`
+
+```python
+# src/core/portfolio/portfolio.py
+class PortfolioSettings(BaseSettings):
+    """Portfolio-specific settings."""
+    config_dir: Path = Field(default=Path("configs/portfolios"))
+```
+
+#### 3. Configuration Models
+- **Purpose**: Validate and structure configuration data
+- **Source**: YAML files
+- **Portfolio Example**: `PortfolioConfig`
+
+```python
+# src/core/portfolio/portfolio.py
+class PortfolioConfig(BaseModel):
+    """Pydantic model for portfolio configuration."""
+    name: str = Field(..., min_length=1)
+    description: Optional[str] = None
+    initial_capital: float = Field(..., gt=0)
+```
+
+### Configuration Flow
+
+```
+YAML File → PortfolioConfig → Portfolio → PortfolioService → PortfolioContainer
+```
+
+1. **YAML File** (`configs/portfolios/demo.yaml`):
+   ```yaml
+   description: Demo Portfolio
+   initial_capital: 10000
+   ```
+
+2. **PortfolioConfig** (Validation):
+   ```python
+   config = load_yaml_config(path, PortfolioConfig)
+   # Validates: name required, initial_capital > 0
+   ```
+
+3. **Portfolio** (Concrete Implementation):
+   ```python
+   portfolio = Portfolio(
+       name=name,
+       description=config.description,
+       initial_capital=config.initial_capital
+   )
+   ```
+
+4. **PortfolioService** (Business Logic):
+   ```python
+   service = PortfolioService(settings, cache)
+   portfolio = service.get("demo")  # Loads and caches
+   ```
+
+5. **PortfolioContainer** (DI Configuration):
+   ```python
+   container = PortfolioContainer()
+   service = container.service()  # Injected dependencies
+   ```
+
+### Benefits of This Architecture
+
+#### 1. Separation of Concerns
+- **Protocols**: Define what components can do
+- **Services**: Implement how they do it
+- **Containers**: Configure when and where they do it
+- **Settings**: Control what they work with
+
+#### 2. Testability
+- **Services**: Can be tested without DI framework
+- **Protocols**: Enable mocking and interface testing
+- **Containers**: Can be tested independently
+- **Settings**: Can be mocked for testing
+
+#### 3. Flexibility
+- **Protocols**: Enable multiple implementations
+- **Services**: Can be swapped without changing business logic
+- **Containers**: Can configure different dependency combinations
+- **Settings**: Can adapt to different environments
+
+#### 4. Maintainability
+- **Clear Boundaries**: Each layer has a specific responsibility
+- **Loose Coupling**: Changes in one layer don't affect others
+- **Type Safety**: Protocols ensure correct implementations
+- **Configuration**: Settings centralize configuration management
+
+### Usage Example
+
+```python
+# Clean import from module
+from core.portfolio import Portfolio, PortfolioService, PortfolioProtocol
+
+# Create service with settings
+settings = PortfolioSettings(config_dir=Path("configs/portfolios"))
+service = PortfolioService(settings=settings, cache={})
+
+# Use service (business logic)
+portfolio = service.get("demo")
+assert isinstance(portfolio, PortfolioProtocol)  # Runtime checking
+
+# Or use container (DI)
+container = PortfolioContainer()
+container.settings.override(settings)
+service = container.service()
+portfolio = service.get("demo")
+```
+
+This architecture ensures that business logic is clean, testable, and independent of infrastructure concerns while maintaining type safety and clear contracts.
+
 ## Benefits of This Architecture
 
 1. **Flexibility**: Strategies can work with any combination of data/execution providers
