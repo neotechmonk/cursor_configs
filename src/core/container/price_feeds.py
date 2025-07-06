@@ -5,9 +5,8 @@ from typing import Dict
 
 from dependency_injector import containers, providers
 
-from ..feed.protocols import PriceFeedProvider
-from ..loaders.load_providers import get_available_providers, load_provider
-
+from src.core.feed.protocols import PriceFeedProvider
+from src.loaders.load_providers import get_available_providers, load_provider
 
 
 def _load_all_providers(providers_dir: Path) -> Dict[str, PriceFeedProvider]:
@@ -75,7 +74,8 @@ class PriceFeedsContainer(containers.DeclarativeContainer):
     
     def wire(self, *args, **kwargs) -> None:
         """Wire the container and validate configuration."""
-        super().wire(*args, **kwargs)
+        super().wire(
+*args, **kwargs)
         
         # Validate providers_dir is provided and valid
         if not self.providers_dir.provided:

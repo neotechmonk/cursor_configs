@@ -1,15 +1,10 @@
 """Advanced loader for trading system configuration using Pydantic v2 features."""
 
 from datetime import datetime, timedelta
-from pprint import pprint
-from typing import Any, Dict, List, Protocol, runtime_checkable
+from typing import Dict, Protocol, runtime_checkable
 
 import pandas as pd
-from dependency_injector.wiring import Provide, inject
 from pydantic import BaseModel, ConfigDict, field_validator
-
-from core.container.provider import PriceFeedsContainer
-from core.feed.providers.csv_file import CSVPriceFeedProvider
 
 # Test data moved to test fixtures - see tests/core/loaders/test_trading_session_loader.py
 
@@ -37,6 +32,7 @@ class DummyPriceFeedProvider:
         }
         return pd.DataFrame(data)
 
+
 class RiskLimits(BaseModel):
     """Risk management configuration."""
     model_config = ConfigDict(frozen=True)
@@ -46,11 +42,13 @@ class RiskLimits(BaseModel):
     stop_loss_pct: float
     take_profit_pct: float
 
+
 @runtime_checkable
 class PriceFeedProtocol(Protocol):
     """Protocol for price feed providers."""
     def get_price_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
         ...
+
 
 class SymbolConfigModel(BaseModel):
     """Symbol configuration model."""
@@ -76,6 +74,7 @@ class SymbolConfigModel(BaseModel):
         # If it's already an object, just return it (for duck typing)
         return v
 
+
 class PortfolioConfig(BaseModel):
     """Portfolio configuration."""
     model_config = ConfigDict(frozen=True)
@@ -83,6 +82,7 @@ class PortfolioConfig(BaseModel):
     name: str
     initial_capital: float
     risk_limits: RiskLimits
+
 
 class TradingSessionConfig(BaseModel):
     """Trading session configuration."""

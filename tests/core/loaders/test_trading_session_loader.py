@@ -18,7 +18,11 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
+from dependency_injector import containers, providers
 from pydantic import BaseModel, ConfigDict, field_validator
+
+from core.container.provider import PriceFeedsContainer
+from core.sessions.protocols import TradingSessionProtocol
 
 """
 TODO   : 
@@ -36,7 +40,7 @@ TODO   :
 def trading_session_data():
     """Fixture for trading session test data."""
     return {
-        "name": "Main Trading Session",
+    "name": "Main Trading Session",
         "description": "Test trading session for validation",
         "portfolio": "Main Portfolio",
         "capital_allocation": 50000.00,
@@ -52,23 +56,23 @@ def trading_session_data():
                 "end": "16:00"
             }
         },
-        "symbols": {
-            "CL": {
-                "symbol": "CL",
+    "symbols": {
+        "CL": {
+            "symbol": "CL",
                 "providers": {
                     "data": "csv",
                     "execution": "ib"
                 },
-                "timeframe": "5m",
+            "timeframe": "5m",
                 "enabled": True,
-            }, 
-            "AAPL": {
-                "symbol": "AAPL",
+        }, 
+        "AAPL": {
+            "symbol": "AAPL",
                 "providers": {
                     "data": "dummy",
                     "execution": "alpaca"
                 },
-                "timeframe": "1d",
+            "timeframe": "1d",
                 "enabled": True
             }
         }
@@ -90,89 +94,30 @@ def provider_context():
 # Test data is now centralized in the trading_session_data fixture above
 
 # Protocol definition
-@runtime_checkable
-class DataProvider(Protocol):
-    """Protocol for price feed providers."""
-    def get_price_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        ...
 
 
-@dataclass
-class MockCSVDataProvider:
-    """Mock CSV provider for testing."""
-    name: str = "csv"
-    
-    def get_price_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        """Generate mock CSV data."""
-        end_time = datetime.now()
-        start_time = end_time - timedelta(days=5)
-        dates = pd.date_range(start=start_time, end=end_time, periods=50)
-        
-        data = {
-            'timestamp': dates,
-            'open': [100.0 + i * 0.1 for i in range(50)],
-            'high': [100.5 + i * 0.1 for i in range(50)],
-            'low': [99.5 + i * 0.1 for i in range(50)],
-            'close': [100.2 + i * 0.1 for i in range(50)],
-            'volume': [1000 + i * 10 for i in range(50)]
-        }
-        return pd.DataFrame(data)
 
-@dataclass
-class DummyDataProvider:
-    """A provider that follows the protocol but doesn't inherit."""
-    name: str = "dummy" 
-    
-    def get_price_data(self, symbol: str, timeframe: str) -> pd.DataFrame:
-        """Generate dummy price data."""
-        end_time = datetime.now()
-        start_time = end_time - timedelta(days=5)
-        dates = pd.date_range(start=start_time, end=end_time, periods=50)
-        
-        data = {
-            'timestamp': dates,
-            'open': [50.0 + i * 0.05 for i in range(50)],
-            'high': [50.5 + i * 0.05 for i in range(50)],
-            'low': [49.5 + i * 0.05 for i in range(50)],
-            'close': [50.2 + i * 0.05 for i in range(50)],
-            'volume': [500 + i * 5 for i in range(50)]
-        }
-        return pd.DataFrame(data)
 
-@runtime_checkable
-class ExecutionProvider(Protocol):
-    """Protocol for order execution and account management"""
-    def submit_order(self, symbol: str, timeframe: str, order_type: str, quantity: int, price: float) -> pd.DataFrame:
-        ...
 
-@dataclass
-class MockIBExecutionProvider:
-    name: str = "ib"
-    def submit_order(self, symbol: str, timeframe: str, order_type: str, quantity: int, price: float) -> pd.DataFrame:
-        raise NotImplementedError("Not implemented - test mock")
 
-@dataclass
-class MockAlpacaExecutionProvider:
-    name: str = "alpaca"
-    def submit_order(self, symbol: str, timeframe: str, order_type: str, quantity: int, price: float) -> pd.DataFrame:
-        raise NotImplementedError("Not implemented - test mock") 
+
     
 
 class SymbolConfigModel(BaseModel):
     """Symbol configuration model."""
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+        model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    symbol: str
+        symbol: str
     providers: dict[Literal['data', 'execution'], Union[DataProvider, ExecutionProvider]]
-    timeframe: str
+        timeframe: str
     enabled: bool
-
+        
     @field_validator('providers', mode='before')
-    @classmethod
+        @classmethod
     def validate_provider(cls, v, info):
         """Convert string provider names to actual provider instances using context."""
         if isinstance(v, dict):
-            context = info.context or {}
+                context = info.context or {}
             
             for provider_type, provider_name in v.items():
                 if isinstance(provider_name, str):
@@ -188,26 +133,11 @@ class SymbolConfigModel(BaseModel):
         return v
     
 
-# Define the generic type variable
-T = TypeVar('T')
-
-class ContainerProtocol(Protocol):
-    """Protocol for container-like objects with flexible get methods."""
-    
-    @overload
-    def get(self, *, key: str) -> Union[DataProvider, ExecutionProvider]:
-        """Get by single key."""
-        ...
-    
-    @overload
-    def get(self, *, key: str, type: Literal['data', 'execution']) -> Union[DataProvider, ExecutionProvider]:
-        """Get by provider type and name."""
-        ...
     
     
 
 @pytest.fixture
-def container_context() -> ContainerProtocol:
+def container_context() -> TradingSessionProtocol:
     """Fixture for provider context."""
     providers = {
         "data": {
@@ -225,39 +155,308 @@ def container_context() -> ContainerProtocol:
             return providers[type][key]
     
     return Container()
-    
-class SymbolConfigModelV2(BaseModel):
-    """Symbol configuration model."""
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    symbol: str
+# Domain-specific container protocols
+class DataProviderServiceProtocol(Protocol):
+    """Protocol for data provider services."""
+    def get(self, name: str) -> DataProvider:
+        """Get data provider by name.
+        implements ServiceProtocol.get()
+        """
+        ...
+    
+    def get_all(self) -> list[DataProvider]:
+        """Get all data providers.
+        implements ServiceProtocol.get_all()
+        """
+        ...
+
+class ExecutionProviderServiceProtocol(Protocol):
+    """Protocol for execution provider services."""
+    def get(self, name: str) -> ExecutionProvider:
+        """Get execution provider by name.
+        implements ServiceProtocol.get()
+        """
+        ...
+    
+    def get_all(self) -> list[ExecutionProvider]:
+        """Get all execution providers.
+        implements ServiceProtocol.get_all()
+        """
+        ...
+
+class StrategyServiceProtocol(Protocol):
+    """Protocol for strategy services."""
+    def get(self, name: str) -> Any:  # Strategy type
+        """Get strategy by name.
+        implements ServiceProtocol.get()
+        """
+        ...
+    
+    def get_all(self) -> list[Any]:  # Strategy type
+        """Get all strategies.
+        implements ServiceProtocol.get_all()
+        """
+        ...
+
+        ...
+
+class TradingSessionCoordinatingContainer(containers.DeclarativeContainer):
+    """Coordinating container using dependency_injector framework."""
+    
+    # Configuration
+    config = providers.Configuration()
+    
+    # Dependencies - inject domain containers
+    data_provider_container = providers.Dependency(ServiceProtocol, default=PriceFeedsContainer)
+    execution_provider_container = providers.Dependency(ServiceProtocol)
+    strategy_container = providers.Dependency(StrategyServiceProtocol, default=None)
+    portfolio_container = providers.Dependency(PortfolioServiceProtocol, default=None)
+    
+    # Provider factory methods - consistent with provided checks
+    def get_data_provider(self, *, name: str) -> DataProvider:
+        """Get data provider by name - coordinates with data provider container."""
+        if self.data_provider_container.provided:
+            return self.data_provider_container().get(name)
+        else:
+            raise ValueError("Data provider container not provided")
+        
+    def get_execution_provider(self, *, name: str) -> ExecutionProvider:
+        """Get execution provider by name - coordinates with execution provider container."""
+        if self.execution_provider_container.provided:
+            return self.execution_provider_container().get(name)
+        else:
+            raise ValueError("Execution provider container not provided")
+    
+    def get_strategy(self, *, name: str) -> Any:
+        """Get strategy by name - coordinates with strategy container."""
+        if self.strategy_container.provided:
+            return self.strategy_container().get(name)
+        else:
+            raise ValueError("Strategy container not provided")
+    
+    def get_portfolio(self, *, name: str) -> Any:
+        """Get portfolio by name - coordinates with portfolio container."""
+        if self.portfolio_container.provided:
+            return self.portfolio_container().get(name)
+        else:
+            raise ValueError("Portfolio container not provided")
+    
+    # Validation methods - consistent with provided checks
+    def validate_data_provider_exists(self, *, name: str) -> bool:
+        """Validate that a data provider exists without loading it."""
+        if not self.data_provider_container.provided:
+            return False
+        try:
+            self.data_provider_container().get(name)
+            return True
+        except (KeyError, ValueError):
+            return False
+    
+    def validate_execution_provider_exists(self, *, name: str) -> bool:
+        """Validate that an execution provider exists without loading it."""
+        if not self.execution_provider_container.provided:
+            return False
+        try:
+            self.execution_provider_container().get(name)
+            return True
+        except (KeyError, ValueError):
+            return False
+    
+    def validate_strategy_exists(self, *, name: str) -> bool:
+        """Validate that a strategy exists without loading it."""
+        if not self.strategy_container.provided:
+            return False
+        try:
+            self.strategy_container().get(name)
+            return True
+        except (KeyError, ValueError):
+            return False
+    
+    def validate_portfolio_exists(self, *, name: str) -> bool:
+        """Validate that a portfolio exists without loading it."""
+        if not self.portfolio_container.provided:
+            return False
+        try:
+            self.portfolio_container().get(name)
+            return True
+        except (KeyError, ValueError):
+            return False
+    
+    # Unified provider method for backward compatibility
+    def get_provider(self, *, key: str, type: Literal['data', 'execution']) -> Union[DataProvider, ExecutionProvider]:
+        """Get provider by type and name - unified API for validation."""
+        if type == "data":
+            return self.get_data_provider(name=key)
+        elif type == "execution":
+            return self.get_execution_provider(name=key)
+        else:
+            raise ValueError(f"Invalid provider type: {type}")
+    
+    def wire(self, *args, **kwargs) -> None:
+        """Wire the container and validate dependencies."""
+        super().wire(*args, **kwargs)
+        
+        # Validate that required containers are provided
+        if not self.data_provider_container.provided:
+            raise ValueError("data_provider_container is required but not provided")
+        if not self.execution_provider_container.provided:
+            raise ValueError("execution_provider_container is required but not provided")
+
+# Domain containers using DI framework
+class TestDataProviderContainer(containers.DeclarativeContainer):
+    """Test data provider container using dependency_injector."""
+    
+    # Configuration
+    config = providers.Configuration()
+    
+    # Provider instances
+    csv_provider = providers.Singleton(MockCSVDataProvider)
+    dummy_provider = providers.Singleton(DummyDataProvider)
+    
+    # Factory method
+    def get(self, name: str) -> DataProvider:
+        """Get data provider by name."""
+        providers_map = {
+            "csv": self.csv_provider,
+            "dummy": self.dummy_provider
+        }
+        if name not in providers_map:
+            raise ValueError(f"Data provider '{name}' not found")
+        return providers_map[name]()
+
+class TestExecutionProviderContainer(containers.DeclarativeContainer):
+    """Test execution provider container using dependency_injector."""
+    
+    # Configuration
+    config = providers.Configuration()
+    
+    # Provider instances
+    ib_provider = providers.Singleton(MockIBExecutionProvider)
+    alpaca_provider = providers.Singleton(MockAlpacaExecutionProvider)
+    
+    # Factory method
+    def get(self, name: str) -> ExecutionProvider:
+        """Get execution provider by name."""
+        providers_map = {
+            "ib": self.ib_provider,
+            "alpaca": self.alpaca_provider
+        }
+        if name not in providers_map:
+            raise ValueError(f"Execution provider '{name}' not found")
+        return providers_map[name]()
+
+class TestStrategyContainer(containers.DeclarativeContainer):
+    """Test strategy container using dependency_injector."""
+    
+    # Configuration
+    config = providers.Configuration()
+    
+    # Strategy instances
+    trend_following_strategy = providers.Singleton(lambda: Mock(spec=Strategy))
+    mean_reversion_strategy = providers.Singleton(lambda: Mock(spec=Strategy))
+    
+    # Factory method
+    def get_strategy(self, name: str) -> Any:
+        """Get strategy by name."""
+        strategies_map = {
+            "trend_following": self.trend_following_strategy,
+            "mean_reversion": self.mean_reversion_strategy
+        }
+        if name not in strategies_map:
+            raise ValueError(f"Strategy '{name}' not found")
+        return strategies_map[name]()
+
+class TestPortfolioContainer(containers.DeclarativeContainer):
+    """Test portfolio container using dependency_injector."""
+    
+    # Configuration
+    config = providers.Configuration()
+    
+    # Portfolio instances
+    main_portfolio = providers.Singleton(lambda: Mock(spec=Portfolio))
+    
+    # Factory method
+    def get_portfolio(self, name: str) -> Any:
+        """Get portfolio by name."""
+        portfolios_map = {
+            "Main Portfolio": self.main_portfolio
+        }
+        if name not in portfolios_map:
+            raise ValueError(f"Portfolio '{name}' not found")
+        return portfolios_map[name]()
+
+# Updated fixture that creates DI-based coordinating container
+@pytest.fixture
+def coordinating_container() -> TradingSessionCoordinatingContainer:
+    """Fixture for coordinating container using dependency_injector."""
+    
+    # Create domain containers
+    data_provider_container = TestDataProviderContainer()
+    execution_provider_container = TestExecutionProviderContainer()
+    strategy_container = TestStrategyContainer()
+    portfolio_container = TestPortfolioContainer()
+    
+    # Wire domain containers
+    data_provider_container.wire()
+    execution_provider_container.wire()
+    strategy_container.wire()
+    portfolio_container.wire()
+    
+    # Create coordinating container with dependencies
+    coordinating_container = TradingSessionCoordinatingContainer()
+    coordinating_container.data_provider_container.override(data_provider_container)
+    coordinating_container.execution_provider_container.override(execution_provider_container)
+    coordinating_container.strategy_container.override(strategy_container)
+    coordinating_container.portfolio_container.override(portfolio_container)
+    
+    # Wire coordinating container
+    coordinating_container.wire()
+    
+    return coordinating_container
+
+# Updated SymbolConfigModelV2 to use DI-based coordinating container
+class SymbolConfigModelV2(BaseModel):
+    """Symbol configuration model with DI-based coordinating container."""
+        model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+        symbol: str
     providers: dict[Literal['data', 'execution'], Union[DataProvider, ExecutionProvider]]
-    timeframe: str
+        timeframe: str
     enabled: bool
     
-
     @field_validator('providers', mode='before')
     @classmethod
     def validate_provider(cls, v, info):
-        """Convert string provider names to actual provider instances using context."""
+        """Convert string provider names to actual provider instances using DI-based coordinating container."""
         if isinstance(v, dict):
             context = info.context or {}
+            container = context.get('container')
             
-            for provider_type, provider_name in v.items():
-                if isinstance(provider_name, str):
-                    provider = context.get(key=provider_name, type=provider_type)
-                    # Find provider by name property
-                    if provider is None:
-                        raise ValueError(f"{provider_type.title()} provider '{provider_name}' not found")
-                    v[provider_type] = provider
-            
-            return v
+            if container and isinstance(container, TradingSessionCoordinatingContainer):
+                for provider_type, provider_name in v.items():
+                    if isinstance(provider_name, str):
+                        # Use DI-based coordinating container's unified API
+                        provider = container.get_provider(key=provider_name, type=provider_type)
+                        if provider is None:
+                            raise ValueError(f"{provider_type.title()} provider '{provider_name}' not found")
+                        v[provider_type] = provider
+            else:
+                # Fallback to old approach
+                for provider_type, provider_name in v.items():
+                    if isinstance(provider_name, str):
+                        providers = context.get(f"providers.{provider_type}", {})
+                        provider = next((p for p in providers.values() 
+                                       if getattr(p, 'name', None) == provider_name), None)
+                        if provider is None:
+                            raise ValueError(f"{provider_type.title()} provider '{provider_name}' not found")
+                        v[provider_type] = provider
         
-        return v
-
-# @pytest.mark.skip(reason="TDD: Implementing step by step")
-def test_price_feed_protocol_validation(container_context):
-    """Test that objects conforming to DataProvider are accepted."""
+            return v
+    
+# Updated tests to use DI-based coordinating container
+def test_di_coordinating_container_validation(coordinating_container):
+    """Test that DI-based coordinating container properly validates providers."""
     
     # Test with a simple symbol configuration
     symbol_data = {
@@ -272,7 +471,7 @@ def test_price_feed_protocol_validation(container_context):
     
     config = SymbolConfigModelV2.model_validate(
         symbol_data,
-        context=container_context
+        context={'container': coordinating_container}
     )
     
     assert config.symbol == "CL"
@@ -283,137 +482,56 @@ def test_price_feed_protocol_validation(container_context):
     assert isinstance(config.providers["data"], MockCSVDataProvider)
     assert isinstance(config.providers["execution"], MockIBExecutionProvider)
 
-# Test 2: String to provider conversion
+# Test coordinating container validation methods
+def test_coordinating_container_validation_methods(coordinating_container):
+    """Test the validation methods of the coordinating container."""
+    
+    # Test provider validation
+    assert coordinating_container.validate_data_provider_exists(name="csv") == True
+    assert coordinating_container.validate_execution_provider_exists(name="ib") == True
+    assert coordinating_container.validate_data_provider_exists(name="invalid") == False
+    
+    # Test strategy validation
+    assert coordinating_container.validate_strategy_exists(name="trend_following") == True
+    assert coordinating_container.validate_strategy_exists(name="invalid") == False
+    
+    # Test portfolio validation
+    assert coordinating_container.validate_portfolio_exists(name="Main Portfolio") == True
+    assert coordinating_container.validate_portfolio_exists(name="invalid") == False
 
-def test_string_to_provider_conversion():
-    """Test converting string provider names to actual provider instances."""
+# Test coordinating container with missing dependencies
+def test_coordinating_container_missing_dependencies():
+    """Test coordinating container behavior when dependencies are missing."""
     
-    # Act
-    config = SymbolConfigModel.model_validate(
-        {
-            "symbol": "TEST",
-            "providers": {
-                "data": "csv",
-                "execution": "ib"
-            },
-            "timeframe": "1h",
-            "enabled": True
-        },
-        context={
-            "providers.data": {"csv": MockCSVDataProvider()},  # Fixed: match validator expectation
-            "providers.execution": {"ib": MockIBExecutionProvider()}  # Fixed: match validator expectation
-        }
-    )
+    # Create minimal container without optional dependencies
+    coordinating_container = TradingSessionCoordinatingContainer()
     
-    # Assert
-    assert config.symbol == "TEST"
-    assert config.timeframe == "1h"
-    assert config.enabled 
-    assert "data" in config.providers
-    assert "execution" in config.providers
-    assert isinstance(config.providers["data"], MockCSVDataProvider)
-    assert isinstance(config.providers["execution"], MockIBExecutionProvider)
-
-# Test 3: Duck typing with direct object
-# @pytest.mark.skip(reason="TDD: Implementing step by step")
-def test_duck_typing_direct_object():
-    """Test passing duck type compliant object directly."""
+    # Create required containers
+    data_provider_container = TestDataProviderContainer()
+    execution_provider_container = TestExecutionProviderContainer()
     
-    # Act
-    config = SymbolConfigModel(
-        symbol="TEST",
-        providers={
-            "data": DummyDataProvider(),
-            "execution": MockIBExecutionProvider()
-        },
-        timeframe="1h",
-        enabled=True
-    )
+    # Wire required containers
+    data_provider_container.wire()
+    execution_provider_container.wire()
     
-    # Assert
-    assert "data" in config.providers
-    assert "execution" in config.providers
-    assert isinstance(config.providers["data"], DataProvider)
-    assert isinstance(config.providers["execution"], ExecutionProvider)
-    assert config.providers["data"].name == "dummy"
-    assert config.providers["execution"].name == "ib"
+    # Override only required dependencies
+    coordinating_container.data_provider_container.override(data_provider_container)
+    coordinating_container.execution_provider_container.override(execution_provider_container)
     
-
-# Add this class definition before the test functions
-class TradingSessionConfig(BaseModel):
-    """Trading session configuration model."""
-    model_config = ConfigDict(frozen=True, extra="ignore", arbitrary_types_allowed=True)
+    # Wire coordinating container
+    coordinating_container.wire()
     
-    name: str
-    description: str
-    symbols: Dict[str, SymbolConfigModel]
-    portfolio: str
-    capital_allocation: float
-    # strategies: List[str]
-    # execution_limits: Dict[str, Any]
-
-# Test 4: Trading session with multiple symbols
-# @pytest.mark.skip(reason="TDD: Implementing step by step")
-def test_trading_session_with_multiple_symbols(trading_session_data, provider_context):
-    """Test loading a complete trading session with multiple symbols."""
-    session_config = TradingSessionConfig.model_validate(
-        trading_session_data,
-        context=provider_context
-    )
+    # Provider methods should work
+    assert coordinating_container.get_data_provider(name="csv") is not None
+    assert coordinating_container.get_execution_provider(name="ib") is not None
     
-    assert session_config.name == "Main Trading Session"
-    assert session_config.portfolio == "Main Portfolio"
-    assert len(session_config.symbols) == 2
+    # Strategy methods should raise error
+    with pytest.raises(ValueError, match="Strategy container not provided"):
+        coordinating_container.get_strategy(name="trend_following")
     
-    # Check CL symbol
-    cl_symbol = session_config.symbols["CL"]
-    assert cl_symbol.symbol == "CL"
-    assert cl_symbol.timeframe == "5m"
-    assert isinstance(cl_symbol.providers["data"], MockCSVDataProvider)
-    assert isinstance(cl_symbol.providers["execution"], MockIBExecutionProvider)
-    
-    # Check AAPL symbol
-    aapl_symbol = session_config.symbols["AAPL"]
-    assert aapl_symbol.symbol == "AAPL"
-    assert aapl_symbol.timeframe == "1d"
-    assert isinstance(aapl_symbol.providers["data"], DummyDataProvider)
-    assert isinstance(aapl_symbol.providers["execution"], MockAlpacaExecutionProvider)
-
-# Test 5: Error handling for invalid provider
-# @pytest.mark.skip(reason="TDD: Implementing step by step")
-def test_error_handling_invalid_provider():
-    """Test error handling when provider string is not found."""
-    
-    # Arrange
-    class SymbolConfigModel(BaseModel):
-        model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
-        symbol: str
-        provider: DataProvider
-        timeframe: str
-        
-        @field_validator('provider', mode='before')
-        @classmethod
-        def validate_provider(cls, v, info):
-            if isinstance(v, str):
-                context = info.context or {}
-                providers = context.get('providers', {})
-                provider = providers.get(v)
-                if not provider:
-                    raise ValueError(f"Provider '{v}' not found")
-                return provider
-            return v
-    
-    # Act & Assert
-    with pytest.raises(ValueError, match="Provider 'invalid' not found"):
-        SymbolConfigModel.model_validate(
-            {
-                "symbol": "TEST",
-                "provider": "invalid",
-                "timeframe": "1h"
-            },
-            context={'providers': {}}
-        )
-
+    # Portfolio methods should raise error
+    with pytest.raises(ValueError, match="Portfolio container not provided"):
+        coordinating_container.get_portfolio(name="Main Portfolio")
 
 if __name__ == "__main__":
     # Run tests

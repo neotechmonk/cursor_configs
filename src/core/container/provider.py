@@ -12,6 +12,7 @@ from src.core.feed.protocols import PriceFeedProvider
 
 # from src.core.feed.providers.yahoo import YahooFinanceConfig, YahooFinanceProvider
 from src.loaders.generic import load_yaml_config
+from utils import deprecated
 
 # Provider mapping - easy to update when adding new providers
 PROVIDERS = {
@@ -74,6 +75,7 @@ class PriceFeedsContainer(containers.DeclarativeContainer):
     providers_dir = providers.Dependency(instance_of=Path, default=Path("configs/providers"))
     
     # Provider factory
+    @deprecated("Use get() instead")
     provider = providers.Factory(
         _create_provider_by_name,
         providers_dir=providers_dir,
