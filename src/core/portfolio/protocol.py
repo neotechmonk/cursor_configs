@@ -1,9 +1,10 @@
 """Portfolio protocol definitions."""
 
 from decimal import Decimal
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from core.sessions.trading_session import TradingSession
+if TYPE_CHECKING:
+    from core.sessions.protocols import TradingSessionProtocol
 
 
 @runtime_checkable
@@ -35,26 +36,12 @@ class PortfolioProtocol(Protocol):
         """Get unrealised P&L."""
         ...
     
-    def get_open_sessions(self) -> list[TradingSession]:
+    def get_open_sessions(self) -> list["TradingSessionProtocol"]:
         """Get all Trading sessions."""
         ...
     
-    def get_all_sessions(self) -> list[TradingSession]:
+    def get_all_sessions(self) -> list["TradingSessionProtocol"]:
         """Get all Trading sessions."""
         ...
 
-
-@runtime_checkable
-class PortfolioServiceProtocol(Protocol):
-    """Protocol for portfolio services.
-    Defines the interface for portfolio management operations.
-    """
-    
-    def get(self, name: str) -> PortfolioProtocol:
-        """Get portfolio by name."""
-        ...
-    
-    def get_all(self) -> list[PortfolioProtocol]:
-        """Get all portfolios."""
-        ...
 

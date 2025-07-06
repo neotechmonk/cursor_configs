@@ -1,15 +1,18 @@
 """Portfolio management implementation."""
 
+from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings
 
 from core.portfolio.protocol import PortfolioProtocol
-from core.sessions.trading_session import TradingSession
 from loaders.generic import load_yaml_config
+
+if TYPE_CHECKING:
+    from core.sessions.protocols import TradingSessionProtocol
 
 
 class PortfolioSettings(BaseSettings):
@@ -63,9 +66,13 @@ class Portfolio(BaseModel):
         """Check if portfolio can open a new position."""
         raise NotImplementedError("Can open position is not implemented in this portfolio.")
     
-    def get_sessions(self) -> list[TradingSession]:
-        """Get all sessions."""
+    def get_open_sessions(self) -> list["TradingSessionProtocol"]:
+        """Get open sessions."""
         raise NotImplementedError("Sessions are not implemented in this portfolio.")
+    
+    def get_all_sessions(self) -> list["TradingSessionProtocol"]:
+        """Get all sessions."""
+        raise NotImplementedError("All sessions are not implemented in this portfolio.")
     
     def get_realised_pnl(self) -> Decimal:
         """Get realised P&L."""
@@ -74,12 +81,12 @@ class Portfolio(BaseModel):
     def get_unrealised_pnl(self) -> Decimal:
         """Get unrealised P&L."""
         raise NotImplementedError("Unrealised P&L is not implemented in this portfolio.")
-    
+ 
 
+@dataclass
 class PortfolioService:
-    def __init__(self, settings: PortfolioSettings, cache: Dict[str, PortfolioProtocol]):
-        self.settings = settings
-        self.cache = cache
+    settings: PortfolioSettings
+    cache: Dict[str, PortfolioProtocol]
 
     def _load_portfolio_by_name(self, name: str) -> PortfolioProtocol:
         path = self.settings.config_dir / f"{name}.yaml"
