@@ -5,8 +5,10 @@ from typing import Any, Dict, List, Protocol
 
 import pandas as pd
 
+from core.portfolio.protocol import PortfolioProtocol
 
-class TradingSession(Protocol):
+
+class TradingSessionProtocol(Protocol):
     """Protocol for trading sessions."""
     
     @property
@@ -15,7 +17,7 @@ class TradingSession(Protocol):
         ...
     
     @property
-    def portfolio_name(self) -> str:
+    def portfolio_name(self) -> PortfolioProtocol:
         """Associated portfolio name."""
         ...
     
@@ -24,6 +26,7 @@ class TradingSession(Protocol):
         """Allocated capital for this session."""
         ...
     
+    #FIXME : this should be a list of StrategyProtocol
     @property
     def strategies(self) -> List[str]:
         """List of strategy names in this session."""
@@ -90,4 +93,13 @@ class TradingSession(Protocol):
         Returns:
             List of enabled symbol names
         """
+        ...
+
+
+class TradingSessionServiceProtocol(Protocol):
+    def get(self, name: str) -> TradingSessionProtocol:
+        """Get trading session by name."""
+        ...
+    def get_all(self) -> List[TradingSessionProtocol]:
+        """Get all trading sessions."""
         ...

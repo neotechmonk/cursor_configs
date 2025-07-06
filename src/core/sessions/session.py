@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -79,6 +78,7 @@ def resolve_session_config(
         symbols=resolved_symbols
     )
 
+
 @dataclass
 class TradingSessionService:
     """Service Layer: Business logic for trading session operations."""
@@ -127,6 +127,7 @@ class TradingSessionService:
             symbols=config.symbols
         )
     
+
 class TradingSession:
     """Trading session implementation."""
 
