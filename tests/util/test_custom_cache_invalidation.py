@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from watchdog.events import FileSystemEvent
 
-from util.custom_cache import CacheInvalidationHandler, CustomCache
+from util.custom_cache import CacheInvalidationHandler, WatchedCache
 
 
 def make_mock_event(file_path: str, is_directory=False) -> FileSystemEvent:
@@ -18,12 +18,12 @@ class TestCacheInvalidationHandler:
     """Test suite for CacheInvalidationHandler."""
     
     @pytest.fixture
-    def cache(self)-> CustomCache:
+    def cache(self)-> WatchedCache:
         """Create a fresh cache for each test."""
-        return CustomCache()
+        return WatchedCache()
     
     @pytest.fixture
-    def handler(self, cache: CustomCache)-> CacheInvalidationHandler:
+    def handler(self, cache: WatchedCache)-> CacheInvalidationHandler:
         """Create a handler with the test cache."""
         return CacheInvalidationHandler(cache)
     

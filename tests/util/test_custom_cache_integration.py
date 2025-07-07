@@ -1,28 +1,28 @@
-from time import sleep
 import os
-from pathlib import Path
 import tempfile
-from typing import Dict
+from pathlib import Path
+from time import sleep
 from unittest.mock import MagicMock
 
+import pytest
 from dependency_injector import containers, providers
 
-from util.custom_cache import CacheInvalidationHandler, CustomCache
-import pytest
+from util.custom_cache import CacheInvalidationHandler, ScopedCacheView, WatchedCache
+
 
 #service.py
 class MockedService:
-    def __init__(self, config_dir, cache: Dict[str, str]):
+    def __init__(self, config_dir, cache: ScopedCacheView):
         self.config_dir = config_dir
         self.cache = cache
         self.load_called_with = []
     
     def get(self, name: str) -> str:
         self.load_called_with.append(name)
-        return self.cache.get(name, f"mocked:{name}")
+        return self.cache.get(name) or f"mocked:{name}"
     
     def get_all(self):
-        return list(self.cache.values())
+        return self.cache.keys()
 
     def clear_cache(self):
         self.cache.clear()
@@ -31,20 +31,23 @@ class MockedService:
 # container.py
 class MockedContainer(containers.DeclarativeContainer):
     settings = providers.Dependency()
-    data_provider_cache = providers.Singleton(dict)
+    cache_backend = providers.Singleton(WatchedCache)
     
+    scoped_cache = providers.Factory(
+        ScopedCacheView,
+        "data_provider",  # <-- positional
+        cache_backend
+    )
     service = providers.Singleton(
         MockedService,
         config_dir=providers.Callable(lambda s: s.config_dir, settings),
-        cache=data_provider_cache,
+        cache=scoped_cache,
     )
-
-    # Define observer as a resource
+  
     observer = providers.Resource(
         CacheInvalidationHandler.start,
         config_dir=providers.Callable(lambda s: s.config_dir, settings),
-        cache=data_provider_cache,
-    )
+        cache=scoped_cache)
 
 
 def test_data_provider_container_with_mock_settings():
@@ -57,7 +60,7 @@ def test_data_provider_container_with_mock_settings():
     # Set up the container
     container = MockedContainer(
         settings=mock_settings,
-        data_provider_cache=mock_cache,
+        cache_backend=mock_cache,
     )
 
     # Override service to prevent real __init__ logic if needed
@@ -85,7 +88,7 @@ def test_data_provider_service_integration():
     # Then
     assert isinstance(service, MockedService)
     assert service.config_dir == Path("/tmp/yaml_dir")
-    assert isinstance(service.cache, dict)
+    assert isinstance(service.cache, ScopedCacheView)
 
 
 @pytest.mark.xfail(reason="Unable to validate observer is started")
@@ -102,8 +105,8 @@ def test_cache_invalidator_is_started(monkeypatch):
     mock_settings.config_dir = Path("/fake/config")
     container.settings.override(mock_settings)
     
-    cache = CustomCache()
-    container.data_provider_cache.override(cache)
+    cache = WatchedCache()
+    container.cache_backend.override(cache)
 
     # Act: Initialize resources (this starts the observer)
     container.init_resources()
@@ -123,36 +126,34 @@ def test_file_deletion_invalidates_cache():
     with tempfile.TemporaryDirectory() as tmpdir:
         config_dir = Path(tmpdir)
         config_file = config_dir / "test_config.yaml"
-        # config_file_wrong = Path(tmpdir) / "test_config-wrong.yaml"
 
-        cache = CustomCache()        
-        observer = CacheInvalidationHandler.start(config_dir=config_dir, cache=cache)
+        backend = WatchedCache()
+        scoped_cache = ScopedCacheView( cache=backend, namespace="data_provider",)  # ✅ provide namespace
 
-        # Create a dummy YAML file
+        observer = CacheInvalidationHandler.start(config_dir=config_dir, cache=scoped_cache)
+
+        # Create the dummy file
         config_file.write_text("dummy: config")
 
-        # Create cache and insert the
-        cache.add("test_config", {"mock": "data"})
+        # Add to namespaced cache
+        scoped_cache.add("test_config", {"mock": "data"})
 
-        assert cache.get("test_config") is not None  # Precondition
-
+        assert scoped_cache.get("test_config") is not None
 
         try:
-            print("\nBefore removing the yaml file :" + str(cache.get("test_config")))
-            # Delete the file to trigger the handler
+            print("\nBefore removing the yaml file:", scoped_cache.get("test_config"))
+
             if config_file.exists():
                 print("Removing file")
                 os.remove(config_file)
-                print("....After removing the yaml file :" + str(cache.get("test_config")))
 
-            # Allow time for watchdog to pick up the event
-            sleep(1.0)  # May need to be adjusted based on platform/CI speed
+            # Wait for observer to detect the deletion
+            sleep(1.0)
 
-            
-            # Verify that cache is invalidated
-            assert cache.get("test_config") is None
+            # ✅ This now uses ScopedCacheView which only needs key
+            assert scoped_cache.get("test_config") is None
         finally:
-            print("....AfBefore  stopping the observer  :" + str(cache.get("test_config")))
             observer.stop()
             observer.join()
-            print("....After stopping the observer  :" + str(cache.get("test_config")))
+            print("....After removing the yaml file :" + str(scoped_cache.get(key="test_config")))
+    
