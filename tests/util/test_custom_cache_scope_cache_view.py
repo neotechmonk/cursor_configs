@@ -1,57 +1,58 @@
 import pytest
-
 from util.custom_cache import ScopedCacheView, WatchedCache
 
 
 @pytest.fixture
-def base_cache():
-    return WatchedCache[str]()
+def scoped_cache_view() -> ScopedCacheView[str]:
+    base_cache = WatchedCache[str]()
+    return ScopedCacheView(cache=base_cache, namespace="test_ns")
 
 
-@pytest.fixture
-def scoped_view(base_cache):
-    return ScopedCacheView[str](cache=base_cache, namespace="scoped_ns")
+def test_add_and_get(scoped_cache_view):
+    scoped_cache_view.add("key1", "val1")
+    assert scoped_cache_view.get("key1") == "val1"
 
 
-def test_scoped_add_and_get(scoped_view):
-    scoped_view.add("item1", "value1")
-    assert scoped_view.get("item1") == "value1"
+def test_get_missing_returns_none(scoped_cache_view):
+    assert scoped_cache_view.get("missing_key") is None
 
 
-def test_scoped_get_missing_key(scoped_view):
-    assert scoped_view.get("missing") is None
+def test_remove_existing_key(scoped_cache_view):
+    scoped_cache_view.add("temp", "value")
+    scoped_cache_view.remove("temp")
+    assert scoped_cache_view.get("temp") is None
 
 
-def test_scoped_remove_existing_key(scoped_view):
-    scoped_view.add("temp", "value")
-    scoped_view.remove("temp")
-    assert scoped_view.get("temp") is None
+def test_remove_nonexistent_key_is_safe(scoped_cache_view):
+    scoped_cache_view.remove("nonexistent")  # Should not raise
 
 
-def test_scoped_remove_nonexistent_key(scoped_view):
-    # Should not raise
-    scoped_view.remove("ghost")
+def test_clear_namespace(scoped_cache_view):
+    scoped_cache_view.add("a", "1")
+    scoped_cache_view.add("b", "2")
+    scoped_cache_view.clear()
+    assert scoped_cache_view.get("a") is None
+    assert scoped_cache_view.get("b") is None
 
 
-def test_scoped_clear(scoped_view):
-    scoped_view.add("one", "1")
-    scoped_view.add("two", "2")
-    scoped_view.clear()
-    assert scoped_view.get("one") is None
-    assert scoped_view.get("two") is None
-    assert scoped_view.keys() == []
+def test_keys(scoped_cache_view):
+    scoped_cache_view.add("x", "valX")
+    scoped_cache_view.add("y", "valY")
+    keys = scoped_cache_view.keys()
+    assert set(keys) == {"x", "y"}
 
 
-def test_scoped_keys(scoped_view):
-    scoped_view.add("k1", "v1")
-    scoped_view.add("k2", "v2")
-    keys = scoped_view.keys()
-    assert set(keys) == {"k1", "k2"}
+def test_get_all(scoped_cache_view):
+    scoped_cache_view.add("one", "v1")
+    scoped_cache_view.add("two", "v2")
+    values = scoped_cache_view.get_all()
+    assert set(values) == {"v1", "v2"}
 
 
-def test_scope_isolation(base_cache):
-    view1 = ScopedCacheView(cache=base_cache, namespace="ns1")
-    view2 = ScopedCacheView(cache=base_cache, namespace="ns2")
+def test_namespace_isolation():
+    base = WatchedCache[str]()
+    view1 = ScopedCacheView(cache=base, namespace="ns1")
+    view2 = ScopedCacheView(cache=base, namespace="ns2")
 
     view1.add("shared", "v1")
     view2.add("shared", "v2")

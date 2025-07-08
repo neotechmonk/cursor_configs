@@ -14,6 +14,7 @@ class Cache[T](Protocol):
 
     def add(self, key:str, value: T)-> None :...    
     def get(self, key:str) -> T:...
+    def get_all(self)-> list[T]:...
     def clear(self)-> None:...
 
 
@@ -31,6 +32,9 @@ class WatchedCache[T]():
 
     def get(self, ns: str, key: str) -> Optional[T]:
         return self._store.get(ns, {}).get(key)
+    
+    def get_all(self, ns: str) -> Optional[T]:
+        return self._store.get(ns, {}).values()
 
     def remove(self, ns: str, key: str):
         self._store.get(ns, {}).pop(key, None)
@@ -52,6 +56,9 @@ class ScopedCacheView[T]():
 
     def get(self, key: str) -> Optional[T]:
         return self._cache.get(self._namespace, key)
+    
+    def get_all(self) -> list[T]:
+        return self._cache.get_all(self._namespace)
 
     def remove(self, key: str):
         self._cache.remove(self._namespace, key)
