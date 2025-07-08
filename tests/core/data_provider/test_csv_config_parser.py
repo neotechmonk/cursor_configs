@@ -10,7 +10,7 @@ from core.data_provider.csv import (
 @pytest.fixture
 def raw_csv_pricefeed_model() -> RawCSVPriceFeedConfig:
     return RawCSVPriceFeedConfig(
-        name="csv",
+        # name="csv",
         data_dir="tests/data",
         file_pattern="*.csv",
         date_format="%Y-%m-%d %H:%M:%S",
@@ -29,6 +29,7 @@ def raw_csv_pricefeed_model() -> RawCSVPriceFeedConfig:
 
 
 def test_resolve_csv_pricefeed_config(raw_csv_pricefeed_model):
+    raw_csv_pricefeed_model.name = "csv"
     resolved: CSVPriceFeedConfig = resolve_csv_pricefeed_config(raw_csv_pricefeed_model)
 
     assert resolved.name == "csv"

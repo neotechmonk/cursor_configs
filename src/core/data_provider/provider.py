@@ -2,7 +2,9 @@ from pathlib import Path
 
 from pydantic import BaseSettings, Field
 
+from core.data_provider.csv import CSVPriceFeedProvider, RawCSVPriceFeedConfig, resolve_csv_pricefeed_config
 from core.data_provider.protocol import DataProviderProtocol
+from loaders.generic import load_yaml_config
 from util.custom_cache import Cache
 
 
@@ -18,7 +20,15 @@ class DataProviderService:
         self.cache: Cache = cache
 
     def _load_data_provider_by_name(self, name: str) -> DataProviderProtocol:
-        config = load_yaml_config(self.config_dir, DataProviderConfig)
+        match name:
+            case "csv":
+                raw_model: RawCSVPriceFeedConfig = load_yaml_config(self.config_dir / f"{name}.yaml", RawCSVPriceFeedConfig)
+                raw_model.name = name
+                target_model: CSVPriceFeedProvider = resolve_csv_pricefeed_config(raw_model)
+                return target_model
+            case _:
+                raise ValueError(f"Unsupported data provider: {name}")
+
         return DataProvider(name=name, description=config.description, initial_capital=config.initial_capital)
 
     def get(self, name: str) -> DataProviderProtocol:
