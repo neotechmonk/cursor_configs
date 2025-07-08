@@ -1,47 +1,50 @@
 from pathlib import Path
+from typing import Dict
 
-from pydantic import BaseSettings, Field
-
-from core.data_provider.csv import CSVPriceFeedProvider, RawCSVPriceFeedConfig, resolve_csv_pricefeed_config
 from core.data_provider.protocol import DataProviderProtocol
+from core.data_provider.settings import DataProviderMetadata
 from loaders.generic import load_yaml_config
 from util.custom_cache import Cache
 
 
-class DataProviderSettings(BaseSettings):
-    """Data provider-specific settings from app configuration."""
-    config_dir: Path = Field(default=Path("configs/providers/data"))
-
-
-@dataclass
 class DataProviderService:
     def __init__(self, config_dir: Path, cache: Cache):
         self.config_dir = config_dir
         self.cache: Cache = cache
+        self.registry: Dict[str, DataProviderMetadata] = {}
 
     def _load_data_provider_by_name(self, name: str) -> DataProviderProtocol:
-        match name:
-            case "csv":
-                raw_model: RawCSVPriceFeedConfig = load_yaml_config(self.config_dir / f"{name}.yaml", RawCSVPriceFeedConfig)
-                raw_model.name = name
-                target_model: CSVPriceFeedProvider = resolve_csv_pricefeed_config(raw_model)
-                return target_model
-            case _:
-                raise ValueError(f"Unsupported data provider: {name}")
+        """
+        Load a data provider by name.
+        """
+        try:
+            raw_model_class, target_model_class, provider_class = self.registry.get(name)
+        except KeyError:
+            raise ValueError(f"Unsupported data provider: {name}")
 
-        return DataProvider(name=name, description=config.description, initial_capital=config.initial_capital)
+        raw_model = load_yaml_config(self.config_dir / f"{name}.yaml", raw_model_class)
+        raw_model.name = name
+
+        target_model = target_model_class(**raw_model.model_dump())
+        provider = provider_class(config=target_model)
+
+        if not isinstance(provider, DataProviderProtocol):
+            raise TypeError(f"{provider_class.__name__} must implement DataProviderProtocol")
+
+        return provider
 
     def get(self, name: str) -> DataProviderProtocol:
-        if name not in self.cache:
-            self.cache[name] = self._load_data_provider_by_name(name)
-        return self.cache[name]
+        if not (provider := self.cache.get(name)):
+            provider = self._load_data_provider_by_name(name)
+            self.cache.add(name, provider)
+        return provider
 
     def get_all(self) -> list[DataProviderProtocol]:
-        for file in self.settings.config_dir.glob("*.yaml"):
-            name = file.stem
-            if name not in self.cache:
-                self.cache[name] = self._load_data_provider_by_name(name)
-        return list(self.cache.values())
+        for path in self.config_dir.glob("*.yaml"):
+            name = path.stem
+            if not self.cache.get(name):
+                self.cache.add(name, self._load_data_provider_by_name(name))
+        return list(self.cache.get_all())
 
     def clear_cache(self) -> None:
         self.cache.clear()
