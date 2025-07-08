@@ -1,3 +1,4 @@
+import re
 import warnings
 from datetime import datetime
 from pathlib import Path
@@ -7,7 +8,7 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from core.data_provider.config import PricefeedTimeframeConfig
-from core.feed.error import SymbolError, TimeframeError
+from core.data_provider.error import SymbolError, TimeframeError
 from core.time import CustomTimeframe
 
 

@@ -8,7 +8,7 @@ import yfinance as yf
 from pydantic import ConfigDict
 
 from core.feed.config import PricefeedTimeframeConfig
-from core.feed.error import SymbolError, TimeframeError
+from core.data_provider.error import SymbolError, TimeframeError
 from core.time import CustomTimeframe
 
 
