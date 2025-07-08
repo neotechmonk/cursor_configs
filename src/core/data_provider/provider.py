@@ -8,28 +8,28 @@ from util.custom_cache import Cache
 
 
 class DataProviderService:
-    def __init__(self, config_dir: Path, cache: Cache):
+    def __init__(self, config_dir: Path, cache: Cache, registry: Dict[str, DataProviderMetadata] = None):
         self.config_dir = config_dir
         self.cache: Cache = cache
-        self.registry: Dict[str, DataProviderMetadata] = {}
+        self.registry: Dict[str, DataProviderMetadata] = registry or {}
 
     def _load_data_provider_by_name(self, name: str) -> DataProviderProtocol:
         """
         Load a data provider by name.
         """
         try:
-            raw_model_class, target_model_class, provider_class = self.registry.get(name)
+            metadata = self.registry[name]
         except KeyError:
             raise ValueError(f"Unsupported data provider: {name}")
 
-        raw_model = load_yaml_config(self.config_dir / f"{name}.yaml", raw_model_class)
+        raw_model = load_yaml_config(self.config_dir / f"{name}.yaml", metadata.raw_config)
         raw_model.name = name
 
-        target_model = target_model_class(**raw_model.model_dump())
-        provider = provider_class(config=target_model)
+        target_model = metadata.target_config(**raw_model.model_dump())
+        provider = metadata.provider_class(config=target_model)
 
         if not isinstance(provider, DataProviderProtocol):
-            raise TypeError(f"{provider_class.__name__} must implement DataProviderProtocol")
+            raise TypeError(f"{metadata.provider_class.__name__} must implement DataProviderProtocol")
 
         return provider
 
