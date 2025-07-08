@@ -1,9 +1,11 @@
 import pytest
 
+from core.data_provider.csv import (
+    CSVPriceFeedConfig,
+    RawCSVPriceFeedConfig,
+    resolve_csv_pricefeed_config,
+)
 
-from core.data_provider.config import PricefeedTimeframeConfig
-from core.data_provider.csv import CSVPriceFeedConfig, RawCSVPriceFeedConfig, resolve_csv_pricefeed_config
-from loaders.generic import load_yaml_config
 
 @pytest.fixture
 def raw_csv_pricefeed_model() -> RawCSVPriceFeedConfig:
@@ -24,6 +26,7 @@ def raw_csv_pricefeed_model() -> RawCSVPriceFeedConfig:
             }
         }
     )
+
 
 def test_resolve_csv_pricefeed_config(raw_csv_pricefeed_model):
     resolved: CSVPriceFeedConfig = resolve_csv_pricefeed_config(raw_csv_pricefeed_model)
