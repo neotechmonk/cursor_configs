@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -33,9 +32,9 @@ class AppSettings(BaseSettings):
     
     This class loads configuration from multiple sources in order of priority:
     1. Explicitly passed settings (highest priority)
-    2. configs/settings.json (via custom_settings_source)
+    2. Environment variables
     3. .env file
-    4. Environment variables
+    4. configs/settings.json (via custom_settings_source)
     5. Secrets directory (lowest priority)
     """
     
@@ -46,6 +45,8 @@ class AppSettings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=".env",
+        env_nested_delimiter="__",
+        case_sensitive=False,
         env_file_encoding="utf-8",
         extra="allow"
     )
@@ -63,15 +64,15 @@ class AppSettings(BaseSettings):
         
         This method defines the priority order for loading settings:
         1. Explicitly passed settings (highest priority)
-        2. Custom JSON file (configs/settings.json)
+        2. Environment variables
         3. .env file
-        4. Environment variables
+        4. Custom JSON file (configs/settings.json)
         5. Secrets directory (lowest priority)
         """
         return (
             init_settings,           # First, use explicitly passed settings (highest priority)
-            custom_settings_source,  # Then, read from the custom JSON file
+            env_settings,            # Then, read from environment variables
             dotenv_settings,         # Then, read from .env file
-            env_settings,            # Next, read from environment variables
-            file_secret_settings,    # Finally, read from the secrets directory (lowest priority)
+            file_secret_settings,    # Then, read from the secrets directory (lowest priority)
+            custom_settings_source,  # Finally, read from the custom JSON file
         )
