@@ -10,5 +10,15 @@
   },
   "strategies": {
     "config_dir": "configs/strategies"
+  },
+  "data_provider": {
+    "config_dir": "configs/providers/data",
+    "providers": {
+      "csv": {
+        "raw_config": "core.data_provider.csv.RawCSVPriceFeedConfig",
+        "target_config": "core.data_provider.csv.CSVPriceFeedConfig",
+        "provider_class": "core.data_provider.csv.CSVPriceFeedProvider"
+      }
+    }
   }
 }

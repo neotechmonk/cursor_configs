@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from pydantic import BaseModel
 
-from core.data_provider.csv import (
+from core.data_provider.providers.csv import (
     CSVPriceFeedConfig,
     CSVPriceFeedProvider,
     RawCSVPriceFeedConfig,
@@ -50,14 +50,8 @@ def test_default_data_provider_settings():
     assert settings.config_dir == Path("configs/providers/data")
 
     # Check providers dict exists and contains 'csv'
-    assert "csv" in settings.providers
-    csv_metadata = settings.providers["csv"]
-    assert isinstance(csv_metadata, DataProviderMetadata)
+    assert settings.providers == {}
 
-    # Validate contents of ProviderMetadata
-    assert csv_metadata.raw_config == RawCSVPriceFeedConfig
-    assert csv_metadata.target_config == CSVPriceFeedConfig
-    assert csv_metadata.provider_class == CSVPriceFeedProvider
 
 
 def test_provider_resolution(mock_provider_settings):

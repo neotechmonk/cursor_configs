@@ -5,7 +5,7 @@ import yaml
 from pydantic import BaseModel
 
 from core.data_provider.protocol import DataProviderProtocol
-from core.data_provider.provider import DataProviderService
+from core.data_provider.service import DataProviderService
 from core.data_provider.settings import DataProviderMetadata
 from util.custom_cache import ScopedCacheView, WatchedCache
 

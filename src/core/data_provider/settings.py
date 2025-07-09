@@ -5,7 +5,7 @@ from typing import Dict, Type, Union
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings
 
-from core.data_provider.csv import (
+from core.data_provider.providers.csv import (
     CSVPriceFeedConfig,
     CSVPriceFeedProvider,
     RawCSVPriceFeedConfig,
@@ -36,9 +36,12 @@ class DataProviderSettings(BaseSettings):
     """Data provider-specific settings from app configuration."""
     config_dir: Path = Field(default=Path("configs/providers/data"))
 
-    providers: Dict[str, DataProviderMetadata] = { #Others loaded from config/settings.json
-        "csv": DataProviderMetadata(
-            raw_config=RawCSVPriceFeedConfig,
-            target_config=CSVPriceFeedConfig,
-            provider_class=CSVPriceFeedProvider,
-        ) }
+    providers: Dict[str, DataProviderMetadata] = Field(default_factory=dict)
+    """
+        { #Others loaded from config/settings.json
+            "csv": DataProviderMetadata(
+                raw_config=RawCSVPriceFeedConfig,
+                target_config=CSVPriceFeedConfig,
+                provider_class=CSVPriceFeedProvider,
+            ) }
+    """

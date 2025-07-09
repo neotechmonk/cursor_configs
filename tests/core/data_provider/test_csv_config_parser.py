@@ -1,6 +1,6 @@
 import pytest
 
-from core.data_provider.csv import (
+from core.data_provider.providers.csv import (
     CSVPriceFeedConfig,
     RawCSVPriceFeedConfig,
     resolve_csv_pricefeed_config,

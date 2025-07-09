@@ -1,7 +1,7 @@
 
 from dependency_injector import containers, providers
 
-from core.data_provider.provider import DataProviderService
+from core.data_provider.service import DataProviderService
 from core.data_provider.settings import DataProviderSettings
 from util.custom_cache import CacheInvalidationHandler, ScopedCacheView, WatchedCache
 

@@ -5,7 +5,7 @@ import pytest
 from pydantic import BaseModel
 
 from core.data_provider.container import DataProviderContainer
-from core.data_provider.provider import DataProviderService
+from core.data_provider.service import DataProviderService
 from core.data_provider.settings import DataProviderMetadata, DataProviderSettings
 
 
