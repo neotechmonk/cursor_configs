@@ -33,8 +33,8 @@ class WatchedCache[T]():
     def get(self, ns: str, key: str) -> Optional[T]:
         return self._store.get(ns, {}).get(key)
     
-    def get_all(self, ns: str) -> Optional[T]:
-        return self._store.get(ns, {}).values()
+    def get_all(self, ns: str) -> list[T]:
+        return list(self._store.get(ns, {}).values())
 
     def remove(self, ns: str, key: str):
         self._store.get(ns, {}).pop(key, None)

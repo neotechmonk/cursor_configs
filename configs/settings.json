@@ -15,9 +15,9 @@
     "config_dir": "configs/providers/data",
     "providers": {
       "csv": {
-        "raw_config": "core.data_provider.csv.RawCSVPriceFeedConfig",
-        "target_config": "core.data_provider.csv.CSVPriceFeedConfig",
-        "provider_class": "core.data_provider.csv.CSVPriceFeedProvider"
+        "raw_config": "core.data_provider.providers.csv.RawCSVPriceFeedConfig",
+        "target_config": "core.data_provider.providers.csv.CSVPriceFeedConfig",
+        "provider_class": "core.data_provider.providers.csv.CSVPriceFeedProvider"
       }
     }
   }

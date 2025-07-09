@@ -16,8 +16,8 @@ class DataProviderContainer(containers.DeclarativeContainer):
     # -- Isolates cache for the data provider
     scoped_cache = providers.Factory(
         ScopedCacheView,
-        NAMESPACE,  
-        cache_backend)
+        cache_backend,  # Fixed: cache object first
+        NAMESPACE)      # Fixed: namespace second
     observer = providers.Resource(
         CacheInvalidationHandler.start,
         config_dir=providers.Callable(lambda s: s.config_dir, settings),

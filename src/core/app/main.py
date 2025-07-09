@@ -18,10 +18,13 @@ def main():
 
     # Access config for further use
     settings = container.settings()
-    logger.debug(f"Loaded config:\n{settings.model_dump_json(indent=2)}")
+    logger.debug("Settings loaded successfully")
 
     # Example: use a subcontainer or resource
-    # container.portfolio().load() or similar
+    # Get the data provider service and list all available providers
+    data_provider_service = container.data_provider.service()
+    providers = data_provider_service.get_all()
+    print(f"Available data providers: {[provider.name for provider in providers]}")
     
     logger.info("Shutting down")
 

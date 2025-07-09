@@ -34,10 +34,10 @@ class AppContainer(containers.DeclarativeContainer):
     # Subcontainers
     data_provider = providers.Container(
         DataProviderContainer,
-        settings=settings.provided.portfolio  # Access the actual PortfolioSettings object
+        settings=settings.provided.data_provider  # Fixed: was portfolio, should be data_provider
     )
 
-    portfolio = providers.Container(
-        PortfolioContainer,
-        settings=settings.provided.portfolio  # Access the actual PortfolioSettings object
-    )
+    # portfolio = providers.Container(
+    #     PortfolioContainer,
+    #     settings=settings.provided.portfolio  # Access the actual PortfolioSettings object
+    # )

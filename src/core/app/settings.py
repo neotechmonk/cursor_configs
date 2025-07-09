@@ -7,6 +7,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from core.app.logging import LoggingSettings
+from core.data_provider.settings import DataProviderSettings
 from core.portfolio.portfolio import PortfolioSettings
 from core.sessions.session import TradingSessionSettings
 
@@ -46,6 +47,7 @@ class AppSettings(BaseSettings):
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     portfolio: PortfolioSettings = Field(default_factory=PortfolioSettings)
     sessions: TradingSessionSettings = Field(default_factory=TradingSessionSettings)
+    data_provider: DataProviderSettings = Field(default_factory=DataProviderSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",
