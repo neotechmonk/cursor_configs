@@ -5,7 +5,6 @@ from enum import Enum
 from typing import Optional, Protocol
 
 import pandas as pd
-from pydantic import BaseModel
 
 from ..time import CustomTimeframe
 
@@ -54,18 +53,3 @@ class AuthType(Enum):
 
 
 #FIX: move this to provider specific resampling for now and later make generic if needed
-class ResampleStrategy(BaseModel):
-    """Strategy for resampling price data.
-    
-    Attributes:
-        open: Aggregation method for open prices (e.g., "first")
-        high: Aggregation method for high prices (e.g., "max")
-        low: Aggregation method for low prices (e.g., "min")
-        close: Aggregation method for close prices (e.g., "last")
-        volume: Aggregation method for volume (e.g., "sum")
-    """
-    open: str
-    high: str
-    low: str
-    close: str
-    volume: str

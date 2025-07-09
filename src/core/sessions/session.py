@@ -18,6 +18,10 @@ from loaders.generic import load_yaml_config
 
 
 class TradingSessionSettings(BaseSettings):
+    model_config = ConfigDict(
+        env_nested_delimiter="__",
+        case_sensitive=False
+    )
     config_dir: Path = Path("configs/sessions")
 
 

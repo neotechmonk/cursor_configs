@@ -21,7 +21,6 @@ class LoggingSettings(BaseModel):
             loaded_dict = json.loads(self.config_path.read_text())
             self.dict_config = loaded_dict
 
-
             # Update the default attributes
             self.level = loaded_dict.get("root", {}).get("level", self.level)
             self.format = loaded_dict.get("formatters", {}).get("default", {}).get("format", self.format)

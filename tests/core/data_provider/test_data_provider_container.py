@@ -18,6 +18,7 @@ class RawDummyPriceFeedConfig(BaseModel):...
 
 class DummyPriceFeedConfig(BaseModel):...
 
+
 @pytest.fixture
 def mock_provider_settings():
     return DataProviderSettings(

@@ -2,7 +2,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.data_provider.protocol import DataProvider
+from core.data_provider.protocol import DataProviderProtocol
 from core.execution_provider.protocol import ExecutionProvider
 from core.time import CustomTimeframe
 
@@ -15,7 +15,7 @@ class SymbolConfigModel(BaseModel):
     )
 
     symbol: str
-    data_provider: DataProvider = Field(..., alias="data-provider")
+    data_provider: DataProviderProtocol = Field(..., alias="data-provider")
     execution_provider: ExecutionProvider = Field(..., alias="execution-provider")
     timeframe: CustomTimeframe
     enabled: bool = True

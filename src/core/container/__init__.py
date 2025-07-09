@@ -3,8 +3,7 @@
 This package provides containers for managing dependencies in the strategy system.
 """
 
-from ..feed.container import PriceFeedsContainer
 from .steps import StepRegistryContainer
 from .strategies import StrategiesContainer
 
-__all__ = ['StepRegistryContainer', 'StrategiesContainer', 'PriceFeedsContainer'] 
+__all__ = ['StepRegistryContainer', 'StrategiesContainer'] 

@@ -17,6 +17,10 @@ if TYPE_CHECKING:
 
 class PortfolioSettings(BaseSettings):
     """Portfolio-specific settings from app configuration."""
+    model_config = ConfigDict(
+        env_nested_delimiter="__",
+        case_sensitive=False
+    )
     config_dir: Path = Field(default=Path("configs/portfolios"))
     
 
@@ -81,8 +85,9 @@ class Portfolio(BaseModel):
     def get_unrealised_pnl(self) -> Decimal:
         """Get unrealised P&L."""
         raise NotImplementedError("Unrealised P&L is not implemented in this portfolio.")
- 
 
+ 
+# FIXME : make this less greedy by extracting parameters from config
 @dataclass
 class PortfolioService:
     settings: PortfolioSettings

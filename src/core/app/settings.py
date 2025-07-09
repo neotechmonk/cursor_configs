@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,11 +13,14 @@ from core.sessions.session import TradingSessionSettings
 
 def custom_settings_source(settings: BaseSettings = None) -> dict[str, Any]:
     """Read additional settings from a custom JSON file.
-    
-    This function is used by BaseSettings to load configuration from configs/settings.json.
+
+    Priority:
+    1. APP_SETTINGS_PATH environment variable
+    2. Default to 'configs/settings.json'
     """
-    json_file = Path("configs/settings.json")
-    
+    config_path = os.getenv("APP_SETTINGS_PATH", "configs/settings.json")
+    json_file = Path(config_path)
+
     if json_file.exists():
         try:
             with open(json_file, "r", encoding="utf-8") as config_file:

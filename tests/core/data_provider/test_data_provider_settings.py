@@ -1,22 +1,26 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 from pydantic import BaseModel
-from pydantic_settings import BaseSettings
 
 from core.data_provider.csv import (
     CSVPriceFeedConfig,
     CSVPriceFeedProvider,
     RawCSVPriceFeedConfig,
 )
-import pytest
 from core.data_provider.settings import DataProviderMetadata, DataProviderSettings
+
 
 class DummyDataProvider():
     def get_price_data(self, symbol: str, timeframe: str) -> pd.DataFrame:...
 
+
 class RawDummyPriceFeedConfig(BaseModel):...
+
+
 class DummyPriceFeedConfig(BaseModel):...
+
 
 @pytest.fixture
 def mock_provider_settings(monkeypatch):
@@ -37,6 +41,7 @@ def mock_provider_settings(monkeypatch):
         }
     }
     return raw_json_dict
+
 
 def test_default_data_provider_settings():
     settings = DataProviderSettings()
@@ -63,7 +68,6 @@ def test_provider_resolution(mock_provider_settings):
     assert dummy_metadata.target_config is DummyPriceFeedConfig
     assert dummy_metadata.provider_class is DummyDataProvider
     assert dummy_metadata.extra["note"] == "used for isolated unit tests"
-
 
     #Test overridden default provider
     with pytest.raises(KeyError):

@@ -8,11 +8,10 @@ from typing import Optional, Union
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from core.feed.config import PricefeedTimeframeConfig
-
 # from core.feed.error import PriceFeedCapabilities, SymbolError, TimeframeError
 # from core.feed.error import  SymbolError, TimeframeError
 from core.data_provider.error import SymbolError, TimeframeError
+from core.feed.config import PricefeedTimeframeConfig
 from core.time import CustomTimeframe
 
 
