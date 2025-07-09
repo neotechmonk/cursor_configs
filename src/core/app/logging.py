@@ -1,13 +1,14 @@
 import json
 import logging.config
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 
 
 class LoggingSettings(BaseModel):
     config_path: Optional[Path] = None
+
 
 def load_logging_config(config_path: Path) -> None:
     """
@@ -16,8 +17,9 @@ def load_logging_config(config_path: Path) -> None:
     Parameters:
         config_path (Path): Path to the logging configuration JSON file.
     """
+    logging.getLogger().setLevel(logging.INFO) # default to INFO level
+    
     if not config_path or not config_path.exists():
-        logging.basicConfig(level=logging.INFO)
         logging.getLogger(__name__).warning(f"No logging config found at {config_path}. Using default config.")
         return
 
@@ -26,5 +28,4 @@ def load_logging_config(config_path: Path) -> None:
             config = json.load(f)
         logging.config.dictConfig(config)
     except (OSError, json.JSONDecodeError, ValueError, TypeError) as e:
-        logging.basicConfig(level=logging.INFO)
         logging.getLogger(__name__).exception(f"Failed to load logging config from {config_path}. Using default config. Error: {e}")
