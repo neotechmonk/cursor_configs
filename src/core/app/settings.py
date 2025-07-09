@@ -1,21 +1,77 @@
-from pydantic import ConfigDict, Field
-from pydantic_settings import BaseSettings
+import json
+import os
+from pathlib import Path
+from typing import Any
 
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from core.app.logging import LoggingSettings
 from core.portfolio.portfolio import PortfolioSettings
 from core.sessions.session import TradingSessionSettings
 
 
-class AppSettings(BaseSettings):
-    """Global application settings with domain sections."""
-    model_config = ConfigDict(
-        json_file="configs/settings.json",
-        json_file_encoding="utf-8",
-    )
+def custom_settings_source(settings: BaseSettings = None) -> dict[str, Any]:
+    """Read additional settings from a custom JSON file.
     
-    portfolio: PortfolioSettings = Field(
-        default_factory=PortfolioSettings
+    This function is used by BaseSettings to load configuration from configs/settings.json.
+    """
+    json_file = Path("configs/settings.json")
+    
+    if json_file.exists():
+        try:
+            with open(json_file, "r", encoding="utf-8") as config_file:
+                return json.load(config_file)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"Warning: Could not load settings from {json_file}: {e}")
+    
+    return {}
+
+
+class AppSettings(BaseSettings):
+    """Global application settings with domain sections.
+    
+    This class loads configuration from multiple sources in order of priority:
+    1. Explicitly passed settings (highest priority)
+    2. configs/settings.json (via custom_settings_source)
+    3. .env file
+    4. Environment variables
+    5. Secrets directory (lowest priority)
+    """
+    
+    # Domain-specific settings
+    logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    portfolio: PortfolioSettings = Field(default_factory=PortfolioSettings)
+    sessions: TradingSessionSettings = Field(default_factory=TradingSessionSettings)
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="allow"
     )
 
-    sessions: TradingSessionSettings = Field(
-        default_factory=TradingSessionSettings
-    )
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        cls_type,
+        init_settings,
+        env_settings,
+        dotenv_settings,
+        file_secret_settings,
+    ):
+        """Customize the order of configuration sources.
+        
+        This method defines the priority order for loading settings:
+        1. Explicitly passed settings (highest priority)
+        2. Custom JSON file (configs/settings.json)
+        3. .env file
+        4. Environment variables
+        5. Secrets directory (lowest priority)
+        """
+        return (
+            init_settings,           # First, use explicitly passed settings (highest priority)
+            custom_settings_source,  # Then, read from the custom JSON file
+            dotenv_settings,         # Then, read from .env file
+            env_settings,            # Next, read from environment variables
+            file_secret_settings,    # Finally, read from the secrets directory (lowest priority)
+        )

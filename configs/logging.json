@@ -1,0 +1,4 @@
+{
+    "level": "DEBUG",
+    "format": "%(levelname)s: %(message)s"
+  }

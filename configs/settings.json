@@ -1,8 +1,14 @@
 {
+  "logging": {
+    "config_path": "configs/logging.json"
+  },
   "portfolio": {
-    "config_dir": "configs/portfolios",
+    "config_dir": "configs/portfolios"
   },
   "sessions": {
-    "config_dir": "configs/sessions",
+    "config_dir": "configs/sessions"
+  },
+  "strategies": {
+    "config_dir": "configs/strategies"
   }
-} 
+}
