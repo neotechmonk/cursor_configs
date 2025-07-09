@@ -60,7 +60,12 @@ def settings_config_file(tmp_path: Path, logging_config_file: Path) -> Path:
 
 def test_app_container_initialises_logger(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, settings_config_file: Path):
     """Test that AppContainer initialises logging using config path and returns logger instance."""
-    monkeypatch.setenv("APP_SETTINGS_PATH", str(settings_config_file))
+    # Change to the temporary directory so relative paths work specifically for logging.json
+    monkeypatch.chdir(tmp_path)
+    
+    # Set the settings path relative to the temp directory
+    relative_settings_path = settings_config_file.relative_to(tmp_path)
+    monkeypatch.setenv("APP_SETTINGS_PATH", str(relative_settings_path))
 
     # Instantiate and initialise
     container = AppContainer()

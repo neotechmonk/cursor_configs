@@ -7,28 +7,24 @@ from pydantic import BaseModel, model_validator
 
 
 class LoggingSettings(BaseModel):
-    #Defaults 
-    level: Literal["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"] = "WARN"
-    format: str = "%(asctime)s - %(levelname)s - %(message)s"
-
-    #Configurable overrides
     config_path: Optional[Path] = None
-    dict_config: Optional[dict[str, Any]] = None
 
-    @model_validator(mode="after")
-    def load_from_file(self) -> "LoggingSettings":
-        if self.config_path and self.config_path.exists():
-            loaded_dict = json.loads(self.config_path.read_text())
-            self.dict_config = loaded_dict
+def load_logging_config(config_path: Path) -> None:
+    """
+    Load and apply logging configuration from a JSON file if the file exists and is valid.
 
-            # Update the default attributes
-            self.level = loaded_dict.get("root", {}).get("level", self.level)
-            self.format = loaded_dict.get("formatters", {}).get("default", {}).get("format", self.format)
-        return self
+    Parameters:
+        config_path (Path): Path to the logging configuration JSON file.
+    """
+    if not config_path or not config_path.exists():
+        logging.basicConfig(level=logging.INFO)
+        logging.getLogger(__name__).warning(f"No logging config found at {config_path}. Using default config.")
+        return
 
-
-def configure_logging(settings: LoggingSettings):
-    if settings.dict_config:
-        logging.config.dictConfig(settings.dict_config)
-    else:
-        logging.basicConfig(level="INFO")  # fallback if no config
+    try:
+        with config_path.open("r", encoding="utf-8") as f:
+            config = json.load(f)
+        logging.config.dictConfig(config)
+    except (OSError, json.JSONDecodeError, ValueError, TypeError) as e:
+        logging.basicConfig(level=logging.INFO)
+        logging.getLogger(__name__).exception(f"Failed to load logging config from {config_path}. Using default config. Error: {e}")

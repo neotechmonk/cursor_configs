@@ -4,7 +4,7 @@ import logging
 
 from dependency_injector import containers, providers
 
-from core.app.logging import configure_logging
+from core.app.logging import  load_logging_config
 from core.app.settings import AppSettings
 from core.data_provider.container import DataProviderContainer
 from core.portfolio.container import PortfolioContainer
@@ -25,8 +25,8 @@ class AppContainer(containers.DeclarativeContainer):
     
     # Shared resources
     logging_config = providers.Resource(
-        configure_logging,
-        settings=settings.provided.logging,  # Access the actual LoggingSettings object
+        load_logging_config,
+        config_path=settings.provided.logging.config_path,
     )
 
     logger = providers.Factory(logging.getLogger, name="core")
