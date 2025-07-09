@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from core.data_provider.protocol import DataProviderProtocol
 from core.data_provider.provider import DataProviderService
+from core.data_provider.settings import DataProviderMetadata
 from util.custom_cache import ScopedCacheView, WatchedCache
 
 
@@ -47,10 +48,10 @@ def test_load_data_provider_by_name_happy_path(dummy_config_file):
     service = DataProviderService(config_dir=dummy_config_file.parent, cache=cache)
 
     service.registry = {
-        "dummy": (
-            DummyRawConfig,
-            DummyTargetConfig,
-            DummyProvider
+        "dummy": DataProviderMetadata(
+            raw_config=DummyRawConfig,
+            target_config=DummyTargetConfig,
+            provider_class=DummyProvider
         )
     }
 
