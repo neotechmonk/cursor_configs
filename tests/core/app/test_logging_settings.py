@@ -2,8 +2,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from core.app.logging import LoggingSettings, load_logging_config
 
 

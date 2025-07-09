@@ -1,17 +1,18 @@
 """Tests for Yahoo Finance price feed provider."""
 
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-import yfinance as yf
+import requests
+from curl_cffi.requests.exceptions import DNSError
 
 from core.data_provider.config import PricefeedTimeframeConfig
 from core.data_provider.error import SymbolError, TimeframeError
 from core.data_provider.resampler import ResampleStrategy
 from core.data_provider.yahoo import YahooFinanceConfig, YahooFinanceProvider
-from core.time import CustomTimeframe, TimeframeUnit
+from core.time import CustomTimeframe
 
 
 @pytest.fixture
@@ -280,7 +281,26 @@ def test_yahoo_provider_with_api_key(mock_ticker_class, yahoo_time_config):
 
 
 # Live tests (will be skipped if no internet connection)
+def check_yahoo_connectivity():
+    """Check if Yahoo Finance is reachable."""
+    urls_to_test = [
+        "https://finance.yahoo.com",
+        "https://query1.finance.yahoo.com"
+    ]
+    
+    for url in urls_to_test:
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                return True
+        except ( requests.RequestException, DNSError , Exception) :
+            continue
+    return False
+    
+
 @pytest.mark.live
+@pytest.mark.skipif(
+    not check_yahoo_connectivity(), reason="Internet connection required to reach yahoo.com")
 def test_yahoo_provider_live_validation():
     """Test Yahoo Finance provider with live data (requires internet)."""
     config = YahooFinanceConfig(
@@ -351,8 +371,6 @@ def test_yahoo_provider_live_data():
     assert 'close' in df.columns
     assert 'volume' in df.columns
     
-
-
 
 @pytest.mark.live
 def test_yahoo_provider_live_error_handling():

@@ -5,11 +5,6 @@ from typing import Dict, Type, Union
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings
 
-from core.data_provider.providers.csv import (
-    CSVPriceFeedConfig,
-    CSVPriceFeedProvider,
-    RawCSVPriceFeedConfig,
-)
 from core.data_provider.protocol import DataProviderProtocol
 
 

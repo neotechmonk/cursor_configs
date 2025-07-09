@@ -7,8 +7,8 @@ import pandas as pd
 import pytest
 
 from core.data_provider.config import PricefeedTimeframeConfig
-from core.data_provider.providers.csv import CSVPriceFeedConfig, CSVPriceFeedProvider
 from core.data_provider.error import SymbolError, TimeframeError
+from core.data_provider.providers.csv import CSVPriceFeedConfig, CSVPriceFeedProvider
 from core.data_provider.resampler import ResampleStrategy
 from core.time import CustomTimeframe, TimeframeUnit
 
