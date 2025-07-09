@@ -18,6 +18,11 @@
         "raw_config": "core.data_provider.providers.csv.RawCSVPriceFeedConfig",
         "target_config": "core.data_provider.providers.csv.CSVPriceFeedConfig",
         "provider_class": "core.data_provider.providers.csv.CSVPriceFeedProvider"
+      },
+      "yahoo": {
+        "raw_config": "core.data_provider.yahoo.RawYahooFinanceConfig",
+        "target_config": "core.data_provider.yahoo.YahooFinanceConfig",
+        "provider_class": "core.data_provider.yahoo.YahooFinanceProvider"
       }
     }
   }

@@ -27,6 +27,10 @@ pythonpath = [
   # ".",
   "src",
 ]
+markers = [
+    "live: marks tests with live objects. E.g. Yahoo Finance (deselect with '-m \"not live\"')",
+    "serial",
+]
 
 [tool.ruff]
 fix = true
