@@ -10,8 +10,8 @@ from curl_cffi.requests.exceptions import DNSError
 
 from core.data_provider.config import PricefeedTimeframeConfig
 from core.data_provider.error import SymbolError, TimeframeError
-from core.data_provider.resampler import ResampleStrategy
 from core.data_provider.providers.yahoo import YahooFinanceConfig, YahooFinanceProvider
+from core.data_provider.resampler import ResampleStrategy
 from core.time import CustomTimeframe
 
 
