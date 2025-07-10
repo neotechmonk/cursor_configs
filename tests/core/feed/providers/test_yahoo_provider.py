@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import pytest
 
-from core.data_provider.yahoo import YahooFinanceConfig, YahooFinanceProvider
+from core.data_provider.providers.yahoo import YahooFinanceConfig, YahooFinanceProvider
 from core.feed.config import PricefeedTimeframeConfig
 from src.core.feed.error import ResampleStrategy, SymbolError, TimeframeError
 from src.core.time import CustomTimeframe
