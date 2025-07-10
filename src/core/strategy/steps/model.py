@@ -1,3 +1,4 @@
+from collections import Counter
 from enum import StrEnum
 from typing import Dict, Optional
 
@@ -57,17 +58,9 @@ class StrategyStepDefinition(BaseModel):
             return v
     
     @model_validator(mode="after")
-    def check_duplicate_input_sources(self) -> "StrategyStepDefinition":
-        seen = {}
-        for param_name, binding in self.input_bindings.items():
-            key = binding.mapping
-            if key in seen:
-                other_source = seen[key]
-                if other_source != binding.source:
-                    raise ValueError(
-                        f"Input parameter '{param_name}' has conflicting sources for '{key}': "
-                        f"{binding.source} vs {other_source}"
-                    )
-            else:
-                seen[key] = binding.source
+    def check_duplicate_input_mappings(self) -> "StrategyStepDefinition":
+        mappings = [binding.mapping for binding in self.input_bindings.values()]
+        duplicates = [item for item, count in Counter(mappings).items() if count > 1]
+        if duplicates:
+            raise ValueError(f"Duplicate input mappings found: {duplicates}")
         return self

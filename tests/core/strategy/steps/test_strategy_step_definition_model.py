@@ -48,7 +48,7 @@ def test_strategy_step_definition_happy_path():
 
 
 def test_strategy_step_definition_conflicting_sources_raises_error():
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError, match="Duplicate input mappings found"):
         StrategyStepDefinition(
             id="conflict_step",
             function_path="some_module.some_function",
@@ -58,5 +58,15 @@ def test_strategy_step_definition_conflicting_sources_raises_error():
             },
             output_bindings={}
         )
+
+    with pytest.raises(ValueError, match="Duplicate input mappings found"):
+        StrategyStepDefinition(
+            id="conflict_step",
+            function_path="some_module.some_function",
+            input_bindings={
+                "param1_from_runtime": StrategyStepDefinition.InputBinding(source="runtime", mapping="shared_key"),
+                "param2_from_runtime": StrategyStepDefinition.InputBinding(source="runtime", mapping="shared_key"),
+            },
+            output_bindings={}
+        )
     
-    assert "conflicting sources for 'shared_key'" in str(exc_info.value)
