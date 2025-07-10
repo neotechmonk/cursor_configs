@@ -23,7 +23,7 @@ class PricefeedTimeframeConfig(BaseModel):
     
     supported_timeframes:  Set[Annotated[CustomTimeframe, PlainValidator(validate_timeframe)]]
     native_timeframe: Annotated[CustomTimeframe, PlainValidator(validate_timeframe)]
-    resample_strategy: ResampleStrategy
+    resample_strategy: ResampleStrategy # FIXME : change to  ResamplerProtocol  and adjust duck typing in tests
 
 
 
