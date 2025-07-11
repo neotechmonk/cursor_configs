@@ -1,12 +1,10 @@
-from typing import Dict
-
 from core.strategy.model import RawStrategyConfig, StrategyConfig, StrategyStepInstance
-from core.strategy.steps.model import StrategyStepDefinition
+from core.strategy.steps.service import StrategyStepService
 
 
 def hydrate_strategy_config(
     raw_config: RawStrategyConfig,
-    step_registry: Dict[str, StrategyStepDefinition]
+    steps_service: StrategyStepService
 ) -> StrategyConfig:
     """
     Convert RawStrategyConfig into fully hydrated StrategyConfig with references resolved.
@@ -19,9 +17,9 @@ def hydrate_strategy_config(
     # First pass: build StrategyStepInstance WITHOUT reevaluates
     instance_map = {}
     for raw_step in raw_config.steps:
-        definition = step_registry.get(raw_step.id)
+        definition = steps_service.get(raw_step.id)
         if not definition:
-            raise ValueError(f"Step definition with id '{raw_step.id}' not found in registry")
+            raise ValueError(f"Step definition with id '{raw_step.id}' not found in StrategyStepService")
 
         instance = StrategyStepInstance(
             id=definition,
