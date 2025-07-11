@@ -23,7 +23,7 @@ class StrategyService:
             raw_dict["name"] = name  
             raw_config = RawStrategyConfig(**raw_dict)
             hydrated = self.model_hydration_fn(raw_config, self.steps_registry)
-            return Strategy(hydrated)
+            return Strategy(config=hydrated)
 
     def get(self, name: str) -> StrategyProtocol:
         if not (strategy := self.cache.get(name)):
