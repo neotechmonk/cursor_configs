@@ -44,39 +44,13 @@ class StrategyConfig(BaseModel):
     Raw representation of a strategy loaded from YAML.
     """
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
-
     name: Optional[str] = None  # Injected after loading if needed
     steps: List[StrategyStepInstance]
 
 
 StrategyStepInstance.model_rebuild()
 
-# class StrategyConfig(BaseModel):
-#     model_config = ConfigDict(
-#         validate_assignment=True,
-#         extra='forbid'
-#     )
-    
-#     name: str
-#     timeframes: Union[PricefeedTimeframeConfig, dict]
-#     data_dir: str
-#     file_pattern: str = "*.csv"
-#     date_format: str = "%Y-%m-%d %H:%M:%S"
-    
-#     @field_validator('timeframes', mode='before')
-#     @classmethod
-#     def validate_timeframes(cls, v):
-#         if isinstance(v, dict):
-#             return PricefeedTimeframeConfig(**v)
-#         return v
 
-
-# def resolve_csv_pricefeed_config(raw: RawCSVPriceFeedConfig) -> CSVPriceFeedConfig:
-#     warnings.warn("resolve_csv_pricefeed_config is deprecated. Use CSVPriceFeedConfig model validator instead.")
-#     return CSVPriceFeedConfig(
-#         name=raw.name,
-#         data_dir=raw.data_dir,
-#         file_pattern=raw.file_pattern,
-#         date_format=raw.date_format,
-#         timeframes=PricefeedTimeframeConfig(**raw.timeframes)
-#     )
+class Strategy(BaseModel):
+    """Implements the StrategyProtocol"""
+    config: StrategyConfig

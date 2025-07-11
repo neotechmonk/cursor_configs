@@ -6,7 +6,7 @@ from core.strategy.hydration import hydrate_strategy_config
 from core.strategy.model import RawStrategyConfig, Strategy, StrategyConfig
 from core.strategy.protocol import StrategyProtocol
 from core.strategy.steps.service import StrategyStepService
-from loaders.generic import load_yaml_config
+from util.yaml_config_loader import load_yaml_config
 from util.custom_cache import Cache
 
 

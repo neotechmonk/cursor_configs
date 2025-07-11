@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from core.strategy.model import RawStrategyConfig, RawStrategyStepInstance
+from core.strategy.model import RawStrategyConfig
 
 
 @pytest.fixture

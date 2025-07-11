@@ -14,7 +14,7 @@ from core.sessions.symbol import (
     SymbolConfigModel,
     resolve_symbol_config_from_raw_model,
 )
-from loaders.generic import load_yaml_config
+from util.yaml_config_loader import load_yaml_config
 
 
 class TradingSessionSettings(BaseSettings):

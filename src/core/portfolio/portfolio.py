@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings
 
 from core.portfolio.protocol import PortfolioProtocol
-from loaders.generic import load_yaml_config
+from util.yaml_config_loader import load_yaml_config
 
 if TYPE_CHECKING:
     from core.sessions.protocols import TradingSessionProtocol

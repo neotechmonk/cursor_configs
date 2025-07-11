@@ -3,14 +3,13 @@ from pathlib import Path
 import yaml
 
 from core.strategy.steps.model import StrategyStepDefinition
-from loaders.generic import load_yaml_config
+from util.yaml_config_loader import load_yaml_config
 
 CONFIG_PATH = Path("configs/strategies/_steps/strategy_steps.yaml")
 
+
 # -------- Integration Test --------
-
-
-def test_strategy_step_dedefinition_sample(tmp_path):
+def test_strategy_step_definition_sample(tmp_path):
     # Sample YAML content simulating a user-defined strategy file
     yaml_content = """
     - id: detect_trend

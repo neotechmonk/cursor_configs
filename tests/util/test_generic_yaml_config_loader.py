@@ -5,11 +5,13 @@
 import pytest
 import yaml
 from pydantic import BaseModel, ValidationError
-from loaders.generic import load_yaml_config
+
+from util.yaml_config_loader import load_yaml_config
 
 # =============================================================================
 # TEST CONFIG CLASSES
 # =============================================================================
+
 
 class SimpleConfig(BaseModel):
     """Simple test configuration."""

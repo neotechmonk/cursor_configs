@@ -3,7 +3,7 @@ from typing import Dict
 
 from core.data_provider.protocol import DataProviderProtocol
 from core.data_provider.settings import DataProviderMetadata
-from loaders.generic import load_yaml_config
+from util.yaml_config_loader import load_yaml_config
 from util.custom_cache import Cache
 
 
