@@ -155,4 +155,4 @@ def test_strategy_step_executor_conflicting_input_sources_raises_error(
             function_loader=mock_loader,
         ).execute()
 
-    # assert "Duplicate input mapping found in both context and config: 'shared_key'" in str(exc_info.value)
+    assert "Duplicate input mappings found" in str(exc_info.value)
