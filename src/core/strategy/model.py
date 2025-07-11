@@ -49,6 +49,8 @@ class StrategyConfig(BaseModel):
     steps: List[StrategyStepInstance]
 
 
+StrategyStepInstance.model_rebuild()
+
 # class StrategyConfig(BaseModel):
 #     model_config = ConfigDict(
 #         validate_assignment=True,

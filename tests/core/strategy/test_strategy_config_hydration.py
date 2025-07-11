@@ -1,12 +1,13 @@
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 from core.strategy.hydration import hydrate_strategy_config
 from core.strategy.model import (
     RawStrategyConfig,
+    StrategyConfig,
     StrategyStepDefinition,
     StrategyStepInstance,
-    StrategyConfig,
 )
 
 

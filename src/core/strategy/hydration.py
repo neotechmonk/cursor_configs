@@ -2,22 +2,15 @@ from core.strategy.model import RawStrategyConfig, StrategyConfig, StrategyStepI
 from core.strategy.steps.service import StrategyStepService
 
 
-def hydrate_strategy_config(
-    raw_config: RawStrategyConfig,
-    steps_service: StrategyStepService
-) -> StrategyConfig:
-    """
-    Convert RawStrategyConfig into fully hydrated StrategyConfig with references resolved.
+def hydrate_strategy_config(raw_config: RawStrategyConfig, step_service: StrategyStepService) -> StrategyConfig:
+    """Convert raw YAML strategy config into a fully hydrated, linked StrategyConfig."""
 
-    This hydrates:
-    - `id` → StrategyStepDefinition
-    - `reevaluates` → List[StrategyStepInstance]
-    """
+    # First pass: build all step instances with placeholder reevaluates
+    step_instances = []
+    step_lookup = {}
 
-    # First pass: build StrategyStepInstance WITHOUT reevaluates
-    instance_map = {}
     for raw_step in raw_config.steps:
-        definition = steps_service.get(raw_step.id)
+        definition = step_service.get(raw_step.id)
         if not definition:
             raise ValueError(f"Step definition with id '{raw_step.id}' not found in StrategyStepService")
 
@@ -26,21 +19,16 @@ def hydrate_strategy_config(
             description=raw_step.description,
             config_bindings=raw_step.config_bindings,
             runtime_bindings=raw_step.runtime_bindings,
-            reevaluates=[]  # To be populated in second pass
+            reevaluates=[],  # temporarily empty
         )
-        instance_map[raw_step.id] = instance
+        step_instances.append(instance)
+        step_lookup[definition.id] = instance
 
-    # Second pass: resolve reevaluates to StrategyStepInstance references
-    for raw_step in raw_config.steps:
-        current_instance = instance_map[raw_step.id]
-        current_instance.reevaluates = []
+    # Second pass: resolve reevaluate references to actual instances
+    for raw_step, instance in zip(raw_config.steps, step_instances):
         for reevaluate_id in raw_step.reevaluates:
-            reevaluated_instance = instance_map.get(reevaluate_id)
-            if not reevaluated_instance:
+            if reevaluate_id not in step_lookup:
                 raise ValueError(f"Reevaluated step id '{reevaluate_id}' not found in strategy steps")
-            current_instance.reevaluates.append(reevaluated_instance)
+            instance.reevaluates.append(step_lookup[reevaluate_id])
 
-    return StrategyConfig(
-        name=raw_config.name,
-        steps=list(instance_map.values())
-    )
+    return StrategyConfig(name=raw_config.name, steps=step_instances)
