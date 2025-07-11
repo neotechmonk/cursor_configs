@@ -16,14 +16,14 @@
 #     - Values are config keys to resolve from static config
 
 - id: detect_trend
-  function: "src.utils.get_trend"
+  function_path: "src.utils.get_trend"
   input_bindings: {}
   output_bindings:
     trend:
       mapping: "_"
 
 - id: find_extreme
-  function: "src.utils.is_extreme_bar"
+  function_path: "src.utils.is_extreme_bar"
   input_bindings:
     trend:
       source: runtime
@@ -33,7 +33,7 @@
       mapping: "_"
 
 - id: validate_pullback
-  function: "src.utils.is_bars_since_extreme_pivot_valid"
+  function_path: "src.utils.is_bars_since_extreme_pivot_valid"
   input_bindings:
     major_swing_high_idx:
       source: runtime
@@ -43,7 +43,7 @@
       mapping: "_"
 
 - id: check_fib
-  function: "src.utils.is_within_fib_extension"
+  function_path: "src.utils.is_within_fib_extension"
   input_bindings:
     trend:
       source: runtime
@@ -59,7 +59,7 @@
       mapping: "_"
 
 - id: detect_wrb
-  function: "src.steps.technical.wrb.detect_wide_range_bar"
+  function_path: "src.steps.technical.wrb.detect_wide_range_bar"
   input_bindings: {}
   output_bindings:
     strategy_wrb_detected_wide_range_bar:
