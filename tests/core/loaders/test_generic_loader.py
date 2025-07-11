@@ -2,17 +2,14 @@
 
 """Tests for the generic YAML configuration loader."""
 
-
 import pytest
 import yaml
 from pydantic import BaseModel, ValidationError
-
 from loaders.generic import load_yaml_config
 
 # =============================================================================
 # TEST CONFIG CLASSES
 # =============================================================================
-
 
 class SimpleConfig(BaseModel):
     """Simple test configuration."""
@@ -71,26 +68,19 @@ def nested_yaml_file(tmp_path):
 
 
 @pytest.fixture
-def timeframe_yaml_file(tmp_path):
-    """Create a timeframe YAML file for testing."""
-    yaml_file = tmp_path / "timeframe_config.yaml"
-    
-    config_data = {
-        "name": "timeframe_test",
-        "supported_timeframes": ["1m", "5m", "15m", "30m", "1h", "4h", "1d"],
-        "native_timeframe": "1m",
-        "resample_strategy": {
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "sum"
-        }
-    }
-    
+def list_yaml_file(tmp_path):
+    """Create a YAML file that contains a list of simple configs."""
+    yaml_file = tmp_path / "list_config.yaml"
+
+    config_data = [
+        {"name": "config_a", "value": 1, "enabled": True},
+        {"name": "config_b", "value": 2, "enabled": False},
+        {"name": "config_c", "value": 3, "enabled": True}
+    ]
+
     with open(yaml_file, 'w') as f:
         yaml.dump(config_data, f)
-    
+
     return yaml_file
 
 
@@ -129,6 +119,15 @@ def test_load_yaml_config_with_nested_validation(nested_yaml_file):
     assert config.settings.value == 100
     assert config.settings.enabled is False
     assert config.tags == ["tag1", "tag2", "tag3"]
+
+
+def test_load_yaml_config_with_list_of_models(list_yaml_file):
+    """Test loading YAML config that contains a list of models."""
+    config_list = load_yaml_config(list_yaml_file, SimpleConfig)
+
+    assert isinstance(config_list, list)
+    assert all(isinstance(item, SimpleConfig) for item in config_list)
+    assert [c.name for c in config_list] == ["config_a", "config_b", "config_c"]
 
 
 # =============================================================================
