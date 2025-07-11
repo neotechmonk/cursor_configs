@@ -1,40 +1,41 @@
-class DataProviderService:
-    def __init__(self, config_dir: Path, cache: Cache, registry: Dict[str, DataProviderMetadata] = None):
-        self.config_dir = config_dir
-        self.cache: Cache = cache
-        self.registry: Dict[str, DataProviderMetadata] = registry or {}
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Callable
 
-    def _load_data_provider_by_name(self, name: str) -> DataProviderProtocol:
-        """
-        Load a data provider by name.
-        """
-        try:
-            metadata = self.registry[name]
-        except KeyError:
-            raise ValueError(f"Unsupported data provider: {name}")
+from core.strategy.hydration import hydrate_strategy_config
+from core.strategy.model import RawStrategyConfig, Strategy, StrategyConfig
+from core.strategy.protocol import StrategyProtocol
+from core.strategy.steps.service import StrategyStepService
+from loaders.generic import load_yaml_config
+from util.custom_cache import Cache
 
-        raw_model = load_yaml_config(self.config_dir / f"{name}.yaml", metadata.raw_config)
-        raw_model.name = name
 
-        target_model = metadata.target_config(**raw_model.model_dump())
-        provider = metadata.provider_class(config=target_model)
+@dataclass
+class StrategyService:
+    config_dir:Path 
+    cache: Cache  = field(default_factory=Cache)
+    model_hydration_fn: Callable[[RawStrategyConfig, StrategyStepService], StrategyConfig] = field(default_factory=hydrate_strategy_config)
+    steps_registry: StrategyStepService = field(default_factory=StrategyStepService)
 
-        if not isinstance(provider, DataProviderProtocol):
-            raise TypeError(f"{metadata.provider_class.__name__} must implement DataProviderProtocol")
+    def _load_strategy_by_name(self, name: str) -> StrategyProtocol:
+            path = self.config_dir / f"{name}.yaml"
+            raw_dict = load_yaml_config(path)
+            raw_dict["name"] = name  
+            raw_config = RawStrategyConfig(**raw_dict)
+            hydrated = self.model_hydration_fn(raw_config, self.steps_registry)
+            return Strategy(hydrated)
 
-        return provider
+    def get(self, name: str) -> StrategyProtocol:
+        if not (strategy := self.cache.get(name)):
+            strategy = self._load_strategy_by_name(name)
+            self.cache.add(name, strategy)
+        return strategy
 
-    def get(self, name: str) -> DataProviderProtocol:
-        if not (provider := self.cache.get(name)):
-            provider = self._load_data_provider_by_name(name)
-            self.cache.add(name, provider)
-        return provider
-
-    def get_all(self) -> list[DataProviderProtocol]:
+    def get_all(self) -> list[StrategyProtocol]:
         for path in self.config_dir.glob("*.yaml"):
             name = path.stem
             if not self.cache.get(name):
-                self.cache.add(name, self._load_data_provider_by_name(name))
+                self.cache.add(name, self._load_strategy_by_name(name))
         return list(self.cache.get_all())
 
     def clear_cache(self) -> None:
