@@ -1,25 +1,51 @@
+
 import pytest
 
 from core.strategy.steps.executor import StrategyStepExecutor
 from core.strategy.steps.model import StrategyStepDefinition
 
+@pytest.skip(reason="StrategyStepExecutor is deprecated. Tests implemented in test_strategy_step_executor_v2.py", allow_module_level=True)
 # -------- Fixtures --------
+
+
+class MockRuntimeContext:
+    """Mock implementation of RuntimeContextProtocol."""
+    def __init__(self, data: dict):
+        self._data = data
+    
+    def get(self, key: str):
+        return self._data[key]
+    
+    def has(self, key: str) -> bool:
+        return key in self._data
+
+
+class MockStrategyConfig:
+    """Mock implementation of StrategyStepConfigProtocol."""
+    def __init__(self, data: dict):
+        self._data = data
+    
+    def get(self, key: str):
+        return self._data[key]
+    
+    def has(self, key: str) -> bool:
+        return key in self._data
 
 
 @pytest.fixture
 def runtime_context():
-    return {
+    return MockRuntimeContext({
         "runtime_value1": 100,
         "runtime_value2": 200
-    }
+    })
 
 
 @pytest.fixture
 def static_config():
-    return {
+    return MockStrategyConfig({
         "config_value1": "threshold-A",
         "config_value2": "threshold-B"
-    }
+    })
 
 
 @pytest.fixture
@@ -111,8 +137,8 @@ def test_strategy_step_executor_missing_input_key_raises_error(
     mock_loader
 ):
     # Modify context and config to remove required key
-    incomplete_context = {"runtime_value2": 200}  # missing runtime_value1
-    incomplete_config = {"config_value2": "threshold-B"}  # missing config_value1
+    incomplete_context = MockRuntimeContext({"runtime_value2": 200})  # missing runtime_value1
+    incomplete_config = MockStrategyConfig({"config_value2": "threshold-B"})  # missing config_value1
 
     executor = StrategyStepExecutor(
         step=step_with_direct_return,
@@ -121,7 +147,6 @@ def test_strategy_step_executor_missing_input_key_raises_error(
         function_loader=mock_loader,
     )
 
-    import pytest
     with pytest.raises(KeyError) as exc_info:
         executor.execute()
 
@@ -131,21 +156,19 @@ def test_strategy_step_executor_missing_input_key_raises_error(
 def test_strategy_step_executor_conflicting_input_sources_raises_error(
     mock_loader
 ):
-
     with pytest.raises(ValueError) as exc_info:
-
         step_conflict = StrategyStepDefinition(
-        id="conflict_step",
-        function_path="mock_module.mock_step",
-        input_bindings={
-            "param1": StrategyStepDefinition.InputBinding(source="runtime", mapping="shared_key"),
-            "param2": StrategyStepDefinition.InputBinding(source="config", mapping="shared_key"),
-        },
-        output_bindings={}
-    )
+            id="conflict_step",
+            function_path="mock_module.mock_step",
+            input_bindings={
+                "param1": StrategyStepDefinition.InputBinding(source="runtime", mapping="shared_key"),
+                "param2": StrategyStepDefinition.InputBinding(source="config", mapping="shared_key"),
+            },
+            output_bindings={}
+        )
 
-        context = {"shared_key": 123}
-        config = {"shared_key": 456}
+        context = MockRuntimeContext({"shared_key": 123})
+        config = MockStrategyConfig({"shared_key": 456})
 
         # NOTE Error caught at the StrategyStepDefinition level. Never makes it here
         StrategyStepExecutor(
