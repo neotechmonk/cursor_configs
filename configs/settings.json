@@ -9,7 +9,10 @@
     "config_dir": "configs/sessions"
   },
   "strategy": {
-    "config_dir": "configs/strategies"
+    "config_dir": "configs/strategies",
+    "steps_settings": {
+      "config_path": "configs/strategies/_steps/strategy_steps.yaml"
+    }
   },
   "data_provider": {
     "config_dir": "configs/providers/data",

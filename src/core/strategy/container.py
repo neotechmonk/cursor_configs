@@ -13,7 +13,7 @@ class StrategyContainer(containers.DeclarativeContainer):
     """Container for managing strategy dependencies."""
 
     # Configuration dependency (injected externally)
-    settings = providers.Dependency(instance_of=StrategySettings, default=StrategySettings())
+    settings = providers.Dependency(instance_of=StrategySettings)
 
     cache_backend = providers.Singleton(WatchedCache)
     # -- Isolates cache for the data provider
@@ -30,6 +30,7 @@ class StrategyContainer(containers.DeclarativeContainer):
     # Now you can call init_resources on this instance
     steps_container = providers.Container(
         StrategyStepContainer,
+        settings=providers.Callable(lambda s: s.steps_settings, settings),
     )
 
     # Ensure StrategyStepContainer resources are initialised
