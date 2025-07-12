@@ -3,8 +3,8 @@ from dependency_injector import containers, providers
 from core.strategy.steps.model import StrategyStepDefinition
 from core.strategy.steps.service import StrategyStepService
 from core.strategy.steps.settings import StrategyStepSettings
-from util.yaml_config_loader import load_yaml_config
 from util.custom_cache import ScopedCacheView, WatchedCache
+from util.yaml_config_loader import load_yaml_config
 
 NAMESPACE = "strategy_steps"
 

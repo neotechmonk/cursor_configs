@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from core.strategy.container import StrategyContainer
 from core.strategy.model import Strategy, StrategyConfig

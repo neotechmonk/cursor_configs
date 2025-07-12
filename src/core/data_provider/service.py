@@ -3,8 +3,8 @@ from typing import Dict
 
 from core.data_provider.protocol import DataProviderProtocol
 from core.data_provider.settings import DataProviderMetadata
-from util.yaml_config_loader import load_yaml_config
 from util.custom_cache import Cache
+from util.yaml_config_loader import load_yaml_config
 
 
 class DataProviderService:
