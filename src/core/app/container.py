@@ -7,6 +7,7 @@ from dependency_injector import containers, providers
 from core.app.logging import load_logging_config
 from core.app.settings import AppSettings
 from core.data_provider.container import DataProviderContainer
+from core.portfolio.container import PortfolioContainer
 from core.strategy.container import StrategyContainer
 
 
@@ -36,13 +37,13 @@ class AppContainer(containers.DeclarativeContainer):
         DataProviderContainer,
         settings=settings.provided.data_provider  # Fixed: was portfolio, should be data_provider
     )
-
+    
     strategy = providers.Container(
         StrategyContainer,
         settings=settings.provided.strategy  
     )
 
-    # portfolio = providers.Container(
-    #     PortfolioContainer,
-    #     settings=settings.provided.portfolio  # Access the actual PortfolioSettings object
-    # )
+    portfolio = providers.Container(
+        PortfolioContainer,
+        settings=settings.provided.portfolio  
+    )

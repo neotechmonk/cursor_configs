@@ -32,6 +32,12 @@ def main():
     strategies = strategy_container.service().get_all()
     print(f"Available strategies: {[strategy.config.name for strategy in strategies]}")
 
+    # Portfolio service
+    portfolio_container = container.portfolio
+    # portfolio_container.init_resources()
+    portfolio = portfolio_container.service()
+    print(f"Available portfolios: {[portfolio.name for portfolio in portfolio.get_all()]}")
+
     logger.info("Shutting down")
 
 if __name__ == "__main__":
