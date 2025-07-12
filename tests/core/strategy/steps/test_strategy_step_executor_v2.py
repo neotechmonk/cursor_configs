@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from core.strategy.steps.executor import (
-    StrategyFunctionResolver,
+    StrategyStepFunctionResolver,
     bind_params,
     execute,
     map_results,
@@ -126,7 +126,7 @@ def test_strategy_function_resolver_direct_return(
     mock_function_loader.return_value = mock_function
     
     # Create resolver
-    resolver = StrategyFunctionResolver(
+    resolver = StrategyStepFunctionResolver(
         step_definition=simple_step,
         config_data=simple_config,
         runtime_data=simple_runtime,
@@ -159,7 +159,7 @@ def test_strategy_function_resolver_explicit_mapping(
     mock_function_loader.return_value = mock_function
     
     # Create resolver
-    resolver = StrategyFunctionResolver(
+    resolver = StrategyStepFunctionResolver(
         step_definition=simple_step_with_mapping,
         config_data=simple_config,
         runtime_data=simple_runtime,
@@ -290,7 +290,7 @@ def test_strategy_function_resolver_mixed_mappings(
     }
     mock_function_loader.return_value = mock_function
     
-    resolver = StrategyFunctionResolver(
+    resolver = StrategyStepFunctionResolver(
         step_definition=step,
         config_data=config_data,
         runtime_data=runtime_data,
@@ -312,7 +312,7 @@ def test_strategy_function_resolver_mixed_mappings(
 # @pytest.mark.skip(reason="Default function loader is not implemented")
 def test_strategy_function_resolver_default_loader():
     """Test StrategyFunctionResolver with default function loader."""
-    from core.strategy.steps.executor import StrategyFunctionResolver
+    from core.strategy.steps.executor import StrategyStepFunctionResolver
 
     # Use a function that accepts keyword arguments
     step = StrategyStepDefinition(
@@ -330,7 +330,7 @@ def test_strategy_function_resolver_default_loader():
     config_data = {}
     runtime_data = {"value_a": 1, "value_b": 2}
     
-    resolver = StrategyFunctionResolver(
+    resolver = StrategyStepFunctionResolver(
         step_definition=step,
         config_data=config_data,
         runtime_data=runtime_data
@@ -343,7 +343,7 @@ def test_strategy_function_resolver_default_loader():
 
 def test_strategy_function_resolver_no_output_bindings():
     """Test StrategyFunctionResolver with no output bindings - should return raw results."""
-    from core.strategy.steps.executor import StrategyFunctionResolver
+    from core.strategy.steps.executor import StrategyStepFunctionResolver
 
     # Step with no output bindings
     step = StrategyStepDefinition(
@@ -359,7 +359,7 @@ def test_strategy_function_resolver_no_output_bindings():
     config_data = {}
     runtime_data = {"value_a": 1, "value_b": 2}
     
-    resolver = StrategyFunctionResolver(
+    resolver = StrategyStepFunctionResolver(
         step_definition=step,
         config_data=config_data,
         runtime_data=runtime_data
@@ -372,7 +372,7 @@ def test_strategy_function_resolver_no_output_bindings():
 
 def test_strategy_function_resolver_with_output_bindings():
     """Test StrategyFunctionResolver with output bindings - should apply mapping."""
-    from core.strategy.steps.executor import StrategyFunctionResolver
+    from core.strategy.steps.executor import StrategyStepFunctionResolver
 
     # Step with output bindings
     step = StrategyStepDefinition(
@@ -391,7 +391,7 @@ def test_strategy_function_resolver_with_output_bindings():
     config_data = {}
     runtime_data = {"value_a": 1, "value_b": 2}
     
-    resolver = StrategyFunctionResolver(
+    resolver = StrategyStepFunctionResolver(
         step_definition=step,
         config_data=config_data,
         runtime_data=runtime_data
