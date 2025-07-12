@@ -32,14 +32,16 @@ class StrategyContainer(containers.DeclarativeContainer):
         StrategyStepContainer,
         settings=providers.Callable(lambda s: s.steps_settings, settings),
     )
+    model_hydration_fn = providers.Object(hydrate_strategy_config)
+    steps_registry=steps_container.provided.service()
 
     # AppContainer init will trigger this
-    # init_steps_caching = providers.Resource(steps_container.provided.init_resources)
+    init_steps_caching = providers.Resource(steps_container.provided.init_resources)
 
     service = providers.Singleton(
         StrategyService,
         config_dir=providers.Callable(lambda s: s.config_dir, settings),
         cache=scoped_cache,
-        model_hydration_fn=providers.Object(hydrate_strategy_config),        
-        steps_registry=steps_container.provided.service(), 
+        model_hydration_fn=model_hydration_fn,        
+        steps_registry=steps_registry, 
     )

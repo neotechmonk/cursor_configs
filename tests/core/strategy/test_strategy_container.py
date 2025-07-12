@@ -5,8 +5,19 @@ import pytest
 from core.strategy.container import StrategyContainer
 from core.strategy.model import Strategy, StrategyConfig
 from core.strategy.settings import StrategySettings
+from core.strategy.steps.model import StrategyStepDefinition
 
 
+@pytest.fixture
+def mock_step_registry_data():
+    return [
+        StrategyStepDefinition(
+            id="check_fib",
+            function_path="mock.module.check_fib",
+            input_bindings={},
+            output_bindings={"result": {"mapping": "_"}}
+        ).model_dump()
+    ]
 @pytest.fixture
 def fake_strategy_dict():
     return {
@@ -47,18 +58,17 @@ def mock_step_service():
     service.get_all.return_value = []
     return service
 
-
-def test_strategy_container_hydration_and_cache(tmp_path, fake_strategy_dict, mock_hydrator, mock_step_service):
-    # Create dummy strategy file
+# @pytest.mark.skip(reason="AttributeError: 'DynamicContainer' object has no attribute 'steps_registry'")
+def test_strategy_container_hydration_and_cache(tmp_path, fake_strategy_dict, mock_hydrator, mock_step_service, mock_step_registry_data):
     strategy_name = "my_strategy"
     strategy_file = tmp_path / f"{strategy_name}.yaml"
-    strategy_file.write_text("placeholder: true")  # Just to satisfy path.exists()
+    strategy_file.write_text("placeholder: true")
 
-    # Patch load_yaml_config to return our fake dict
-    with patch("core.strategy.service.load_yaml_config", return_value=fake_strategy_dict):
-        container = StrategyContainer(
-            settings=StrategySettings(config_dir=tmp_path)
-        )
+    with patch("core.strategy.service.load_yaml_config", return_value=fake_strategy_dict), \
+         patch("core.strategy.steps.container.load_yaml_config", return_value=mock_step_registry_data):
+
+        container = StrategyContainer(settings=StrategySettings(config_dir=tmp_path))
+        container.init_resources()
         container.model_hydration_fn.override(mock_hydrator)
         container.steps_registry.override(mock_step_service)
 
@@ -68,11 +78,9 @@ def test_strategy_container_hydration_and_cache(tmp_path, fake_strategy_dict, mo
         assert isinstance(strategy, Strategy)
         assert strategy.config.name == strategy_name
 
-        # Cached now
         from_cache = service.get(strategy_name)
-        assert from_cache is strategy  # Cached object
+        assert from_cache is strategy
 
-        # get_all should load and cache if missing
         service.cache.clear()
         all_strats = service.get_all()
         assert any(s.config.name == strategy_name for s in all_strats)
