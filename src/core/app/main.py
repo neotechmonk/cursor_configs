@@ -17,7 +17,6 @@ def main():
     logger.info("Application started")
 
     # Access config for further use
-    settings = container.settings()
     logger.debug("Settings loaded successfully")
 
     # Example: use a subcontainer or resource
@@ -29,7 +28,7 @@ def main():
 
     # Strategy service
     strategy_container = container.strategy
-    strategy_container.init_resources()
+    # strategy_container.init_resources()
     strategies = strategy_container.service().get_all()
     print(f"Available strategies: {[strategy.config.name for strategy in strategies]}")
 

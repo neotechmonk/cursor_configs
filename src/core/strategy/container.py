@@ -33,8 +33,8 @@ class StrategyContainer(containers.DeclarativeContainer):
         settings=providers.Callable(lambda s: s.steps_settings, settings),
     )
 
-    # Ensure StrategyStepContainer resources are initialised
-    init_steps_caching = providers.Resource(steps_container.provided.init_resources)
+    # AppContainer init will trigger this
+    # init_steps_caching = providers.Resource(steps_container.provided.init_resources)
 
     service = providers.Singleton(
         StrategyService,
