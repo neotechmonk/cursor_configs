@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 
 from core.app.container import AppContainer
+from core.strategy.steps.container import StrategyStepContainer
+from core.strategy.steps.settings import StrategyStepSettings
 
 
 def main():
@@ -21,11 +23,24 @@ def main():
     logger.debug("Settings loaded successfully")
 
     # Example: use a subcontainer or resource
+
     # Get the data provider service and list all available providers
     data_provider_service = container.data_provider.service()
     providers = data_provider_service.get_all()
     print(f"Available data providers: {[provider.name for provider in providers]}")
-    
+
+
+    # Strategy service
+    strategy_container = container.strategy
+    strategy_container.init_resources()
+    strategies = strategy_container.service().get_all()
+    print(f" Strategy Count {len(strategies)}")
+    print(f"Available strategies: {[strategy.config.name for strategy in strategies]}")
+
+
+ 
+
+
     logger.info("Shutting down")
 
 if __name__ == "__main__":

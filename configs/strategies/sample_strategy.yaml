@@ -1,35 +1,28 @@
-# Sample Strategy Configuration
-# This shows how to define a strategy using the new structure
-
 name: "Trend Following Strategy"
 steps:
-  # Step 1: Detect market trend
-  - system_step_id: detect_trend
+  - id: detect_trend
     description: "Determine the current market trend direction"
-    static_config: {}  # No static config needed
-    dynamic_config: {}  # No dynamic inputs needed for first step
+    config_bindings: {}
+    runtime_bindings: {}
 
-  # Step 2: Find extreme pivot point
-  - system_step_id: find_extreme
+  - id: find_extreme
     description: "Identify extreme pivot points in the trend"
-    static_config: {}  # No static config needed
-    dynamic_config:
-      trend: "trend"  # From detect_trend step
+    config_bindings: {}
+    runtime_bindings:
+      trend: "trend"
 
-  # Step 3: Validate pullback
-  - system_step_id: validate_pullback
+  - id: validate_pullback
     description: "Check if pullback meets criteria"
-    static_config: {}  # No static config needed
-    dynamic_config:
-      major_swing_high_idx: "extreme_bar_index"  # From find_extreme step
+    config_bindings: {}
+    runtime_bindings:
+      major_swing_high_idx: "extreme_bar_index"
 
-  # Step 4: Check Fibonacci extension
-  - system_step_id: check_fib
+  - id: check_fib
     description: "Verify if price action meets Fibonacci extension criteria"
-    static_config: {}  # No static config needed
-    dynamic_config:
-      trend: "trend"  # From detect_trend step
-      ref_swing_start_idx: "bar_index_start"  # From find_extreme step
-      ref_swing_end_idx: "bar_index_end"  # From find_extreme step
+    config_bindings: {}
+    runtime_bindings:
+      trend: "trend"
+      ref_swing_start_idx: "bar_index_start"
+      ref_swing_end_idx: "bar_index_end"
     reevaluates:
       - validate_pullback

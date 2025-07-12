@@ -8,7 +8,7 @@
   "sessions": {
     "config_dir": "configs/sessions"
   },
-  "strategies": {
+  "strategy": {
     "config_dir": "configs/strategies"
   },
   "data_provider": {

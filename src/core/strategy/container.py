@@ -13,7 +13,7 @@ class StrategyContainer(containers.DeclarativeContainer):
     """Container for managing strategy dependencies."""
 
     # Configuration dependency (injected externally)
-    settings = providers.Dependency(instance_of=StrategySettings)  # noqa: F821
+    settings = providers.Dependency(instance_of=StrategySettings, default=StrategySettings())
 
     cache_backend = providers.Singleton(WatchedCache)
     # -- Isolates cache for the data provider
@@ -27,11 +27,18 @@ class StrategyContainer(containers.DeclarativeContainer):
         config_dir=providers.Callable(lambda s: s.config_dir, settings),
         cache=scoped_cache)
 
-    steps_registry = StrategyStepContainer.service 
-    model_hydration_fn = providers.Object(hydrate_strategy_config) 
+    # Now you can call init_resources on this instance
+    steps_container = providers.Container(
+        StrategyStepContainer,
+    )
+
+    # Ensure StrategyStepContainer resources are initialised
+    init_steps_caching = providers.Resource(steps_container.provided.init_resources)
+
     service = providers.Singleton(
         StrategyService,
         config_dir=providers.Callable(lambda s: s.config_dir, settings),
         cache=scoped_cache,
-        model_hydration_fn=model_hydration_fn,
-        steps_registry=steps_registry)
+        model_hydration_fn=providers.Object(hydrate_strategy_config),        
+        steps_registry=steps_container.provided.service(), 
+    )

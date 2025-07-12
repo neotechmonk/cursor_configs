@@ -13,7 +13,7 @@ class StrategyStepContainer(containers.DeclarativeContainer):
     """Container for managing strategy step dependencies."""
 
     # Configuration dependency (injected externally)
-    settings = providers.Dependency(instance_of=StrategyStepSettings)
+    settings = providers.Dependency(instance_of=StrategyStepSettings, default=StrategyStepSettings())
 
     # Cache backend (shared)
     cache_backend = providers.Singleton(WatchedCache)
