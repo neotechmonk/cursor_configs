@@ -31,7 +31,7 @@ class StrategyStepInstance(BaseModel):
     """
     Represents an instance of a strategy step referring to a system-defined StrategyStepDefinition.
     """
-    id: StrategyStepDefinition = Field(..., description="ID matching a StrategyStepDefinition in the registry")
+    step_definition: StrategyStepDefinition = Field(..., description="ID matching a StrategyStepDefinition in the registry")
     description: Optional[str] = Field(default=None, description="Optional explanation of the step's purpose")
 
     config_bindings: Dict[str, str] = Field(default_factory=dict, description="Config-time input bindings")

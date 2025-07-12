@@ -29,8 +29,10 @@ def main():
     # Strategy service
     strategy_container = container.strategy
     # strategy_container.init_resources()
-    strategies = strategy_container.service().get_all()
-    print(f"Available strategies: {[strategy.config.name for strategy in strategies]}")
+    strategy_service = strategy_container.service()
+    print(f"Available strategies: {[strategy.config.name for strategy in strategy_service.get_all()]}")
+    main_strategy = strategy_service.get("sample_strategy")
+    print(f"Strategy steps: {[step for step in main_strategy.config.steps]}")
 
     # Portfolio service
     portfolio_container = container.portfolio

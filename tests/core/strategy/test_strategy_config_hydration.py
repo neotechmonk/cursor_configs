@@ -78,12 +78,12 @@ def test_hydrate_strategy_config_success(raw_strategy_dict, mock_step_service):
     assert hydrated.name == "Trend Following Strategy"
     assert len(hydrated.steps) == 2
 
-    check_fib = next(s for s in hydrated.steps if s.id.id == "check_fib")
-    validate_pullback = next(s for s in hydrated.steps if s.id.id == "validate_pullback")
+    check_fib = next(s for s in hydrated.steps if s.step_definition.id == "check_fib")
+    validate_pullback = next(s for s in hydrated.steps if s.step_definition.id == "validate_pullback")
 
     assert isinstance(check_fib, StrategyStepInstance)
     assert check_fib.runtime_bindings["trend"] == "trend"
-    assert check_fib.reevaluates[0] is validate_pullback
+    assert check_fib.reevaluates[0] is validate_pullback.step_definition
 
 
 def test_missing_step_definition_raises(raw_strategy_dict):
