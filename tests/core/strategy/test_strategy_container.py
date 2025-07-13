@@ -18,6 +18,8 @@ def mock_step_registry_data():
             output_bindings={"result": {"mapping": "_"}}
         ).model_dump()
     ]
+
+
 @pytest.fixture
 def fake_strategy_dict():
     return {
@@ -57,6 +59,7 @@ def mock_step_service():
     service.get.return_value = None
     service.get_all.return_value = []
     return service
+
 
 # @pytest.mark.skip(reason="AttributeError: 'DynamicContainer' object has no attribute 'steps_registry'")
 def test_strategy_container_hydration_and_cache(tmp_path, fake_strategy_dict, mock_hydrator, mock_step_service, mock_step_registry_data):

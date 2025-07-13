@@ -1,4 +1,3 @@
-import os
 import logging
 from pathlib import Path
 from textwrap import dedent
@@ -93,6 +92,7 @@ def settings_config_file(
         }}
     '''))
     return settings_path
+
 
 # @pytest.mark.skip(reason="Cause side effects for other tests")
 def test_app_container_initialises_logger(

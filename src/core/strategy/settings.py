@@ -9,5 +9,5 @@ from core.strategy.steps.settings import StrategyStepSettings
 class StrategySettings(BaseSettings):
     """Strategy-specific settings from app configuration."""
     config_dir: Path = Field(default=Path("configs/strategies"))
-    steps_settings: StrategyStepSettings 
+    steps_settings: StrategyStepSettings = Field(default_factory=StrategyStepSettings)
     
