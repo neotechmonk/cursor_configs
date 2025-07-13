@@ -1,8 +1,11 @@
+import inspect
 from collections import Counter
 from enum import StrEnum
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+from util.fn_loader import function_loader
 
 
 class StrategyStepDefinition(BaseModel):
@@ -64,3 +67,24 @@ class StrategyStepDefinition(BaseModel):
         if duplicates:
             raise ValueError(f"Duplicate input mappings found: {duplicates}")
         return self
+    
+    @model_validator(mode="after")
+    def load_and_validate_function(self) -> "StrategyStepDefinition":
+        func = function_loader(self.function_path)
+        sig = inspect.signature(func)
+
+        # Validate that all input_bindings are satisfied by function parameters
+        expected_inputs = set(self.input_bindings.keys())
+        actual_inputs = set(sig.parameters.keys())
+
+        missing = expected_inputs - actual_inputs
+        if missing:
+            raise ValueError(f"Function '{self.function_path}' missing params: {missing}")
+
+        # Store the actual function object in a private field
+        self._function = func
+        return self
+    
+    @property
+    def callable_fn(self) -> Callable:
+        return self._function
