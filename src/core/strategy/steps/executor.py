@@ -96,8 +96,9 @@ class StrategyStepFunctionResolver:
     def __call__(self) -> Dict[str, Any]:  
         resolved_input_params = bind_params(self.step_definition, self.config_data, self.runtime_data)
         step_function = self._function_loader(self.step_definition.function_path)
-        raw_results = execute(step_function, resolved_input_params)  # Use execute function
+        raw_results = execute(step_function, resolved_input_params) 
         return map_results(self.step_definition, raw_results)
+
 
 @deprecated("Use StrategyFunctionResolver instead")
 class StrategyStepExecutor:
