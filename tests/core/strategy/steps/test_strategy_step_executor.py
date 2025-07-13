@@ -4,6 +4,7 @@ import pytest
 from core.strategy.steps.executor import StrategyStepExecutor
 from core.strategy.steps.model import StrategyStepDefinition
 
+
 @pytest.skip(reason="StrategyStepExecutor is deprecated. Tests implemented in test_strategy_step_executor_v2.py", allow_module_level=True)
 # -------- Fixtures --------
 

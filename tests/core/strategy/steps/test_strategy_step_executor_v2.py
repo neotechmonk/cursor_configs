@@ -309,7 +309,7 @@ def test_strategy_function_resolver_mixed_mappings(
         "step_status": "success"
     }
 
-# @pytest.mark.skip(reason="Default function loader is not implemented")
+
 def test_strategy_function_resolver_default_loader():
     """Test StrategyFunctionResolver with default function loader."""
     from core.strategy.steps.executor import StrategyStepFunctionResolver
