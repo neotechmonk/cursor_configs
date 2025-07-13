@@ -36,7 +36,7 @@ class StrategyStepInstance(BaseModel):
 
     config_bindings: Dict[str, str] = Field(default_factory=dict, description="Config-time input bindings")
     runtime_bindings: Dict[str, str] = Field(default_factory=dict, description="Runtime input bindings")
-    reevaluates: List[StrategyStepDefinition] = Field(default_factory=list, description="Steps to re-trigger based on conditions")
+    reevaluates: List['StrategyStepInstance'] = Field(default_factory=list, description="Steps to re-trigger based on conditions")
 
 
 class StrategyConfig(BaseModel):
