@@ -1,4 +1,5 @@
 from unittest.mock import Mock, patch
+
 import pytest
 
 from core.strategy.executor import StrategyExecutor
@@ -19,6 +20,7 @@ def example_step_definition():
         }
     )
 
+
 @pytest.fixture
 def reevaluated_step_definition():
     return StrategyStepDefinition(
@@ -29,6 +31,7 @@ def reevaluated_step_definition():
             "result": StrategyStepDefinition.OutputBinding(mapping="second_output")
         }
     )
+
 
 @pytest.fixture
 def mock_step_instance(example_step_definition, reevaluated_step_definition):
@@ -47,10 +50,12 @@ def mock_step_instance(example_step_definition, reevaluated_step_definition):
         reevaluates=[reevaluated]
     )
 
+
 @pytest.fixture
 def mock_strategy_config(mock_step_instance):
     from core.strategy.model import StrategyConfig
     return StrategyConfig(name="test_strategy", steps=[mock_step_instance])
+
 
 @pytest.fixture
 def mock_context():
