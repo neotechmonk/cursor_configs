@@ -1,19 +1,23 @@
 import inspect
+import traceback
 from collections import Counter
+from datetime import datetime
 from enum import StrEnum
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+import pandas as pd
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    field_validator,
+    model_validator,
+)
 
 from core.strategy.steps.protocol import ErrProtocol, OkProtocol, ResultProtocol
 from util.fn_loader import function_loader
 
-import traceback
-from datetime import datetime
-from typing import Dict, Optional, Protocol, TypeVar, Union, runtime_checkable
-
-import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 class StrategyStepDefinition(BaseModel):
     """
@@ -37,6 +41,11 @@ class StrategyStepDefinition(BaseModel):
         default_factory=dict,
         description="Mapping from function return keys to output names in context"
     )
+
+
+    # Model validation feature flags
+    _validate_signature: bool = PrivateAttr(default=True) # TODO : make this configurable
+    _validate_result_protocol: bool = PrivateAttr(default=True)
 
     class ParamSource(StrEnum):
         RUNTIME = "runtime"
@@ -76,22 +85,32 @@ class StrategyStepDefinition(BaseModel):
         return self
     
     @model_validator(mode="after")
-    def load_and_validate_function(self) -> "StrategyStepDefinition":
-        func = function_loader(self.function_path)
-        sig = inspect.signature(func)
+    def load_function_and_validate_signature(self) -> "StrategyStepDefinition":
+        self._function = function_loader(self.function_path)
 
-        # Validate that all input_bindings are satisfied by function parameters
-        expected_inputs = set(self.input_bindings.keys())
-        actual_inputs = set(sig.parameters.keys())
+        if self._validate_signature:
+            sig = inspect.signature(self._function)
+            expected_inputs = set(self.input_bindings.keys())
+            actual_inputs = set(sig.parameters.keys())
 
-        missing = expected_inputs - actual_inputs
-        if missing:
-            raise ValueError(f"Function '{self.function_path}' missing params: {missing}")
+            missing = expected_inputs - actual_inputs
+            if missing:
+                raise ValueError(f"Function '{self.function_path}' missing params: {missing}")
 
-        # Store the actual function object in a private field
-        self._function = func
         return self
-    
+        
+    @model_validator(mode="after")
+    def validate_callable_contract(self) -> "StrategyStepDefinition":
+        if not callable(self._function):
+            raise ValueError(f"Function at path '{self.function_path}' is not callable")
+
+        test_args = {k: None for k in self.input_bindings.keys()}
+        result = self._function(**test_args)
+
+        if not isinstance(result, dict) or not all(isinstance(k, str) for k in result.keys()):
+            raise ValueError(f"Function '{self.function_path}' does not conform to ResultProtocol")
+
+        return self
     @property
     def callable_fn(self) -> Callable:
         return self._function
@@ -103,23 +122,11 @@ class StrategyStepResult(BaseModel):
     """
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    success: bool = Field(..., description="Indicates whether the step succeeded or failed.")
-    message: Optional[str] = Field(
-        default=None,
-        description="Human-readable status or error message, if applicable."
-    )
-    price_index: Optional[pd.Timestamp] = Field(
-        default=None,
-        description="Timestamp of the price bar related to the step's output."
-    )
-    result_time: datetime = Field(
-        default_factory=datetime.now,
-        description="Time when the step execution completed."
-    )
-    outputs: Dict[str, object] = Field(
-        default_factory=dict,
-        description="Named return values produced by the step."
-    )
+    success: bool = Field(...,)
+    message: Optional[str] = Field( default=None, description="Human-readable additional info")
+    price_index: Optional[pd.Timestamp] = Field(default=None,description="Index (pd.Timestamp) of the price bar related to the step")
+    result_time: datetime = Field(default_factory=datetime.now,description="Time when the step execution completed.")
+    outputs: Dict[str, object] = Field(default_factory=dict, description="Named return values produced by the step.")
 
     # Stack trace or debug info - not meant for public API consumers
     _stack: Optional[str] = PrivateAttr(default=None)
