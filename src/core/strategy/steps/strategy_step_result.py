@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from core.strategy.steps.result import StrategyStepResult
+from core.strategy.steps.model import StrategyStepResult
 
 
 def test_strategy_step_result_ok():
