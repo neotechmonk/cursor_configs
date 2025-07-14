@@ -45,7 +45,7 @@ class StrategyStepDefinition(BaseModel):
 
     # Model validation feature flags
     _validate_signature: bool = PrivateAttr(default=True) # TODO : make this configurable
-    _validate_result_protocol: bool = PrivateAttr(default=True)
+    _validate_result_protocol: bool = PrivateAttr(default=False)
 
     class ParamSource(StrEnum):
         RUNTIME = "runtime"
