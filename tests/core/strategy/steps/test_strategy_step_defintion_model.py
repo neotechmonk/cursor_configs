@@ -9,6 +9,7 @@ from core.strategy.steps.model import StrategyStepDefinition
 # MOCK FUNCTION DEFINITIONS
 # ----------------------------
 
+
 def dummy_function(arg1, arg2):
     return {"result": arg1 + arg2}
 
