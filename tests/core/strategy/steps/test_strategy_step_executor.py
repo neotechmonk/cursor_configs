@@ -1,182 +1,109 @@
 
+
 import pytest
 
-from core.strategy.steps.executor import StrategyStepExecutor
+from core.strategy.steps.executor import bind_params
 from core.strategy.steps.model import StrategyStepDefinition
+from core.strategy.steps.protocol import ResultProtocol
 
 
-@pytest.skip(reason="StrategyStepExecutor is deprecated. Tests implemented in test_strategy_step_executor_v2.py", allow_module_level=True)
-# -------- Fixtures --------
+# @pytest.fixture
+def mock_callable_config_param_only(config1)-> ResultProtocol:
+    return {"return_mapping":"return_value"}
 
+def mock_callable_rt_param_only(rt1)-> ResultProtocol:
+    return {"return_mapping":"return_value"}
 
-class MockRuntimeContext:
-    """Mock implementation of RuntimeContextProtocol."""
-    def __init__(self, data: dict):
-        self._data = data
+def mock_callable(config1,rt1)-> ResultProtocol:
+    return {"return_mapping":"return_value"}
+
+# @pytest.fixture
+# def mock_step_definition():
+#     return StrategyStepDefinition(
+#             id="mock",
+#             function_path=f"{mock_callable.__module__}.mock_callable",
+#             input_bindings={"config1": 
+#                                 {"source": "config", "mapping": "config1_map"}},
+#             output_bindings={"return_value": 
+#                                 {"mapping": "return_mapping"}
+#                                 }
+#         )
+                                
+# @pytest.mark.skip()
+def test_binding_only_config_params_with_return():
+    mock_fn = mock_callable_config_param_only 
+    step_def =  StrategyStepDefinition(
+                                    id="mock",
+                                    function_path=f"{mock_fn.__module__}.{mock_fn.__name__}",
+                                    input_bindings={"config1": 
+                                                        {"source": "config", "mapping": "config1_map"}},
+                                    output_bindings={"return_value": 
+                                                        {"mapping": "return_mapping"}
+                                                        }
+                                )
+
+    # print(mock_step_definition)
+    sample_cofig_data = {"config1_map" :"config1_value"}
+
+    bound_params =  bind_params(step_def, config_data=sample_cofig_data)
+
+    assert list(bound_params.keys()) == ["config1"]
+    assert list(bound_params.values()) == ["config1_value"]
+
+    assert bound_params["config1"] == "config1_value" 
+
+def test_binding_only_runtime_params_with_return():
+    mock_fn = mock_callable_rt_param_only 
+    step_def =  StrategyStepDefinition(
+                                    id="mock",
+                                    function_path=f"{mock_fn.__module__}.{mock_fn.__name__}",
+                                    input_bindings={"rt1": 
+                                                        {"source": "runtime", "mapping": "rt1_map"}},
+                                    output_bindings={"return_value": 
+                                                        {"mapping": "return_mapping"}
+                                                        }
+                                )
+
+    # print(mock_step_definition)
+    sample_runtime_data = {"rt1_map" :"rt1_value"}
+
+    bound_params =  bind_params(step_def, runtime_data=sample_runtime_data)
+
+    assert list(bound_params.keys()) == ["rt1"]
+    assert list(bound_params.values()) == ["rt1_value"]
+
+    assert bound_params["rt1"] == "rt1_value" 
     
-    def get(self, key: str):
-        return self._data[key]
+
+# @pytest.mark.skip()
+def test_binding_both_config_params_and_runtime_params_with_return():
+    mock_fn = mock_callable    
+    step_def =  StrategyStepDefinition(
+                                    id="mock",
+                                    function_path=f"{mock_fn.__module__}.{mock_fn.__name__}",
+                                    input_bindings={"config1": 
+                                                        {"source": "config", "mapping": "config1_map"},
+                                                    "rt1": 
+                                                        {"source": "runtime", "mapping": "rt1_map"}
+                                                    },
+                                                        
+                                    output_bindings={"return_value": 
+                                                        {"mapping": "return_mapping"}
+                                                        }
+                                )
+
+    # print(mock_step_definition)
+    sample_cofig_data = {"config1_map" :"config1_value"}
+    sample_runtime_data = {"rt1_map" :"rt1_value"}
+
+    bound_params =  bind_params(step_def, 
+                                config_data=sample_cofig_data, 
+                                runtime_data=sample_runtime_data)
+
+    assert list(bound_params.keys()) == ["config1", "rt1"]
+    assert list(bound_params.values()) == ["config1_value", "rt1_value"]
+
+    assert bound_params["config1"] == "config1_value" 
+    assert bound_params["rt1"] == "rt1_value" 
     
-    def has(self, key: str) -> bool:
-        return key in self._data
 
-
-class MockStrategyConfig:
-    """Mock implementation of StrategyStepConfigProtocol."""
-    def __init__(self, data: dict):
-        self._data = data
-    
-    def get(self, key: str):
-        return self._data[key]
-    
-    def has(self, key: str) -> bool:
-        return key in self._data
-
-
-@pytest.fixture
-def runtime_context():
-    return MockRuntimeContext({
-        "runtime_value1": 100,
-        "runtime_value2": 200
-    })
-
-
-@pytest.fixture
-def static_config():
-    return MockStrategyConfig({
-        "config_value1": "threshold-A",
-        "config_value2": "threshold-B"
-    })
-
-
-@pytest.fixture
-def mock_loader():
-    def loader(path: str):
-        assert path == "mock_module.mock_step"
-        def mock_step(runtime_param1, runtime_param2, config_param1, config_param2):
-            assert runtime_param1 == 100
-            assert runtime_param2 == 200
-            assert config_param1 == "threshold-A"
-            assert config_param2 == "threshold-B"
-            return {"result_key": "SUCCESS"}
-        return mock_step
-    return loader
-
-
-@pytest.fixture
-def step_with_direct_return():
-    return StrategyStepDefinition(
-        id="direct_return_step",
-        function_path="mock_module.mock_step",
-        input_bindings={
-            "runtime_param1": StrategyStepDefinition.InputBinding(source="runtime", mapping="runtime_value1"),
-            "runtime_param2": StrategyStepDefinition.InputBinding(source="runtime", mapping="runtime_value2"),
-            "config_param1": StrategyStepDefinition.InputBinding(source="config", mapping="config_value1"),
-            "config_param2": StrategyStepDefinition.InputBinding(source="config", mapping="config_value2"),
-        },
-        output_bindings={
-            "result_key": StrategyStepDefinition.OutputBinding(mapping="_")
-        }
-    )
-
-
-@pytest.fixture
-def step_with_explicit_output_mapping():
-    return StrategyStepDefinition(
-        id="mapped_output_step",
-        function_path="mock_module.mock_step",
-        input_bindings={
-            "runtime_param1": StrategyStepDefinition.InputBinding(source="runtime", mapping="runtime_value1"),
-            "runtime_param2": StrategyStepDefinition.InputBinding(source="runtime", mapping="runtime_value2"),
-            "config_param1": StrategyStepDefinition.InputBinding(source="config", mapping="config_value1"),
-            "config_param2": StrategyStepDefinition.InputBinding(source="config", mapping="config_value2"),
-        },
-        output_bindings={
-            "result_key": StrategyStepDefinition.OutputBinding(mapping="result_mapped_key")
-        }
-    )
-
-# -------- Tests --------
-
-
-def test_strategy_step_executor_direct_return(
-    step_with_direct_return,
-    runtime_context,
-    static_config,
-    mock_loader
-):
-    executor = StrategyStepExecutor(
-        step=step_with_direct_return,
-        context=runtime_context,
-        config=static_config,
-        function_loader=mock_loader,
-    )
-    result = executor.execute()
-    assert result == {"result_key": "SUCCESS"}
-
-
-def test_strategy_step_executor_mapped_output(
-    step_with_explicit_output_mapping,
-    runtime_context,
-    static_config,
-    mock_loader
-):
-    executor = StrategyStepExecutor(
-        step=step_with_explicit_output_mapping,
-        context=runtime_context,
-        config=static_config,
-        function_loader=mock_loader,
-    )
-    result = executor.execute()
-    assert result == {"result_mapped_key": "SUCCESS"}
-
-
-# -------- Additional Tests for Error Handling --------
-
-def test_strategy_step_executor_missing_input_key_raises_error(
-    step_with_direct_return,
-    mock_loader
-):
-    # Modify context and config to remove required key
-    incomplete_context = MockRuntimeContext({"runtime_value2": 200})  # missing runtime_value1
-    incomplete_config = MockStrategyConfig({"config_value2": "threshold-B"})  # missing config_value1
-
-    executor = StrategyStepExecutor(
-        step=step_with_direct_return,
-        context=incomplete_context,
-        config=incomplete_config,
-        function_loader=mock_loader,
-    )
-
-    with pytest.raises(KeyError) as exc_info:
-        executor.execute()
-
-    assert "runtime_value1" in str(exc_info.value) or "config_value1" in str(exc_info.value)
-
-
-def test_strategy_step_executor_conflicting_input_sources_raises_error(
-    mock_loader
-):
-    with pytest.raises(ValueError) as exc_info:
-        step_conflict = StrategyStepDefinition(
-            id="conflict_step",
-            function_path="mock_module.mock_step",
-            input_bindings={
-                "param1": StrategyStepDefinition.InputBinding(source="runtime", mapping="shared_key"),
-                "param2": StrategyStepDefinition.InputBinding(source="config", mapping="shared_key"),
-            },
-            output_bindings={}
-        )
-
-        context = MockRuntimeContext({"shared_key": 123})
-        config = MockStrategyConfig({"shared_key": 456})
-
-        # NOTE Error caught at the StrategyStepDefinition level. Never makes it here
-        StrategyStepExecutor(
-            step=step_conflict,
-            context=context,
-            config=config,
-            function_loader=mock_loader,
-        ).execute()
-
-    assert "Duplicate input mappings found" in str(exc_info.value)

@@ -13,8 +13,8 @@ from util import function_loader
 
 def bind_params(
     step: StrategyStepDefinition, 
-    config_data: dict, 
-    runtime_data: dict
+    config_data: dict={}, 
+    runtime_data: dict={}
 ) -> Dict[str, Any]:
     """Resolve input bindings to actual parameter values.
     
@@ -36,6 +36,7 @@ def bind_params(
             raise KeyError(
                 f"Missing input key '{binding.mapping}' in expected source: {binding.source}"
             )
+        # print(f"Looking for {param_name}")
         kwargs[param_name] = source_data[binding.mapping]
     return kwargs
 
@@ -96,8 +97,8 @@ class StrategyStepFunctionResolver:
     def __call__(self) -> Dict[str, Any]:  
         resolved_input_params = bind_params(self.step_definition, self.config_data, self.runtime_data)
         step_function = self._function_loader(self.step_definition.function_path)
-        raw_results = execute(step_function, resolved_input_params) 
-        # raw_results = self.step_definition.callable_fn(**resolved_input_params)
+        # raw_results = execute(step_function, resolved_input_params) 
+        raw_results = self.step_definition.callable_fn(**resolved_input_params)
         return map_results(self.step_definition, raw_results)
 
 
