@@ -41,7 +41,7 @@ def bind_params(
     return kwargs
 
 
-def execute(fn: Callable, params: Dict[str, Any]) -> Dict[str, Any]:
+def execute(fn: Callable, bounded_args: Dict[str, Any]) -> Dict[str, Any]:
     """Execute function with provided parameters.
     
     Args:
@@ -53,10 +53,10 @@ def execute(fn: Callable, params: Dict[str, Any]) -> Dict[str, Any]:
     """
     # Handle functions that don't accept keyword arguments
     try:
-        return fn(**params)
+        return fn(**bounded_args)
     except TypeError:
         # If keyword arguments fail, try positional arguments
-        return fn(*params.values())
+        return fn(*bounded_args.values())
 
 
 # def map_results(
@@ -85,7 +85,6 @@ def execute(fn: Callable, params: Dict[str, Any]) -> Dict[str, Any]:
 #         else:
 #             output[result_key] = value
 #     return output
-
 
 
 def map_results(
@@ -121,6 +120,7 @@ def map_results(
 
     return mapped_result
 
+
 @dataclass
 class StrategyStepFunctionResolver:
     step_definition: StrategyStepDefinition
@@ -130,10 +130,8 @@ class StrategyStepFunctionResolver:
 
     def __call__(self) -> Dict[str, Any]:  
         resolved_input_params = bind_params(self.step_definition, self.config_data, self.runtime_data)
-        step_function = self._function_loader(self.step_definition.function_path)
-        # raw_results = execute(step_function, resolved_input_params) 
         raw_results = self.step_definition.callable_fn(**resolved_input_params)
-        return map_results(self.step_definition, raw_results)
+        return map_results(output_bindings=resolved_input_params, raw_results=raw_results)
 
 
 @deprecated("Use StrategyFunctionResolver instead")

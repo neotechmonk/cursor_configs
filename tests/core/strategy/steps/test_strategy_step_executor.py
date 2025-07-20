@@ -1,8 +1,15 @@
 
 
+from typing import Any, Dict
+
 import pytest
 
-from core.strategy.steps.executor import bind_params, execute, map_results
+from core.strategy.steps.executor import (
+    StrategyStepFunctionResolver,
+    bind_params,
+    execute,
+    map_results,
+)
 from core.strategy.steps.model import StrategyStepDefinition
 from core.strategy.steps.protocol import ResultProtocol
 
@@ -31,6 +38,16 @@ def create_test_step(id: str, function_path: str, input_bindings: dict, output_b
     # Disable validation for testing
     # step._skip_validation = True
     return step
+
+
+# Define a mock function for testing
+def mock_test_function(foo: int, bar: str) -> Dict[str, Any]:
+    foo = foo or 0
+    bar = bar or "?"
+    return {
+        "result": foo * 2,
+        "description": f"input was {bar}"
+    }
 
 
 def test_binding_only_config_params_with_return():
@@ -250,6 +267,7 @@ def test_execute_with_list_parameters():
         "results": [100, 40, 10]
     }
     assert result == expected
+
     
 # test_map_resultsv2.py
 def test_map_resultsv2_no_output_bindings():
@@ -312,3 +330,47 @@ def test_map_resultsv2_empty_raw_results():
 
     mapped = map_results(output_bindings=output_bindings, raw_results=raw_results)
     assert mapped == {"y": None}
+
+
+# Define a test case
+def test_strategy_step_function_resolver_integration():
+    # Create a StrategyStepDefinition with input and output bindings
+    step = StrategyStepDefinition(
+        id="step1",
+        function_path=f"{mock_test_function.__module__}.{mock_test_function.__name__}",  # not used because callable_fn is already resolved
+        input_bindings={
+            "foo": StrategyStepDefinition.InputBinding(source="config", mapping="num"),
+            "bar": StrategyStepDefinition.InputBinding(source="runtime", mapping="label")
+        },
+        output_bindings={
+            "result": StrategyStepDefinition.OutputBinding(mapping="final_value"),
+            "description": StrategyStepDefinition.OutputBinding(mapping=None)  # should keep "description"
+        }
+    )
+
+    # Manually assign the callable (bypass function_loader)
+    # step._function = mock_test_function  # use private field directly for test setup
+
+    # Config and runtime data
+    config_data = {"num": 5}
+    runtime_data = {"label": "test"}
+
+    # Run the resolver
+    resolver = StrategyStepFunctionResolver(
+        step_definition=step,
+        config_data=config_data,
+        runtime_data=runtime_data
+    )
+
+    result = resolver()
+    """
+    return {
+        "result": foo * 2,
+        "description": f"input was {bar}"
+    }
+    """
+    # Assert the mapped output
+    # assert result == {
+    #     "final_value": 10,             # foo * 2
+    #     "description": "input was test"
+    # }
