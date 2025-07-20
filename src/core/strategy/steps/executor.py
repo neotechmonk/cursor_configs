@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from typing_extensions import deprecated
 
@@ -8,7 +8,7 @@ from core.strategy.steps.protocol import (
     RuntimeContextProtocol,
     StrategyStepConfigProtocol,
 )
-from util import function_loader
+from util.fn_loader import function_loader
 
 
 def bind_params(
@@ -59,33 +59,67 @@ def execute(fn: Callable, params: Dict[str, Any]) -> Dict[str, Any]:
         return fn(*params.values())
 
 
+# def map_results(
+#     step: StrategyStepDefinition, 
+#     raw_results: Dict[str, Any]
+# ) -> Dict[str, Any]:
+#     """Map function results according to output bindings.
+    
+#     Args:
+#         step: Step definition with output bindings
+#         raw_results: Raw results from function execution
+        
+#     Returns:
+#         Mapped results according to output bindings, or raw results if no bindings
+#     """
+#     # If no output bindings, return raw results as-is
+#     if not step.output_bindings:
+#         return raw_results
+    
+#     # Otherwise, apply output bindings
+#     output = {}
+#     for result_key, binding in step.output_bindings.items():
+#         value = raw_results.get(result_key)
+#         if binding.mapping is not None:
+#             output[binding.mapping] = value
+#         else:
+#             output[result_key] = value
+#     return output
+
+
+
 def map_results(
-    step: StrategyStepDefinition, 
+    output_bindings: dict[str, Optional[str]],
     raw_results: Dict[str, Any]
 ) -> Dict[str, Any]:
-    """Map function results according to output bindings.
-    
-    Args:
-        step: Step definition with output bindings
-        raw_results: Raw results from function execution
-        
-    Returns:
-        Mapped results according to output bindings, or raw results if no bindings
     """
-    # If no output bindings, return raw results as-is
-    if not step.output_bindings:
-        return raw_results
-    
-    # Otherwise, apply output bindings
-    output = {}
-    for result_key, binding in step.output_bindings.items():
-        value = raw_results.get(result_key)
-        if binding.mapping is not None:
-            output[binding.mapping] = value
-        else:
-            output[result_key] = value
-    return output
+    Maps function results according to output bindings with collision protection.
 
+    Raises:
+        ValueError: If a mapped key would overwrite a different existing key.
+    """
+    if not output_bindings:
+        return raw_results
+
+    mapped_result = raw_results.copy()
+
+    for key, mapping in output_bindings.items():
+        value = raw_results.get(key)
+
+        if mapping is None:
+            # Keep original key if no mapping provided
+            mapped_result[key] = value
+            continue
+
+        if mapping in mapped_result and mapping != key:
+            raise ValueError(f"Output mapping '{key} → {mapping}' would overwrite existing key '{mapping}'")
+
+        mapped_result[mapping] = value
+
+        if mapping != key:
+            mapped_result.pop(key, None)
+
+    return mapped_result
 
 @dataclass
 class StrategyStepFunctionResolver:
