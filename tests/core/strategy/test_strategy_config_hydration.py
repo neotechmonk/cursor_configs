@@ -11,6 +11,15 @@ from core.strategy.model import (
 )
 
 
+# Mock functions for testing
+def mock_check_fib(trend, ref_swing_start_idx, ref_swing_end_idx):
+    return {"result": True}
+
+
+def mock_validate_pullback():
+    return {"valid": True}
+
+
 @pytest.fixture
 def raw_strategy_dict():
     return {
@@ -43,17 +52,21 @@ def mock_step_service():
     """Mock StrategyStepService with controlled .get behavior."""
     mock = Mock()
     
-    # Mocked step definitions
+    # Mocked step definitions using real function paths
     check_fib_def = StrategyStepDefinition(
         id="check_fib",
-        function_path="mock.module.check_fib",
-        input_bindings={},
+        function_path=f"{mock_check_fib.__module__}.{mock_check_fib.__name__}",
+        input_bindings={
+            "trend": StrategyStepDefinition.InputBinding(source="runtime", mapping="trend"),
+            "ref_swing_start_idx": StrategyStepDefinition.InputBinding(source="runtime", mapping="ref_swing_start_idx"),
+            "ref_swing_end_idx": StrategyStepDefinition.InputBinding(source="runtime", mapping="ref_swing_end_idx")
+        },
         output_bindings={"result": StrategyStepDefinition.OutputBinding(mapping="_")}
     )
 
     validate_pullback_def = StrategyStepDefinition(
         id="validate_pullback",
-        function_path="mock.module.validate_pullback",
+        function_path=f"{mock_validate_pullback.__module__}.{mock_validate_pullback.__name__}",
         input_bindings={},
         output_bindings={"valid": StrategyStepDefinition.OutputBinding(mapping="_")}
     )
