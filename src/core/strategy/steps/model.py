@@ -42,7 +42,6 @@ class StrategyStepDefinition(BaseModel):
         description="Mapping from function return keys to output names in context"
     )
 
-
     # Model validation feature flags
     _validate_signature: bool = PrivateAttr(default=True) # TODO : make this configurable
     _validate_result_protocol: bool = PrivateAttr(default=False)
@@ -98,19 +97,20 @@ class StrategyStepDefinition(BaseModel):
                 raise ValueError(f"Function '{self.function_path}' missing params: {missing}")
 
         return self
-        
-    @model_validator(mode="after")
-    def validate_callable_contract(self) -> "StrategyStepDefinition":
-        if not callable(self._function):
-            raise ValueError(f"Function at path '{self.function_path}' is not callable")
 
-        test_args = {k: None for k in self.input_bindings.keys()}
-        result = self._function(**test_args)
+    #NOTE : disabled - wont work with runtime bindings    
+    # @model_validator(mode="after")
+    # def validate_callable_contract(self) -> "StrategyStepDefinition":
+    #     if not callable(self._function):
+    #         raise ValueError(f"Function at path '{self.function_path}' is not callable")
 
-        if not isinstance(result, dict) or not all(isinstance(k, str) for k in result.keys()):
-            raise ValueError(f"Function '{self.function_path}' does not conform to ResultProtocol")
+    #     test_args = {k: None for k in self.input_bindings.keys()}
+    #     result = self._function(**test_args)
 
-        return self
+    #     if not isinstance(result, dict) or not all(isinstance(k, str) for k in result.keys()):
+    #         raise ValueError(f"Function '{self.function_path}' does not conform to ResultProtocol")
+
+    #     return self
     @property
     def callable_fn(self) -> Callable:
         return self._function

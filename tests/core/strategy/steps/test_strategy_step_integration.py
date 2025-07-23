@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 import yaml
 
 from core.strategy.steps.model import StrategyStepDefinition
@@ -14,7 +15,10 @@ def test_strategy_step_definition_sample(tmp_path):
     yaml_content = """
     - id: detect_trend
       function_path: src.utils.get_trend
-      input_bindings: {}
+      input_bindings:
+        price_feed:
+          source: runtime
+          mapping: price_feed
       output_bindings:
         trend:
           mapping: "_"
@@ -52,7 +56,7 @@ def test_strategy_step_definition_sample(tmp_path):
     assert steps[1].input_bindings["trend"].mapping == "trend"
     assert steps[1].output_bindings["is_extreme"].mapping is None
 
-
+# @pytest.mark.xfail(reason="This test is not working as expected")
 def test_strategy_step_yaml_parses_all_entries():
     """
     Integration test to ensure that all entries in the strategy_steps.yaml
