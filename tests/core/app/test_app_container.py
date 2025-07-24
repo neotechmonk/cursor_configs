@@ -6,6 +6,7 @@ import pytest
 
 from core.app.container import AppContainer
 from core.app.settings import AppSettings
+from core.strategy.steps.protocol import ResultProtocol
 
 
 @pytest.fixture
@@ -43,18 +44,22 @@ def logging_config_file(temporary_root_dir: Path) -> Path:
     '''))
     return logging_path
 
+def mock_function()-> ResultProtocol:
+    return {"result": "dummy"}
 
 @pytest.fixture
 def strategy_steps_file(temporary_root_dir: Path) -> Path:
     """Create a dummy strategy steps YAML config file."""
     steps_path = temporary_root_dir / "configs" / "strategies" / "_steps" / "strategy_steps.yaml"
     steps_path.parent.mkdir(parents=True, exist_ok=True)
-    steps_path.write_text(dedent('''\
+
+    function_path = f"{mock_function.__module__}.{mock_function.__name__}"
+    steps_path.write_text(dedent(f'''\
         - id: dummy_id
           name: dummy
           type: example_step
-          function_path: dummy_module.dummy_function
-          params: {}
+          function_path: {function_path}
+          params: {{}}
     '''))
     return steps_path
 
