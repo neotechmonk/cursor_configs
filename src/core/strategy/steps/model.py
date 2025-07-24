@@ -3,7 +3,7 @@ import traceback
 from collections import Counter
 from datetime import datetime
 from enum import StrEnum
-from typing import Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import pandas as pd
 from pydantic import (
@@ -98,19 +98,34 @@ class StrategyStepDefinition(BaseModel):
 
         return self
 
-    #NOTE : disabled - wont work with runtime bindings    
-    # @model_validator(mode="after")
-    # def validate_callable_contract(self) -> "StrategyStepDefinition":
-    #     if not callable(self._function):
-    #         raise ValueError(f"Function at path '{self.function_path}' is not callable")
+    @model_validator(mode="after")
+    def validate_output_binding_structure(self) -> "StrategyStepDefinition":
+        """
+        Validates that the function's return type is compatible with the declared output bindings.
 
-    #     test_args = {k: None for k in self.input_bindings.keys()}
-    #     result = self._function(**test_args)
+        If output bindings are specified, this check ensures the associated function is callable
+        and its return annotation (if provided) is a dictionary type. This guards against structural
+        mismatches between the function's return value and the expected output bindings,
+        without executing the function.
 
-    #     if not isinstance(result, dict) or not all(isinstance(k, str) for k in result.keys()):
-    #         raise ValueError(f"Function '{self.function_path}' does not conform to ResultProtocol")
+        Raises:
+            ValueError: If the function is not callable or its return type is not dict-like
+                        while output bindings are defined.
+        """
+        LEGAL_RETURN_TYPES = (dict, Dict[str, Any], ResultProtocol)
+        if not callable(self._function):
+            raise ValueError(f"Function at path '{self.function_path}' is not callable")
 
-    #     return self
+        if self.output_bindings:
+            sig = inspect.signature(self._function)
+
+            if sig.return_annotation != inspect.Signature.empty:
+                if sig.return_annotation not in (LEGAL_RETURN_TYPES):
+                    raise ValueError(
+                        f"Function '{self.function_path}' does not conform to ResultProtocol "
+                        f"(expected return type to be a dict)"
+                    )
+        return self
     @property
     def callable_fn(self) -> Callable:
         return self._function

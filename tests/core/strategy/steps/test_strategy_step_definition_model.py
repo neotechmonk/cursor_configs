@@ -1,6 +1,6 @@
-import pytest
-from types import SimpleNamespace
 from unittest.mock import patch
+
+import pytest
 
 from core.strategy.steps.model import StrategyStepDefinition
 
@@ -21,11 +21,16 @@ def invalid_func_signature():
 
 
 @pytest.fixture
-def invalid_result_func():
-    def func_without_result_protocol(trend):  # Returns plain value instead of dict with keys
+def invalid_result_func() :
+    def func_without_result_protocol(trend) -> int:  # test will check if return type int is same as the 
         return 123
     return func_without_result_protocol
 
+
+# @pytest.fixture
+# def invalid_result_func():
+    
+#     return "func_without_result_protocol"
 
 # ---- Tests ----
 
@@ -85,7 +90,6 @@ def test_strategy_step_definition_signature_mismatch_raises(invalid_func_signatu
         with pytest.raises(ValueError, match="missing params"):
             StrategyStepDefinition(_validate_signature = True, **config)
             
-
 
 def test_strategy_step_definition_result_protocol_check_fails(invalid_result_func):
     config = {
