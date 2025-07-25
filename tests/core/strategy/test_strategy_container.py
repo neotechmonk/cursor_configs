@@ -6,18 +6,25 @@ from core.strategy.container import StrategyContainer
 from core.strategy.model import Strategy, StrategyConfig
 from core.strategy.settings import StrategySettings
 from core.strategy.steps.model import StrategyStepDefinition
+from util.result import Ok, ResultProtocol
+
+
+def mock_check_fib() -> ResultProtocol:
+    return ResultProtocol(Ok(True))
 
 
 @pytest.fixture
 def mock_step_registry_data():
-    return [
-        StrategyStepDefinition(
-            id="check_fib",
-            function_path="mock.module.check_fib",
-            input_bindings={},
-            output_bindings={"result": {"mapping": "_"}}
-        ).model_dump()
-    ]
+    """Return a list of step definitions as dictionaries."""
+    step = StrategyStepDefinition(
+        id="check_fib",
+        function_path=f"{mock_check_fib.__module__}.{mock_check_fib.__name__}",
+        input_bindings={},
+        output_bindings={"result": {"mapping": "_"}},
+    )
+    
+    # Return as a list of dictionaries, not a single dictionary
+    return [step.model_dump()]
 
 
 @pytest.fixture

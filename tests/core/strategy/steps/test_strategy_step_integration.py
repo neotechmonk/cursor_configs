@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 import yaml
 
 from core.strategy.steps.model import StrategyStepDefinition
@@ -55,6 +54,7 @@ def test_strategy_step_definition_sample(tmp_path):
     assert steps[1].input_bindings["trend"].source == StrategyStepDefinition.ParamSource.RUNTIME
     assert steps[1].input_bindings["trend"].mapping == "trend"
     assert steps[1].output_bindings["is_extreme"].mapping is None
+
 
 # @pytest.mark.xfail(reason="This test is not working as expected")
 def test_strategy_step_yaml_parses_all_entries():

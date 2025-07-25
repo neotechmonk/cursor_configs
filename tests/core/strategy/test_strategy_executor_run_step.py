@@ -6,11 +6,15 @@ from core.strategy.executor import StrategyExecutor
 from core.strategy.model import StrategyStepDefinition, StrategyStepInstance
 
 
+def mock_func():
+    return 42
+
+
 @pytest.fixture
 def example_step_definition():
     return StrategyStepDefinition(
         id="step_1",
-        function_path="my.module.dummy_func",
+        function_path=mock_func.__module__ + "." + mock_func.__name__,
         input_bindings={
             "arg1": StrategyStepDefinition.InputBinding(source="config", mapping="foo"),
             "arg2": StrategyStepDefinition.InputBinding(source="runtime", mapping="bar")
@@ -25,7 +29,7 @@ def example_step_definition():
 def reevaluated_step_definition():
     return StrategyStepDefinition(
         id="step_2",
-        function_path="my.module.another_func",
+        function_path=mock_func.__module__ + "." + mock_func.__name__,
         input_bindings={},
         output_bindings={
             "result": StrategyStepDefinition.OutputBinding(mapping="second_output")
