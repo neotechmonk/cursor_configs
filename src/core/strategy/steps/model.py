@@ -43,8 +43,8 @@ class StrategyStepDefinition(BaseModel):
     )
 
     # Model validation feature flags
-    _validate_signature: bool = PrivateAttr(default=False) 
-    _validate_result_protocol: bool = PrivateAttr(default=False)
+    validate_signature: bool = Field(default=False, description="Whether to validate the function signature")
+    validate_result_protocol: bool = Field(default=False, description="Whether to validate the result protocol")
 
     class ParamSource(StrEnum):
         RUNTIME = "runtime"
@@ -87,7 +87,7 @@ class StrategyStepDefinition(BaseModel):
     def load_function_and_validate_signature(self) -> "StrategyStepDefinition":
         self._function = function_loader(self.function_path)
 
-        if self._validate_signature:
+        if self.validate_signature:
             sig = inspect.signature(self._function)
             expected_inputs = set(self.input_bindings.keys())
             actual_inputs = set(sig.parameters.keys())
@@ -112,7 +112,7 @@ class StrategyStepDefinition(BaseModel):
             ValueError: If the function is not callable or its return type is not dict-like
                         while output bindings are defined.
         """
-        if not self._validate_result_protocol: 
+        if not self.validate_result_protocol: 
             return self
         
         LEGAL_RETURN_TYPES = (dict, Dict[str, Any], ResultProtocol)

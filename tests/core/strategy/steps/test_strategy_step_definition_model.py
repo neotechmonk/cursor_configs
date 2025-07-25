@@ -68,11 +68,12 @@ def test_strategy_step_definition_conflicting_input_mappings_raises():
             "param1": {"source": "runtime", "mapping": "shared_key"},
             "param2": {"source": "config", "mapping": "shared_key"},
         },
-        "output_bindings": {}
+        "output_bindings": {},
     }
 
+
     with pytest.raises(ValueError, match="Duplicate input mappings found"):
-        StrategyStepDefinition(**config)
+        StrategyStepDefinition( **config)
 
 
 def test_strategy_step_definition_signature_mismatch_raises(invalid_func_signature):
@@ -83,18 +84,18 @@ def test_strategy_step_definition_signature_mismatch_raises(invalid_func_signatu
             "arg1": {"source": "runtime", "mapping": "val"},
             "arg2": {"source": "runtime", "mapping": "other_val"},
         },
-        "output_bindings": {}
+        "output_bindings": {},
     }
 
     with patch("core.strategy.steps.model.function_loader", return_value=invalid_func_signature):
         with pytest.raises(ValueError, match="missing params"):
-            StrategyStepDefinition(_validate_signature = True, **config)
+            StrategyStepDefinition(validate_signature = True,validate_result_protocol = True, **config)
             
 
 def test_strategy_step_definition_result_protocol_check_fails(invalid_result_func):
     config = {
         "id": "step_non_conforming",
-        "function_path": "mock.module.invalid_result_func",
+        "function_path": invalid_result_func.__module__ + "." + invalid_result_func.__name__,
         "input_bindings": {
             "trend": {"source": "runtime", "mapping": "trend"}
         },
@@ -105,7 +106,7 @@ def test_strategy_step_definition_result_protocol_check_fails(invalid_result_fun
 
     with patch("core.strategy.steps.model.function_loader", return_value=invalid_result_func):
         with pytest.raises(ValueError, match="does not conform to ResultProtocol"):
-            StrategyStepDefinition(_validate_result_protocol = True, **config)
+            StrategyStepDefinition(validate_result_protocol = True, **config)
 
 
 def test_get_callable_returns_bound_function(valid_func):
