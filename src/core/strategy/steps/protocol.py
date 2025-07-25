@@ -1,6 +1,6 @@
 from typing import Any, Protocol, TypeVar
 
-from typing_extensions import runtime_checkable
+from typing_extensions import deprecated, runtime_checkable
 
 
 class RuntimeContextProtocol(Protocol):
@@ -13,24 +13,28 @@ class StrategyStepConfigProtocol(Protocol):
     def get(self, key: str) -> Any: ...
     def has(self, key: str) -> bool: ...
 
-
 T = TypeVar("T")
 E = TypeVar("E")
 
 
-# protocol for result types from result package
-@runtime_checkable
-class ResultProtocol(Protocol[T, E]):
-    ...
-
-
-# protocol for ok result types
+@deprecated("Use Protocols from util.result")
 @runtime_checkable
 class OkProtocol(Protocol[T]):
-    value: T
+    @property
+    def value(self) -> T: ...
 
 
-# protocol for err result types
+@deprecated("Use Protocols from util.result")
 @runtime_checkable
 class ErrProtocol(Protocol[E]):
-    error: E
+    @property
+    def error(self) -> E: ...
+
+
+@deprecated("Use Protocols from util.result")
+@runtime_checkable
+class ResultProtocol(Protocol[T, E]):
+    def is_ok(self) -> bool: ...
+    def is_err(self) -> bool: ...
+    def unwrap(self) -> T: ...
+    def unwrap_err(self) -> E: ...
