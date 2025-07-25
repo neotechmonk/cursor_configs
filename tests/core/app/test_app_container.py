@@ -44,8 +44,10 @@ def logging_config_file(temporary_root_dir: Path) -> Path:
     '''))
     return logging_path
 
+
 def mock_function()-> ResultProtocol:
     return {"result": "dummy"}
+
 
 @pytest.fixture
 def strategy_steps_file(temporary_root_dir: Path) -> Path:

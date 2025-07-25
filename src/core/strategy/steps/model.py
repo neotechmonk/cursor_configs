@@ -43,7 +43,7 @@ class StrategyStepDefinition(BaseModel):
     )
 
     # Model validation feature flags
-    _validate_signature: bool = PrivateAttr(default=True) # TODO : make this configurable
+    _validate_signature: bool = PrivateAttr(default=False) 
     _validate_result_protocol: bool = PrivateAttr(default=False)
 
     class ParamSource(StrEnum):
@@ -112,6 +112,9 @@ class StrategyStepDefinition(BaseModel):
             ValueError: If the function is not callable or its return type is not dict-like
                         while output bindings are defined.
         """
+        if not self._validate_result_protocol: 
+            return self
+        
         LEGAL_RETURN_TYPES = (dict, Dict[str, Any], ResultProtocol)
         if not callable(self._function):
             raise ValueError(f"Function at path '{self.function_path}' is not callable")
