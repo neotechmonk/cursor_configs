@@ -6,7 +6,7 @@ import pytest
 
 from core.app.container import AppContainer
 from core.app.settings import AppSettings
-from core.strategy.steps.protocol import ResultProtocol
+from util.result import ResultProtocol
 
 
 @pytest.fixture

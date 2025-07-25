@@ -15,8 +15,8 @@ from pydantic import (
     model_validator,
 )
 
-from core.strategy.steps.protocol import ErrProtocol, OkProtocol, ResultProtocol
 from util.fn_loader import function_loader
+from util.result import ErrProtocol, OkProtocol, ResultProtocol
 
 
 class StrategyStepDefinition(BaseModel):

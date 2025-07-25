@@ -11,7 +11,7 @@ from core.strategy.steps.executor import (
     map_results,
 )
 from core.strategy.steps.model import StrategyStepDefinition
-from core.strategy.steps.protocol import ResultProtocol
+from util.result import ResultProtocol
 
 
 # Mock functions for testing

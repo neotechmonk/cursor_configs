@@ -18,6 +18,7 @@ def mock_check_fib() :
 def mock_validate_pullback() :
     return True
 
+
 @pytest.fixture
 def raw_strategy_dict():
     return {

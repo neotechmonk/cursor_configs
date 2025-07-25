@@ -71,7 +71,6 @@ def test_strategy_step_definition_conflicting_input_mappings_raises():
         "output_bindings": {},
     }
 
-
     with pytest.raises(ValueError, match="Duplicate input mappings found"):
         StrategyStepDefinition( **config)
 
