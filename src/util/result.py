@@ -4,31 +4,28 @@ from result import Err as LibErr
 from result import Ok as LibOk
 from result import Result as LibResult
 
-T = TypeVar("T")
-E = TypeVar("E")
-
 
 @runtime_checkable
-class OkProtocol(Protocol[T]):
+class OkProtocol[T](Protocol):
     @property
     def value(self) -> T: ...
 
 
 @runtime_checkable
-class ErrProtocol(Protocol[E]):
+class ErrProtocol[E](Protocol):
     @property
     def error(self) -> E: ...
 
 
 @runtime_checkable
-class ResultProtocol(Protocol[T, E]):
+class ResultProtocol[T, E](Protocol):
     def is_ok(self) -> bool: ...
     def is_err(self) -> bool: ...
     def unwrap(self) -> T: ...
     def unwrap_err(self) -> E: ...
 
 
-class Ok():
+class Ok[T]():
     """
     implements OkProtocol[T]
     """
@@ -43,7 +40,7 @@ class Ok():
         return self._inner
 
 
-class Err():
+class Err[E]():
     """
     implements ErrProtocol[E]
     """
@@ -58,7 +55,7 @@ class Err():
         return self._inner
 
 
-class Result():
+class Result[T, E]():
     """
     implements ResultProtocol[T, E]
     """
