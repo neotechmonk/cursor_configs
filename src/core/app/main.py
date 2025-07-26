@@ -40,6 +40,20 @@ def main():
     portfolio = portfolio_container.service()
     print(f"Available portfolios: {[portfolio.name for portfolio in portfolio.get_all()]}")
 
+    # Sessions service - NEW
+    sessions_service = container.sessions.service()
+    print(f"Available trading sessions: {[session.name for session in sessions_service.get_all()]}")
+    
+    # Get a specific session and show details
+    if sessions_service.get_all():
+        day_trading_session = sessions_service.get("day_trading")
+        print(f"Session '{day_trading_session.name}' has {len(day_trading_session.get_enabled_symbols())} enabled symbols")
+        
+        # Show session details
+        for symbol in day_trading_session.get_enabled_symbols():
+            config = day_trading_session.get_symbol_config(symbol)
+            print(f"  Symbol {symbol}: {config.timeframe} via {type(config.data_provider).__name__}")
+
     logger.info("Shutting down")
 
 if __name__ == "__main__":
