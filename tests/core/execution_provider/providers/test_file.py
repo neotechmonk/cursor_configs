@@ -14,21 +14,51 @@ class MockOrder:
     quantity: float
     price: float
 
+
+# --- Fixtures ---
+
+@pytest.fixture
+def mock_config():
+    """Fixture for FileExecutionProviderConfig."""
+    return FileExecutionProviderConfig(
+        name="file_exec", 
+        file_path=Path("fake/path.txt")
+    )
+
+
+@pytest.fixture
+def file_provider(mock_config):
+    """Fixture for FileExecutionProvider instance."""
+    return FileExecutionProvider(config=mock_config)
+
+
+@pytest.fixture
+def sample_order():
+    """Fixture for a sample MockOrder."""
+    return MockOrder(
+        symbol="BTCUSD", 
+        quantity=1.0, 
+        price=50000.0
+    )
+
+
+@pytest.fixture
+def sample_order_eth():
+    """Fixture for a sample ETH order."""
+    return MockOrder(
+        symbol="ETHUSD", 
+        quantity=2.5, 
+        price=3000.0
+    )
+
+
 # --- Basic Tests ---
 
-def test_provider_name_property():
-    config = FileExecutionProviderConfig(name="file_exec", file_path=Path("fake/path.txt"))
-    provider = FileExecutionProvider(config=config)
-    
-    assert provider.name == "file_exec"
 
-# @pytest.mark.skip(reason="Not implemented")
-def test_submit_order_prints_and_returns_true(capfd):
-    config = FileExecutionProviderConfig(name="file_exec", file_path=Path("fake/path.txt"))
-    provider = FileExecutionProvider(config=config)
 
-    test_order = MockOrder(symbol="BTCUSD", quantity=1.0, price=50000.0, )
-    result = provider.submit_order(test_order)
+def test_submit_order_prints_and_returns_true(file_provider, sample_order, capfd):
+    """Test that submit_order prints expected output and returns True."""
+    result = file_provider.submit_order(sample_order)
     
     # Capture stdout
     out, _ = capfd.readouterr()
@@ -36,3 +66,5 @@ def test_submit_order_prints_and_returns_true(capfd):
     assert "Sumitting Order" in out
     assert "BTCUSD" in out
     assert result is True
+
+
