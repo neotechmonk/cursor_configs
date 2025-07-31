@@ -1,70 +1,69 @@
+import json
 from pathlib import Path
+
 import pytest
-from dataclasses import dataclass
 
-from core.execution_provider.providers.file import FileExecutionProvider, FileExecutionProviderConfig
-
-
-@dataclass
-class MockOrder:
-    """
-    Mock Order class of Order model
-    """
-    symbol: str
-    quantity: float
-    price: float
-
+from core.execution_provider.providers.file import (
+    FileExecutionProvider,
+    FileExecutionProviderConfig,
+)
+from core.order.models import Order, OrderSide, OrderType
 
 # --- Fixtures ---
 
+
 @pytest.fixture
-def mock_config():
-    """Fixture for FileExecutionProviderConfig."""
-    return FileExecutionProviderConfig(
-        name="file_exec", 
-        file_path=Path("fake/path.txt")
-    )
+def temp_order_file(tmp_path) -> Path:
+    return tmp_path / "orders.jsonl"
 
 
 @pytest.fixture
-def file_provider(mock_config):
-    """Fixture for FileExecutionProvider instance."""
-    return FileExecutionProvider(config=mock_config)
+def file_provider(temp_order_file) -> FileExecutionProvider:
+    config = FileExecutionProviderConfig(name="test_provider", file_path=temp_order_file)
+    return FileExecutionProvider(config=config)
 
 
 @pytest.fixture
 def sample_order():
     """Fixture for a sample MockOrder."""
-    return MockOrder(
+    return Order(
         symbol="BTCUSD", 
-        quantity=1.0, 
-        price=50000.0
-    )
-
-
-@pytest.fixture
-def sample_order_eth():
-    """Fixture for a sample ETH order."""
-    return MockOrder(
-        symbol="ETHUSD", 
-        quantity=2.5, 
-        price=3000.0
+        quantity=1, 
+        entry_price=50000,
+        stop_price=49000,
+        target_price=51000,
+        side=OrderSide.BUY,
+        order_type=OrderType.MARKET,
+        timeframe="1m",
+        tag="test"
     )
 
 
 # --- Basic Tests ---
 
 
-
-def test_submit_order_prints_and_returns_true(file_provider, sample_order, capfd):
-    """Test that submit_order prints expected output and returns True."""
+def test_submit_order_writes_expected_json(file_provider, sample_order, temp_order_file):
+    """Test that submit_order writes valid JSON content to the file."""
     result = file_provider.submit_order(sample_order)
-    
-    # Capture stdout
-    out, _ = capfd.readouterr()
 
-    assert "Sumitting Order" in out
-    assert "BTCUSD" in out
     assert result is True
+    assert temp_order_file.exists()
 
+    lines = temp_order_file.read_text().strip().splitlines()
+    assert len(lines) == 1
 
+    order_json = json.loads(lines[0])
+
+    # Basic structure assertions
+    assert "timestamp" in order_json
+    assert order_json["symbol"] == "BTCUSD"
+    assert order_json["side"] == "buy"
+    assert order_json["order_type"] == "market"
+    assert order_json["quantity"] == "1"
+    assert order_json["entry_price"] == "50000"
+    assert order_json["stop_price"] == "49000"
+    assert order_json["target_price"] == "51000"
+    assert order_json["tag"] == "test"
+
+    with pytest.raises(KeyError):
+        order_json["ttl_bars"] #optional field and not set at instantiation
