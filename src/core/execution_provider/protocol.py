@@ -4,6 +4,6 @@ import pandas as pd
 
 
 @runtime_checkable
-class ExecutionProvider(Protocol):
+class ExecutionProviderProtocol(Protocol):
     def submit_order(self, symbol: str, timeframe: str, order_type: str, quantity: int, price: float) -> pd.DataFrame:
         ...
