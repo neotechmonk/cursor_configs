@@ -70,4 +70,3 @@ class ProviderBuilder[P, M]:
         if not self._provider:
             raise ValueError("Provider not initialized. Call `get_provider()` first.")
         return self._provider
-        return self._provider
