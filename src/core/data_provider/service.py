@@ -4,7 +4,7 @@ from typing import Dict
 from core.data_provider.protocol import DataProviderProtocol
 from core.data_provider.settings import DataProviderMetadata
 from util.custom_cache import Cache
-from util.yaml_config_loader import load_yaml_config
+from util.provider_builder import ProviderBuilder
 
 
 class DataProviderService:
@@ -12,25 +12,17 @@ class DataProviderService:
         self.config_dir = config_dir
         self.cache: Cache = cache
         self.registry: Dict[str, DataProviderMetadata] = registry or {}
+    
+    def _load_data_provider_by_name(self, name:str) -> DataProviderProtocol:
+        config_path:Path = Path(f"{self.config_dir}/{name}.yaml")
 
-    def _load_data_provider_by_name(self, name: str) -> DataProviderProtocol:
-        """
-        Load a data provider by name.
-        """
-        try:
-            metadata = self.registry[name]
-        except KeyError:
-            raise ValueError(f"Unsupported data provider: {name}")
+        builder = ProviderBuilder[DataProviderProtocol, DataProviderMetadata](config_path=config_path, meta_data=self.registry[name]) 
 
-        raw_model = load_yaml_config(self.config_dir / f"{name}.yaml", metadata.raw_config)
-        raw_model.name = name
-
-        target_model = metadata.target_config(**raw_model.model_dump())
-        provider = metadata.provider_class(config=target_model)
-
-        if not isinstance(provider, DataProviderProtocol):
-            raise TypeError(f"{metadata.provider_class.__name__} must implement DataProviderProtocol")
-
+        provider: DataProviderProtocol =  builder\
+            .load_config()\
+            .get_provider()\
+            .build()
+        
         return provider
 
     def get(self, name: str) -> DataProviderProtocol:
