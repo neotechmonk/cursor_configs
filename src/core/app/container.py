@@ -7,31 +7,10 @@ from dependency_injector import containers, providers
 from core.app.logging import load_logging_config
 from core.app.settings import AppSettings
 from core.data_provider.container import DataProviderContainer
+from core.execution_provider.container import ExecutionProviderContainer
 from core.portfolio.container import PortfolioContainer
 from core.sessions.container import TradingSessionContainer
 from core.strategy.container import StrategyContainer
-from tests.mocks.providers import MockIBExecutionProvider, MockAlpacaExecutionProvider
-
-
-class MockExecutionProviderService:
-    """Temporary mock execution provider service."""
-    
-    def __init__(self):
-        self._providers = {
-            "csv": MockIBExecutionProvider(),  # Use CSV as IB
-            "yahoo": MockAlpacaExecutionProvider(),  # Use Yahoo as Alpaca
-            "ib": MockIBExecutionProvider(),
-            "alpaca": MockAlpacaExecutionProvider(),
-        }
-    
-    def get(self, name: str):
-        if name not in self._providers:
-            # Fallback to IB for unknown providers
-            return MockIBExecutionProvider()
-        return self._providers[name]
-    
-    def get_all(self):
-        return list(self._providers.values())
 
 
 class AppContainer(containers.DeclarativeContainer):
@@ -40,6 +19,7 @@ class AppContainer(containers.DeclarativeContainer):
         "core.data_provider",
         "core.portfolio",
         "core.sessions",
+        "core.execution_provider",
     ])
     """
     AppSettings loads other settings like logging, portfolio, sessions, etc.
@@ -71,14 +51,17 @@ class AppContainer(containers.DeclarativeContainer):
         settings=settings.provided.portfolio  
     )
 
-    # Mock execution provider service
-    execution_provider = providers.Singleton(MockExecutionProviderService)
+    # Execution provider container
+    execution_provider = providers.Container(
+        ExecutionProviderContainer,
+        settings=settings.provided.execution_provider
+    )
 
     # Add sessions container
     sessions = providers.Container(
         TradingSessionContainer,
         settings=settings.provided.sessions,
         data_provider_service=data_provider.service,
-        execution_provider_service=execution_provider,
+        execution_provider_service=execution_provider.service,
         portfolio_service=portfolio.service
     )
