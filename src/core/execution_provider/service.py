@@ -1,60 +1,11 @@
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, Self, Union
-
-from pydantic import BaseModel
+from typing import Dict
 
 from core.execution_provider.protocol import ExecutionProviderProtocol
 from core.execution_provider.settings import ExecutionProviderMetadata
 from util.custom_cache import Cache
+from util.provider_builder import ProviderBuilder
 from util.yaml_config_loader import load_yaml_config
-
-
-@dataclass
-class ProviderBuilder[P, M]:
-    config_path:Path
-    meta_data: M
-    yaml_config_loader: Callable[...,Union[dict, BaseModel]] = load_yaml_config
-
-    def _load_yaml_config(self)->Self:
-        if not isinstance(self. config_path, Path):
-            raise ValueError(f"`config_path`, {self.config_path} is not a valid `Path` object")
-        
-        if not self.config_path.exists():
-            raise ValueError(f"`config_path`, {self.config_path} is not exist")
-         
-        self._config_dict:dict = load_yaml_config(self.config_path)
-        return self
-    
-    def _load_config_raw_model(self)->Self:
-        if not all([self._config_dict, isinstance(self._config_dict, dict)]):
-            raise ValueError("A valid config must loaded as dict using `load_config()` before calling this method") 
-        
-        self._raw_config_model = self.meta_data.raw_config(**self._config_dict)
-        self._raw_config_model.name = self.config_path.stem
-
-        return self
-    
-    def _load_config_target_model(self)->Self:
-        if not isinstance(self._raw_config_model, self.meta_data.raw_config):
-            raise ValueError(f"A valid config must loaded as {type(self.meta_data.raw_config)} using `load_raw_model()` before calling this method") 
-        
-        self._target_config_model = self.meta_data.target_config(**self._raw_config_model.model_dump())
-        return self
-    
-    def load_config(self)-> Self: 
-        self._load_yaml_config()\
-            ._load_config_raw_model()\
-            ._load_config_target_model()
-
-        return self
-    
-    def get_provider(self)->Self:
-        self._provider = self.meta_data.provider_class(config=self._target_config_model)
-        return self
-    
-    def build(self)-> P:
-        return self._provider
 
 
 class ExecutionProviderService:
