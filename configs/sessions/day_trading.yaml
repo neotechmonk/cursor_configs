@@ -10,13 +10,13 @@ symbols:
   AAPL:
     providers:
       data: "csv"
-      execution: "csv"  # Using csv as execution provider temporarily
+      execution: "file"  # Using file as execution provider
     timeframe: "5m"
     enabled: true
   
   SPY:
     providers:
       data: "yahoo"
-      execution: "yahoo"  # Using yahoo as execution provider temporarily
+      execution: "file"  # Using file as execution provider
     timeframe: "1d"
     enabled: true
