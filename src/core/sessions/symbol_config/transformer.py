@@ -3,13 +3,14 @@ from dataclasses import dataclass
 
 from core.data_provider.protocol import DataProviderProtocol
 from core.execution_provider.protocol import ExecutionProviderProtocol
-from core.sessions.symbol import RawSymbolConfig, SymbolConfigModel
+from core.sessions.symbol_config.model import RawSymbolConfig, SymbolConfigModel
 from core.shared.service import ReadOnlyServiceProtocol
 from core.strategy.protocol import StrategyProtocol
 
 
 @dataclass(slots=True)
 class SymbolTransformer:
+    """Implements ConfigTransformerProtocol[RawSymbolConfig, SymbolConfigModel]."""
     data_service: ReadOnlyServiceProtocol[str, DataProviderProtocol]
     exec_service: ReadOnlyServiceProtocol[str, ExecutionProviderProtocol]
     strategy_service: ReadOnlyServiceProtocol[str, StrategyProtocol]

@@ -4,12 +4,12 @@ from pathlib import Path
 
 import yaml
 
-from core.sessions.symbol_config import RawSymbolConfig
+from core.sessions.symbol_config.model import RawSymbolConfig
 
 
 @dataclass(slots=True)
 class YamlSymbolAdapter:
-    """Implements ReadOnlyServiceProtocol[str, RawSymbolConfig]."""
+    """Implements ConfigPersistenceAdapterProtocol[str, RawSymbolConfig]."""
     path: Path
     _blob: dict = field(init=False)
 
