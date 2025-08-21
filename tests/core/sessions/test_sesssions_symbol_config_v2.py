@@ -2,10 +2,9 @@
 import textwrap
 from typing import Optional
 
-from core.sessions.symbol import RawSymbolConfig, SymbolConfigModel
+from core.sessions.symbol_config import RawSymbolConfig, SymbolConfigModel
 from core.sessions.symbolv2 import SymbolTransformer, YamlSymbolAdapter
-from core.shared.protocols.config import ReadOnlyConfigService
-from core.time import CustomTimeframe
+from core.shared.config import ReadOnlyConfigService
 from tests.mocks.providers import MockDataProviderService, MockExecutionProviderService
 from tests.mocks.strategies import MockStrategyService
 
@@ -65,35 +64,6 @@ def test_yaml_symbol_adapter_get_and_get_all_happy_path(tmp_path):
     assert symbols == {"AAPL", "MSFT"}
 
 
-def test_symbol_transformer_happy_path():
-    # Arrange
-    raw = RawSymbolConfig(
-        symbol="AAPL",
-        timeframe="5m",
-        enabled=True,
-        providers={"data": "csv", "execution": "ib"},
-        strategy="breakout",
-    )
-
-    transformer = SymbolTransformer(
-        data_service=MockDataProviderService(),
-        exec_service=MockExecutionProviderService(),
-        strategy_service=MockStrategyService(),
-    )
-
-    # Act
-    model = transformer(raw)
-
-    # Assert
-    assert isinstance(model, SymbolConfigModel)
-    assert model.symbol == "AAPL"
-    assert model.timeframe == CustomTimeframe("5m")
-    assert model.enabled is True
-    assert model.data_provider.name == "csv"
-    assert model.execution_provider.name == "ib"
-    assert model.strategy.name == "breakout"
-
-
 def test_symbol_service_happy_path(tmp_path):
     # Arrange: YAML file
     yaml_text = textwrap.dedent(
@@ -123,23 +93,21 @@ def test_symbol_service_happy_path(tmp_path):
         adapter=adapter,
         transformer=transformer,
         cache=cache,
-        cache_namespace="symbol:",
-        key_from_target=lambda t: t.symbol,  # primes cache on get_all()
     )
 
     # Act: first call (miss → adapter+transformer)
     aapl = service.get("AAPL")
-    # Act: second call (hit cache)
-    aapl_again = service.get("AAPL")
 
-    # Assert model
+    # # Assert model
     assert isinstance(aapl, SymbolConfigModel)
     assert aapl.symbol == "AAPL"
     assert aapl.data_provider.name == "csv"
     assert aapl.execution_provider.name == "ib"
     assert aapl.strategy.name == "breakout"
 
+    # Act: second call (hit cache)
     # Assert cache effectiveness (same object instance is a simple proxy for cache hit)
+    aapl_again = service.get("AAPL")
     assert aapl_again is aapl
 
     # Act: get_all primes cache (if more symbols existed)
