@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from core.sessions.symbol_config.adapter import YamlSymbolAdapter
+from core.sessions.symbol_config.adapter import SymbolYamlAdapter
 from core.sessions.symbol_config.model import RawSymbolConfig
 from core.shared.config import ConfigPersistenceAdapterProtocol
 
@@ -54,7 +54,7 @@ def symbols_yaml_multi(tmp_path: Path) -> Path:
 
 # --- Tests: get / get_all / cache --------------------------------------------
 def test_yaml_symbol_adapter_get_respects_protocol(symbols_yaml_min: Path) -> None:
-    adapter: ConfigPersistenceAdapterProtocol[str, RawSymbolConfig] = YamlSymbolAdapter(path=symbols_yaml_min)
+    adapter: ConfigPersistenceAdapterProtocol[str, RawSymbolConfig] = SymbolYamlAdapter(path=symbols_yaml_min)
 
     # Optional runtime assertion if your protocol is @runtime_checkable
     assert isinstance(adapter, ConfigPersistenceAdapterProtocol)
@@ -70,7 +70,7 @@ def test_yaml_symbol_adapter_get_respects_protocol(symbols_yaml_min: Path) -> No
 
 
 def test_yaml_symbol_adapter_get_all_respects_protocol(symbols_yaml_multi: Path) -> None:
-    adapter: ConfigPersistenceAdapterProtocol[str, RawSymbolConfig] = YamlSymbolAdapter(path=symbols_yaml_multi)
+    adapter: ConfigPersistenceAdapterProtocol[str, RawSymbolConfig] = SymbolYamlAdapter(path=symbols_yaml_multi)
 
     raws = adapter.get_all()
     assert all(isinstance(r, RawSymbolConfig) for r in raws)
