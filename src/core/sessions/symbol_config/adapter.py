@@ -1,6 +1,8 @@
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Mapping, Optional
 
 import yaml
 
@@ -8,7 +10,7 @@ from core.sessions.symbol_config.model import RawSymbolConfig
 
 
 @dataclass(slots=True)
-class YamlSymbolAdapter:
+class SymbolYamlAdapter:
     """Implements ConfigPersistenceAdapterProtocol[str, RawSymbolConfig]."""
     path: Path
     _blob: dict = field(init=False)
@@ -35,3 +37,28 @@ class YamlSymbolAdapter:
             out.append(RawSymbolConfig(**node))
         return out
 
+@dataclass(slots=True)
+class SymbolDictAdapter:
+    """Read-only adapter over the session's symbols mapping.
+    Used case : nested Symbol configs in the TradingSession config. 
+    Session will have the symbols as dict after parsing the outer contenet
+    E.g.
+        {
+            "AAPL": {
+                "strategy": "sample_strategy",
+                "providers": {"data": "csv", "execution": "ib"},
+                "timeframe": "5m",
+                "enabled": true
+            }
+        }
+    """
+    symbols: Mapping[str, dict] = field(init=False)
+
+    def get(self, key: str) -> Optional[RawSymbolConfig]:
+        d = self.symbols.get(key)
+        if not d:
+            return None
+        return RawSymbolConfig(symbol=key, **d)
+
+    def get_all(self) -> Iterable[RawSymbolConfig]:
+        return [RawSymbolConfig(symbol=k, **v) for k, v in self.symbols.items()]
