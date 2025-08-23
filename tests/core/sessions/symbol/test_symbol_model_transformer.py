@@ -1,5 +1,6 @@
-from core.sessions.symbol import RawSymbolConfig, SymbolConfigModel
+from core.sessions.symbol_config.model import RawSymbolConfig, SymbolConfigModel
 from core.sessions.symbol_config.transformer import SymbolTransformer
+from core.shared.config import ConfigTransformerProtocol
 from core.time import CustomTimeframe
 from tests.mocks.providers import MockDataProviderService, MockExecutionProviderService
 from tests.mocks.strategies import MockStrategyService
@@ -15,7 +16,7 @@ def test_symbol_transformer_happy_path():
         strategy="breakout",
     )
 
-    transformer = SymbolTransformer(
+    transformer: ConfigTransformerProtocol[RawSymbolConfig, SymbolConfigModel] = SymbolTransformer(
         data_service=MockDataProviderService(),
         exec_service=MockExecutionProviderService(),
         strategy_service=MockStrategyService(),

@@ -77,31 +77,23 @@ class RawSymbolConfig(BaseModel):
             raise ValueError(f"Missing provider/s: Expected {allowed_keys}, got {v.keys()}")
         return v
 
-
-def parse_raw_symbol_configs(raw_dict: dict[str, dict]) -> list[RawSymbolConfig]:
-    """Convert raw YAML dict into a list of validated RawSymbolConfig models."""
-    return [
-        RawSymbolConfig(**value, symbol=key)
-        for key, value in raw_dict.items()
-    ]
-
-
-def resolve_symbol_config_from_raw_model(
-    raw: RawSymbolConfig,
-    data_provider_service: DataProviderServiceProtocol, 
-    execution_provider_service: ExecutionProviderServiceProtocol,
-    strategy_service: StrategyServiceProtocol,    
-) -> SymbolConfigModel:
+"""replaced with transformers"""
+# def resolve_symbol_config_from_raw_model(
+#     raw: RawSymbolConfig,
+#     data_provider_service: DataProviderServiceProtocol, 
+#     execution_provider_service: ExecutionProviderServiceProtocol,
+#     strategy_service: StrategyServiceProtocol,    
+# ) -> SymbolConfigModel:
     
-    try:
-        return SymbolConfigModel(
-            symbol=raw.symbol,
-            strategy=strategy_service.get(raw.strategy),
-            data_provider=data_provider_service.get(raw.providers["data"]) ,
-            execution_provider=execution_provider_service.get(raw.providers["execution"]) ,
-            timeframe=CustomTimeframe(raw.timeframe),
-            enabled=raw.enabled
-        )
-    except Exception as e:
-        raise ValueError(f"Error resolving symbol config from raw model: {e}")
+#     try:
+#         return SymbolConfigModel(
+#             symbol=raw.symbol,
+#             strategy=strategy_service.get(raw.strategy),
+#             data_provider=data_provider_service.get(raw.providers["data"]) ,
+#             execution_provider=execution_provider_service.get(raw.providers["execution"]) ,
+#             timeframe=CustomTimeframe(raw.timeframe),
+#             enabled=raw.enabled
+#         )
+#     except Exception as e:
+#         raise ValueError(f"Error resolving symbol config from raw model: {e}")
 
