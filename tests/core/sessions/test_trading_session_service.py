@@ -22,13 +22,26 @@ def mock_services():
 
 @pytest.fixture
 def session_yaml_path(tmp_path: Path) -> Path:
+    """Create a temporary session YAML file with new list-based symbols structure.
+    
+    Creates a test session configuration using the new YAML format where
+    symbols are defined as a list with explicit symbol fields instead of
+    being keyed by symbol names.
+    
+    Args:
+        tmp_path: Pytest temporary directory fixture
+        
+    Returns:
+        Path to the temporary sessions directory containing the test YAML file
+    """
     session_data = {
         "name": "Test Session",
         "description": "A test trading session",
         "portfolio": "main_account",
         "capital_allocation": 10000.0,
-        "symbols": {
-            "AAPL": {
+        "symbols": [
+            {
+                "symbol": "AAPL",
                 "strategy": "sample_strategy",
                 "providers": {
                     "data": "csv",
@@ -37,7 +50,7 @@ def session_yaml_path(tmp_path: Path) -> Path:
                 "timeframe": "5m",
                 "enabled": True
             }
-        }
+        ]
     }
 
     sessions_dir = tmp_path / "sessions"

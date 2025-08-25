@@ -1,3 +1,33 @@
+"""Trading session management with new list-based YAML configuration.
+
+This module provides the core functionality for managing trading sessions
+using the updated YAML configuration format. The new format uses a list-based
+structure for symbols instead of the previous key-value mapping approach.
+
+Key Changes:
+- Symbols are now defined as a list with explicit 'symbol' fields
+- Each symbol configuration is self-contained and explicit
+- Improved readability and easier programmatic manipulation
+- Better support for metadata and additional symbol properties
+
+Example YAML Structure:
+    symbols:
+      - symbol: AAPL
+        strategy: "sample_strategy"
+        providers:
+          data: "csv"
+          execution: "file"
+        timeframe: "5m"
+        enabled: true
+      - symbol: SPY
+        strategy: "sample_strategy"
+        providers:
+          data: "yahoo"
+          execution: "file"
+        timeframe: "1d"
+        enabled: true
+"""
+
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -12,11 +42,8 @@ from core.execution_provider.service import ExecutionProviderService
 from core.portfolio.portfolio import PortfolioService
 from core.portfolio.protocol import PortfolioProtocol
 from core.sessions.protocols import TradingSessionProtocol
-from core.sessions.symbol_config.adapter import SymbolDictAdapter
 from core.sessions.symbol_config.model import RawSymbolConfig, SymbolConfigModel
 from core.sessions.symbol_config.transformer import SymbolTransformer
-from core.shared.config import ReadOnlyConfigService
-from core.shared.service import ReadOnlyServiceProtocol
 from core.strategy.service import StrategyService
 from util.yaml_config_loader import load_yaml_config
 
@@ -44,44 +71,90 @@ class TradingSessionConfig(BaseModel):
 
 
 class RawSessionConfig(BaseModel):
+    """Raw session configuration from YAML with list-based symbols structure.
+    
+    Example YAML structure:
+        name: "Day Trading Session"
+        description: "High-frequency trading session for intraday strategies"
+        portfolio: "main-portfolio"
+        capital_allocation: 30000.00
+        symbols:
+          - symbol: AAPL
+            strategy: "sample_strategy"
+            providers:
+              data: "csv"
+              execution: "file"
+            timeframe: "5m"
+            enabled: true
+          - symbol: SPY
+            strategy: "sample_strategy"
+            providers:
+              data: "yahoo"
+              execution: "file"
+            timeframe: "1d"
+            enabled: true
+    """
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    
     name: str
     description: Optional[str] = None
     portfolio: str
     capital_allocation: Decimal
-    symbols: Dict[str, dict] 
+    symbols: List[dict]  
 
 
-
-def resolve_session_config(
-    raw: RawSessionConfig,
-    data_provider_service: DataProviderService,
-    execution_provider_service: ExecutionProviderService,
-    portfolio_service: PortfolioService,
-    strategy_service: StrategyService
-) -> TradingSessionConfig:
+def resolve_session_config(raw_config: RawSessionConfig, 
+                          data_provider_service: DataProviderService,
+                          execution_provider_service: ExecutionProviderService,
+                          portfolio_service: PortfolioService,
+                          strategy_service: StrategyService) -> TradingSessionConfig:
+    """Resolve raw session config into fully hydrated TradingSessionConfig.
     
-    symbols_service = ReadOnlyConfigService[str, RawSymbolConfig, SymbolConfigModel](
-        adapter=SymbolDictAdapter(symbols=raw.symbols),
-        transformer=SymbolTransformer(
-            data_service=data_provider_service,
-            exec_service=execution_provider_service,
-            strategy_service=strategy_service
-        ),
-        cache=None
+    This function processes the new list-based symbols structure where each symbol
+    configuration includes an explicit 'symbol' field instead of being keyed by
+    the symbol name.
+    
+    Args:
+        raw_config: Raw session configuration with list-based symbols
+        data_provider_service: Service to resolve data providers
+        execution_provider_service: Service to resolve execution providers
+        portfolio_service: Service to resolve portfolio
+        strategy_service: Service to resolve strategies
+        
+    Returns:
+        Fully resolved TradingSessionConfig with hydrated symbol configurations
+        
+    Raises:
+        ValueError: If portfolio is not found or symbol config is invalid
+    """
+    
+    # Create the symbol transformer
+    symbol_transformer = SymbolTransformer(
+        data_service=data_provider_service,
+        exec_service=execution_provider_service,
+        strategy_service=strategy_service
     )
-
-    resolved_symbols = symbols_service.get_all()
-
+    # Process each symbol in the list - each item is already a dict with 'symbol' field
+    resolved_symbols = []
+    for symbol_config in raw_config.symbols:
+        # Create RawSymbolConfig from the dict - the transformer expects this type
+        raw_symbol = RawSymbolConfig(**symbol_config)
+        
+        # Resolve the symbol config using the transformer
+        resolved_symbol = symbol_transformer(raw_symbol)
+        resolved_symbols.append(resolved_symbol)
+    
     # Validate portfolio resolution
-    portfolio = portfolio_service.get(raw.portfolio)
+    portfolio = portfolio_service.get(raw_config.portfolio)
     if portfolio is None:
-        raise ValueError(f"Error resolving session config: portfolio '{raw.portfolio}' not found")
+        raise ValueError(f"portfolio '{raw_config.portfolio}' not found")
 
+    # Create and return the resolved config
     return TradingSessionConfig(
-        name=raw.name,
-        description=raw.description,
+        name=raw_config.name,
+        description=raw_config.description,
         portfolio=portfolio,
-        capital_allocation=raw.capital_allocation,
+        capital_allocation=raw_config.capital_allocation,
         symbols=resolved_symbols
     )
 
@@ -116,16 +189,26 @@ class TradingSessionService:
         return sessions
 
     def _load_session_config(self, session_name: str) -> TradingSessionConfig:
+        """Load and resolve session configuration from YAML file.
+        
+        Loads the session configuration using the new list-based symbols structure
+        where each symbol configuration includes an explicit 'symbol' field.
+        
+        Args:
+            session_name: Name of the session configuration file (without .yaml extension)
+            
+        Returns:
+            Resolved TradingSessionConfig with hydrated dependencies
+            
+        Raises:
+            FileNotFoundError: If session configuration file doesn't exist
+            ValueError: If configuration validation fails
+        """
         config_path = self.sessions_dir / f"{session_name}.yaml"
         raw_dict = load_yaml_config(config_path)
         
-        # Create raw session config and inject symbol names inline
+        # Create raw session config - symbols are now already in list format
         raw_config = RawSessionConfig(**raw_dict)
-        updated_symbols = {
-            sym_name: {**raw_config.symbols[sym_name], "symbol": sym_name}
-            for sym_name in raw_config.symbols.keys()
-        }
-        raw_config = raw_config.model_copy(update={"symbols": updated_symbols})
         
         return resolve_session_config(
             raw_config,
@@ -135,7 +218,6 @@ class TradingSessionService:
             self.strategy_service
         )
     
-
     def _build_trading_session(self, config: TradingSessionConfig) -> "TradingSession":
         """Construct a TradingSession with explicit config unpacking."""
         # Convert list of symbols back to dict for TradingSession constructor
