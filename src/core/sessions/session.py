@@ -7,13 +7,17 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict
 from pydantic_settings import BaseSettings
 
+from core.data_provider.service import DataProviderService
+from core.execution_provider.service import ExecutionProviderService
+from core.portfolio.portfolio import PortfolioService
 from core.portfolio.protocol import PortfolioProtocol
 from core.sessions.protocols import TradingSessionProtocol
-from core.sessions.symbol import (
-    RawSymbolConfig,
-    SymbolConfigModel,
-    resolve_symbol_config_from_raw_model,
-)
+from core.sessions.symbol_config.adapter import SymbolDictAdapter
+from core.sessions.symbol_config.model import RawSymbolConfig, SymbolConfigModel
+from core.sessions.symbol_config.transformer import SymbolTransformer
+from core.shared.config import ReadOnlyConfigService
+from core.shared.service import ReadOnlyServiceProtocol
+from core.strategy.service import StrategyService
 from util.yaml_config_loader import load_yaml_config
 
 
@@ -36,7 +40,7 @@ class TradingSessionConfig(BaseModel):
     portfolio: PortfolioProtocol
     capital_allocation: float
     # strategies: List[str]
-    symbols: Dict[str, SymbolConfigModel]
+    symbols: List[SymbolConfigModel]
 
 
 class RawSessionConfig(BaseModel):
@@ -44,40 +48,39 @@ class RawSessionConfig(BaseModel):
     description: Optional[str] = None
     portfolio: str
     capital_allocation: Decimal
-    symbols: Dict[str, RawSymbolConfig] 
+    symbols: Dict[str, dict] 
 
-
-def parse_raw_session_config(raw_dict: dict) -> RawSessionConfig:
-    raw_session = RawSessionConfig(**raw_dict)
-
-    # Inject symbol names into each RawSymbolConfig
-    updated_symbols = {
-        sym_name: raw_session.symbols[sym_name].model_copy(update={"symbol": sym_name})
-        for sym_name in raw_session.symbols.keys()
-    }
-
-    return raw_session.model_copy(update={"symbols": updated_symbols})
 
 
 def resolve_session_config(
     raw: RawSessionConfig,
-    data_provider_service,
-    execution_provider_service,
-    portfolio_service
+    data_provider_service: DataProviderService,
+    execution_provider_service: ExecutionProviderService,
+    portfolio_service: PortfolioService,
+    strategy_service: StrategyService
 ) -> TradingSessionConfig:
-    resolved_symbols = {
-        symbol_name: resolve_symbol_config_from_raw_model(
-            raw_cfg,
-            data_provider_service,
-            execution_provider_service
-        )
-        for symbol_name, raw_cfg in raw.symbols.items()
-    }
+    
+    symbols_service = ReadOnlyConfigService[str, RawSymbolConfig, SymbolConfigModel](
+        adapter=SymbolDictAdapter(symbols=raw.symbols),
+        transformer=SymbolTransformer(
+            data_service=data_provider_service,
+            exec_service=execution_provider_service,
+            strategy_service=strategy_service
+        ),
+        cache=None
+    )
+
+    resolved_symbols = symbols_service.get_all()
+
+    # Validate portfolio resolution
+    portfolio = portfolio_service.get(raw.portfolio)
+    if portfolio is None:
+        raise ValueError(f"Error resolving session config: portfolio '{raw.portfolio}' not found")
 
     return TradingSessionConfig(
         name=raw.name,
         description=raw.description,
-        portfolio=portfolio_service.get(raw.portfolio),
+        portfolio=portfolio,
         capital_allocation=raw.capital_allocation,
         symbols=resolved_symbols
     )
@@ -90,6 +93,7 @@ class TradingSessionService:
     data_provider_service: Any
     execution_provider_service: Any
     portfolio_service: Any
+    strategy_service: Any
 
     _session_cache: Dict[str, TradingSessionProtocol] = field(default_factory=dict, init=False)
 
@@ -114,13 +118,23 @@ class TradingSessionService:
     def _load_session_config(self, session_name: str) -> TradingSessionConfig:
         config_path = self.sessions_dir / f"{session_name}.yaml"
         raw_dict = load_yaml_config(config_path)
-        raw_config = parse_raw_session_config(raw_dict)
+        
+        # Create raw session config and inject symbol names inline
+        raw_config = RawSessionConfig(**raw_dict)
+        updated_symbols = {
+            sym_name: {**raw_config.symbols[sym_name], "symbol": sym_name}
+            for sym_name in raw_config.symbols.keys()
+        }
+        raw_config = raw_config.model_copy(update={"symbols": updated_symbols})
+        
         return resolve_session_config(
             raw_config,
             self.data_provider_service,
             self.execution_provider_service,
-            self.portfolio_service
+            self.portfolio_service,
+            self.strategy_service
         )
+    
 
     def _build_trading_session(self, config: TradingSessionConfig) -> "TradingSession":
         """Construct a TradingSession with explicit config unpacking."""

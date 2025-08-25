@@ -37,6 +37,7 @@ class SymbolYamlAdapter:
             out.append(RawSymbolConfig(**node))
         return out
 
+
 @dataclass(slots=True)
 class SymbolDictAdapter:
     """Read-only adapter over the session's symbols mapping.
@@ -52,7 +53,7 @@ class SymbolDictAdapter:
             }
         }
     """
-    symbols: Mapping[str, dict] = field(init=False)
+    symbols: Mapping[str, dict] 
 
     def get(self, key: str) -> Optional[RawSymbolConfig]:
         d = self.symbols.get(key)
@@ -61,4 +62,4 @@ class SymbolDictAdapter:
         return RawSymbolConfig(symbol=key, **d)
 
     def get_all(self) -> Iterable[RawSymbolConfig]:
-        return [RawSymbolConfig(symbol=k, **v) for k, v in self.symbols.items()]
+        return [RawSymbolConfig(**v) for v in self.symbols.values()]

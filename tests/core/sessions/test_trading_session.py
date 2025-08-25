@@ -6,10 +6,11 @@ from pydantic import ValidationError
 from core.sessions.session import (
     RawSessionConfig,
     TradingSessionConfig,
-    parse_raw_session_config,
     resolve_session_config,
 )
 from tests.mocks.portfolio import MockPortfolio
+from tests.mocks.providers import MockDataProviderService, MockExecutionProviderService
+from tests.mocks.strategies import MockStrategyService
 
 
 @pytest.fixture
@@ -41,6 +42,33 @@ def full_session_config_dict():
             }
         }
     }
+
+
+@pytest.fixture
+def mock_data_provider_service():
+    """Mock data provider service for testing."""
+    return MockDataProviderService()
+
+
+@pytest.fixture
+def mock_execution_provider_service():
+    """Mock execution provider service for testing."""
+    return MockExecutionProviderService()
+
+
+@pytest.fixture
+def mock_portfolio_service():
+    """Mock portfolio service for testing."""
+    class MockPortfolioService:
+        def get(self, name):
+            return MockPortfolio(name) if name == "main_account" else None
+    return MockPortfolioService()
+
+
+@pytest.fixture
+def mock_strategy_service():
+    """Mock strategy service for testing."""
+    return MockStrategyService()
 
 
 # ============================================================================
@@ -105,8 +133,8 @@ def test_raw_session_config_validation():
 # SESSION CONFIG PARSING TESTS
 # ============================================================================
 
-def test_parse_raw_session_config_happy_path():
-    """Test parsing raw session configuration from dictionary."""
+def test_raw_session_config_with_symbol_names():
+    """Test creating raw session config with symbol names injected."""
     raw_dict = {
         "name": "Day Trading Session",
         "description": "Intraday trading session",
@@ -134,7 +162,13 @@ def test_parse_raw_session_config_happy_path():
         }
     }
 
-    parsed = parse_raw_session_config(raw_dict)
+    # Create raw session config and inject symbol names inline
+    raw_session = RawSessionConfig(**raw_dict)
+    updated_symbols = {
+        sym_name: {**raw_session.symbols[sym_name], "symbol": sym_name}
+        for sym_name in raw_session.symbols.keys()
+    }
+    parsed = raw_session.model_copy(update={"symbols": updated_symbols})
 
     assert isinstance(parsed, RawSessionConfig)
     assert parsed.name == "Day Trading Session"
@@ -143,8 +177,8 @@ def test_parse_raw_session_config_happy_path():
     assert len(parsed.symbols) == 2
 
 
-def test_parse_raw_session_config_empty_symbols():
-    """Test parsing session config with no symbols."""
+def test_raw_session_config_empty_symbols():
+    """Test creating session config with no symbols."""
     raw_dict = {
         "name": "Empty Session",
         "description": "Session with no symbols",
@@ -153,30 +187,36 @@ def test_parse_raw_session_config_empty_symbols():
         "symbols": {}
     }
 
-    parsed = parse_raw_session_config(raw_dict)
+    # Create raw session config and inject symbol names inline
+    raw_session = RawSessionConfig(**raw_dict)
+    updated_symbols = {
+        sym_name: {**raw_session.symbols[sym_name], "symbol": sym_name}
+        for sym_name in raw_session.symbols.keys()
+    }
+    parsed = raw_session.model_copy(update={"symbols": updated_symbols})
     assert parsed.name == "Empty Session"
     assert len(parsed.symbols) == 0
 
 
-def test_parse_raw_session_config_missing_required_fields():
-    """Test parsing session config with missing required fields."""
+def test_raw_session_config_missing_required_fields():
+    """Test creating session config with missing required fields."""
     # Missing name
     with pytest.raises(ValidationError, match=r"Field required"):
-        parse_raw_session_config({
-            "description": "Test session",
-            "portfolio": "main_account",
-            "capital_allocation": 10000.00,
-            "symbols": {}
-        })
+        RawSessionConfig(
+            description="Test session",
+            portfolio="main_account",
+            capital_allocation=10000.00,
+            symbols={}
+        )
 
     # Missing portfolio
     with pytest.raises(ValidationError, match=r"Field required"):
-        parse_raw_session_config({
-            "name": "Test Session",
-            "description": "Test session",
-            "capital_allocation": 10000.00,
-            "symbols": {}
-        })
+        RawSessionConfig(
+            name="Test Session",
+            description="Test session",
+            capital_allocation=10000.00,
+            symbols={}
+        )
 
 
 # ============================================================================
@@ -187,14 +227,15 @@ def test_resolve_session_config_happy_path(
     full_session_config_dict,
     mock_data_provider_service,
     mock_execution_provider_service,
-    mock_portfolio_service
+    mock_portfolio_service,
+    mock_strategy_service
 ):
     """Test successful session configuration resolution."""
     raw_session = RawSessionConfig(**full_session_config_dict)
 
-    # Inject symbol names into each RawSymbolConfig
+    # Inject symbol names into each symbol dict (keep as dictionaries)
     updated_symbols = {
-        symbol_name: cfg.model_copy(update={"symbol": symbol_name})
+        symbol_name: {**cfg, "symbol": symbol_name}
         for symbol_name, cfg in raw_session.symbols.items()
     }
     raw_session = raw_session.model_copy(update={"symbols": updated_symbols})
@@ -203,7 +244,8 @@ def test_resolve_session_config_happy_path(
         raw_session,
         data_provider_service=mock_data_provider_service,
         execution_provider_service=mock_execution_provider_service,
-        portfolio_service=mock_portfolio_service
+        portfolio_service=mock_portfolio_service,
+        strategy_service=mock_strategy_service
     )
 
     assert isinstance(resolved, TradingSessionConfig)
@@ -217,7 +259,8 @@ def test_resolve_session_config_happy_path(
 def test_resolve_session_config_missing_portfolio(
     full_session_config_dict,
     mock_data_provider_service,
-    mock_execution_provider_service
+    mock_execution_provider_service,
+    mock_strategy_service
 ):
     """Test session resolution with missing portfolio."""
     raw_session = RawSessionConfig(**full_session_config_dict)
@@ -225,21 +268,24 @@ def test_resolve_session_config_missing_portfolio(
 
     # Inject symbol names
     updated_symbols = {
-        symbol_name: cfg.model_copy(update={"symbol": symbol_name})
+        symbol_name: {**cfg, "symbol": symbol_name}
         for symbol_name, cfg in raw_session.symbols.items()
     }
     raw_session = raw_session.model_copy(update={"symbols": updated_symbols})
 
     # Create a portfolio service that returns None for missing portfolio
-    def missing_portfolio_service(name):
-        return None
+    class MissingPortfolioService:
+        def get(self, name):
+            return None
+    missing_portfolio_service = MissingPortfolioService()
 
     with pytest.raises(ValueError, match="Error resolving session config"):
         resolve_session_config(
             raw_session,
             data_provider_service=mock_data_provider_service,
             execution_provider_service=mock_execution_provider_service,
-            portfolio_service=missing_portfolio_service
+            portfolio_service=missing_portfolio_service,
+            strategy_service=mock_strategy_service
         )
 
 
@@ -276,7 +322,7 @@ def test_session_symbol_count():
     }
     
     model = RawSessionConfig(**test_data)
-    enabled_symbols = [symbol for symbol, config in model.symbols.items() if config.enabled]
+    enabled_symbols = [symbol for symbol, config in model.symbols.items() if config["enabled"]]
     
     assert len(enabled_symbols) == 2  # AAPL and BTC are enabled, SPY is disabled
 
@@ -307,7 +353,8 @@ def test_session_capital_allocation():
 def test_session_end_to_end_workflow(
     mock_data_provider_service,
     mock_execution_provider_service,
-    mock_portfolio_service
+    mock_portfolio_service,
+    mock_strategy_service
 ):
     """Test complete end-to-end session workflow."""
     # 1. Create raw session config
@@ -326,14 +373,19 @@ def test_session_end_to_end_workflow(
         }
     }
     
-    # 2. Parse raw config
-    raw_session = parse_raw_session_config(raw_dict)
+    # 2. Create raw session config and inject symbol names inline
+    raw_session = RawSessionConfig(**raw_dict)
+    updated_symbols = {
+        sym_name: {**raw_session.symbols[sym_name], "symbol": sym_name}
+        for sym_name in raw_session.symbols.keys()
+    }
+    raw_session = raw_session.model_copy(update={"symbols": updated_symbols})
     assert raw_session.name == "Test Session"
     assert raw_session.capital_allocation == Decimal("50000.00")
     
     # 3. Inject symbol names
     updated_symbols = {
-        symbol_name: cfg.model_copy(update={"symbol": symbol_name})
+        symbol_name: {**cfg, "symbol": symbol_name}
         for symbol_name, cfg in raw_session.symbols.items()
     }
     raw_session = raw_session.model_copy(update={"symbols": updated_symbols})
@@ -343,7 +395,8 @@ def test_session_end_to_end_workflow(
         raw_session,
         mock_data_provider_service,
         mock_execution_provider_service,
-        mock_portfolio_service
+        mock_portfolio_service,
+        mock_strategy_service
     )
     
     # 5. Validate resolved session
@@ -351,4 +404,4 @@ def test_session_end_to_end_workflow(
     assert resolved.name == "Test Session"
     assert resolved.capital_allocation == 50000.00
     assert len(resolved.symbols) == 1
-    assert "AAPL" in resolved.symbols
+    assert any(symbol.symbol == "AAPL" for symbol in resolved.symbols)
