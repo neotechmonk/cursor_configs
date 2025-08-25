@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.models import StrategStepEvaluationResult, StrategyStep
+from src.models import StrategyStep, StrategyStepEvaluationResult
 from src.validation.validators import (
     validate_identical_output_by_different_steps,
     validate_no_duplicate_outputs_by_different_steps,
@@ -127,12 +127,12 @@ def test_validate_step_outputs_for_duplicate_results(test_case):
     )
     
     # Create results with specified outputs
-    result1 = StrategStepEvaluationResult(
+    result1 = StrategyStepEvaluationResult(
         is_success=True,
         step_output=test_case["step1_output"]
     )
     
-    result2 = StrategStepEvaluationResult(
+    result2 = StrategyStepEvaluationResult(
         is_success=True,
         step_output=test_case["step2_output"]
     )
@@ -218,7 +218,7 @@ def test_validate_step_output_keys_and_values(test_case):
     )
     
     # Create result with specified output
-    result = StrategStepEvaluationResult(
+    result = StrategyStepEvaluationResult(
         is_success=True,
         step_output=test_case["step_output"]
     )
@@ -251,7 +251,7 @@ def test_validate_identical_output_by_different_steps():
     )
     
     # Create a result with some output
-    result = StrategStepEvaluationResult(
+    result = StrategyStepEvaluationResult(
         is_success=True,
         step_output={"key": "value"}
     )

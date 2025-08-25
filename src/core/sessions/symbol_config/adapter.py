@@ -62,4 +62,4 @@ class SymbolDictAdapter:
         return RawSymbolConfig(symbol=key, **d)
 
     def get_all(self) -> Iterable[RawSymbolConfig]:
-        return [RawSymbolConfig(**v) for v in self.symbols.values()]
+        return [RawSymbolConfig(symbol=key, **{k: v for k, v in cfg.items() if k != 'symbol'}) for key, cfg in self.symbols.items()]

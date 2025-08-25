@@ -8,6 +8,7 @@ capital_allocation: 30000.00
 # Symbol mapping - connects strategies to providers
 symbols:
   AAPL:
+    strategy: "sample_strategy"
     providers:
       data: "csv"
       execution: "file"  # Using file as execution provider
@@ -15,6 +16,7 @@ symbols:
     enabled: true
   
   SPY:
+    strategy: "sample_strategy"
     providers:
       data: "yahoo"
       execution: "file"  # Using file as execution provider

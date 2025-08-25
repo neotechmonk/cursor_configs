@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict, Optional, Type
 
 import yaml
-
 from core.feed import (
     CSVPriceFeedConfig,
     CSVPriceFeedProvider,
@@ -12,6 +11,7 @@ from core.feed import (
     YahooFinanceConfig,
     YahooFinanceProvider,
 )
+
 from core.protocols import PriceFeedProvider
 
 

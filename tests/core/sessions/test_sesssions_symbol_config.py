@@ -1,10 +1,8 @@
 
 import pytest
 
-from core.sessions.symbol_config import (
-    RawSymbolConfig,
-    resolve_symbol_config_from_raw_model,
-)
+from core.sessions.symbol_config.model import RawSymbolConfig
+from core.sessions.symbol_config.transformer import SymbolTransformer
 from tests.mocks.providers import MockDataProviderService, MockExecutionProviderService
 from tests.mocks.strategies import MockStrategyService
 
@@ -66,10 +64,11 @@ def test_resolve_symbol_config_with_missing_providers(providers):
         enabled=True
     )
 
-    with pytest.raises(ValueError, match="Error resolving symbol config"):
-        resolve_symbol_config_from_raw_model(
-            raw,
-            MockDataProviderService(),
-            MockExecutionProviderService(),
-            MockStrategyService()
-        )
+    transformer = SymbolTransformer(
+        data_service=MockDataProviderService(),
+        exec_service=MockExecutionProviderService(),
+        strategy_service=MockStrategyService()
+    )
+
+    with pytest.raises(ValueError, match="Symbol resolution failed"):
+        transformer(raw)

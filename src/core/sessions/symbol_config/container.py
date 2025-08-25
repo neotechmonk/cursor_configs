@@ -2,7 +2,9 @@ from dependency_injector import containers, providers
 
 from core.sessions.symbol_config.adapter import SymbolDictAdapter, SymbolYamlAdapter
 from core.sessions.symbol_config.model import RawSymbolConfig, SymbolConfigModel
-from core.sessions.symbol_config.transformer import SymbolTransformer  # if class/callable
+from core.sessions.symbol_config.transformer import (
+    SymbolTransformer,  # if class/callable
+)
 from core.shared.config import ReadOnlyConfigService
 
 

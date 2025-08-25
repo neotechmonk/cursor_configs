@@ -2,15 +2,9 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from core.data_provider.protocol import (
-    DataProviderProtocol,
-    DataProviderServiceProtocol,
-)
-from core.execution_provider.protocol import (
-    ExecutionProviderProtocol,
-    ExecutionProviderServiceProtocol,
-)
-from core.strategy.protocol import StrategyProtocol, StrategyServiceProtocol
+from core.data_provider.protocol import DataProviderProtocol
+from core.execution_provider.protocol import ExecutionProviderProtocol
+from core.strategy.protocol import StrategyProtocol
 from core.time import CustomTimeframe
 
 
@@ -73,7 +67,8 @@ class RawSymbolConfig(BaseModel):
     @field_validator('providers')
     @classmethod
     def all_required_providers(cls, v):
-        if  {'data', 'execution'} - set(v.keys()):
+        allowed_keys = {'data', 'execution'}
+        if allowed_keys - set(v.keys()):
             raise ValueError(f"Missing provider/s: Expected {allowed_keys}, got {v.keys()}")
         return v
 

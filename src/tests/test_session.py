@@ -5,11 +5,11 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
+from core.price_feeds import YahooFinanceProvider
+from core.session import SimpleTradingSession
 
 from core.portfolio import SimplePortfolio
-from core.price_feeds import YahooFinanceProvider
 from core.protocols import SymbolConfig, Timeframe
-from core.session import SimpleTradingSession
 
 
 @pytest.fixture

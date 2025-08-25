@@ -1,4 +1,3 @@
-import pytest
 
 from core.sessions.symbol_config.adapter import SymbolDictAdapter
 from core.sessions.symbol_config.model import RawSymbolConfig
@@ -15,8 +14,7 @@ def test_dict_symbol_adapter_get_respects_protocol() -> None:
         }
     }
 
-    adapter = SymbolDictAdapter()
-    adapter.symbols = symbols  # set internal mapping
+    adapter = SymbolDictAdapter(symbols=symbols)
 
     assert isinstance(adapter, ConfigPersistenceAdapterProtocol)
 
@@ -46,8 +44,7 @@ def test_dict_symbol_adapter_get_all_respects_protocol() -> None:
         },
     }
 
-    adapter = SymbolDictAdapter()
-    adapter.symbols = symbols
+    adapter = SymbolDictAdapter(symbols=symbols)
 
     raws = adapter.get_all()
     assert all(isinstance(r, RawSymbolConfig) for r in raws)

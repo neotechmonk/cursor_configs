@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 from unittest.mock import Mock
-import pytest
 
 from dependency_injector import providers
 
-from core.sessions.symbol_config.container import SymbolsContainer  # path to your container
+from core.sessions.symbol_config.container import (
+    SymbolsContainer,  # path to your container
+)
 
 
 def test_symbols_container_happy_path_with_dict_adapter():

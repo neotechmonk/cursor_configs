@@ -138,11 +138,14 @@ class TradingSessionService:
 
     def _build_trading_session(self, config: TradingSessionConfig) -> "TradingSession":
         """Construct a TradingSession with explicit config unpacking."""
+        # Convert list of symbols back to dict for TradingSession constructor
+        symbols_dict = {symbol.symbol: symbol for symbol in config.symbols}
+        
         return TradingSession(
             name=config.name,
             portfolio=config.portfolio,
             capital_allocation=Decimal(str(config.capital_allocation)),
-            symbols=config.symbols
+            symbols=symbols_dict
         )
     
 

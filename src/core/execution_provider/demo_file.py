@@ -106,65 +106,65 @@ def demo_submit_orders(
         return None
 
 
-@inject
-def demo_read_orders(
-    execution_service: ExecutionProviderService = Provide[AppContainer.execution_provider.service]
-):
-    """Demo: Read orders from the file."""
-    print("\n" + "=" * 60)
-    print("DEMO: Reading Orders from File")
-    print("=" * 60)
+# @inject
+# def demo_read_orders(
+#     execution_service: ExecutionProviderService = Provide[AppContainer.execution_provider.service]
+# ):
+#     """Demo: Read orders from the file."""
+#     print("\n" + "=" * 60)
+#     print("DEMO: Reading Orders from File")
+#     print("=" * 60)
     
-    try:
-        file_provider = execution_service.get("file")
+#     try:
+#         file_provider = execution_service.get("file")
         
-        # Read all orders from file
-        orders = file_provider.get_orders()
+#         # Read all orders from file
+#         orders = file_provider.get_orders()
         
-        print(f"✓ Read {len(orders)} orders from {file_provider.config.file_path}")
+#         print(f"✓ Read {len(orders)} orders from {file_provider.config.file_path}")
         
-        # Display order details
-        for i, order_data in enumerate(orders, 1):
-            print(f"\nOrder {i}:")
-            print(f"  - Symbol: {order_data.get('symbol')}")
-            print(f"  - Side: {order_data.get('side')}")
-            print(f"  - Quantity: {order_data.get('quantity')}")
-            print(f"  - Entry Price: {order_data.get('entry_price')}")
-            print(f"  - Tag: {order_data.get('tag', 'None')}")
-            print(f"  - Timestamp: {order_data.get('timestamp')}")
+#         # Display order details
+#         for i, order_data in enumerate(orders, 1):
+#             print(f"\nOrder {i}:")
+#             print(f"  - Symbol: {order_data.get('symbol')}")
+#             print(f"  - Side: {order_data.get('side')}")
+#             print(f"  - Quantity: {order_data.get('quantity')}")
+#             print(f"  - Entry Price: {order_data.get('entry_price')}")
+#             print(f"  - Tag: {order_data.get('tag', 'None')}")
+#             print(f"  - Timestamp: {order_data.get('timestamp')}")
         
-        return orders
+#         return orders
         
-    except Exception as e:
-        print(f"❌ Error reading orders: {e}")
-        return []
+#     except Exception as e:
+#         print(f"❌ Error reading orders: {e}")
+#         return []
 
 
-@inject
-def demo_clear_orders(
-    execution_service: ExecutionProviderService = Provide[AppContainer.execution_provider.service]
-):
-    """Demo: Clear all orders from the file."""
-    print("\n" + "=" * 60)
-    print("DEMO: Clearing Orders")
-    print("=" * 60)
+# @inject
+# def demo_clear_orders(
+#     execution_service: ExecutionProviderService = Provide[AppContainer.execution_provider.service]
+# ):
+#     """Demo: Clear all orders from the file."""
+#     print("\n" + "=" * 60)
+#     print("DEMO: Clearing Orders")
+#     print("=" * 60)
     
-    try:
-        file_provider = execution_service.get("file")
+#     try:
+#         file_provider = execution_service.get("file")
         
-        # Clear all orders
-        result = file_provider.clear_orders()
+#         # Clear all orders
+#         result = file_provider.clear_orders()
         
-        if result:
-            print(f"✓ Cleared all orders from {file_provider.config.file_path}")
-        else:
-            print("❌ Failed to clear orders")
+#         if result:
+#             print(f"✓ Cleared all orders from {file_provider.config.file_path}")
+#         else:
+#             print("❌ Failed to clear orders")
         
-        return result
+#         return result
         
-    except Exception as e:
-        print(f"❌ Error clearing orders: {e}")
-        return False
+#     except Exception as e:
+#         print(f"❌ Error clearing orders: {e}")
+#         return False
 
 
 def main():

@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import (
-    cast,
-)
+from typing import cast
 from unittest.mock import Mock
 
 from core.shared.config import (

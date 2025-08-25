@@ -4,10 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 import yaml
 
-from core.sessions.session import (
-    TradingSession,
-    TradingSessionService,
-)
+from core.sessions.session import TradingSession, TradingSessionService
 from core.time import CustomTimeframe
 from tests.mocks.portfolio import MockPortfolio
 from tests.mocks.providers import MockCSVDataProvider, MockIBExecutionProvider
@@ -18,7 +15,8 @@ def mock_services():
     return {
         "data_provider_service": MagicMock(get=MagicMock(return_value=MockCSVDataProvider())),
         "execution_provider_service": MagicMock(get=MagicMock(return_value=MockIBExecutionProvider())),
-        "portfolio_service": MagicMock(get=MagicMock(return_value=MockPortfolio()))
+        "portfolio_service": MagicMock(get=MagicMock(return_value=MockPortfolio())),
+        "strategy_service": MagicMock(get=MagicMock(return_value=MagicMock()))
     }
 
 
@@ -31,6 +29,7 @@ def session_yaml_path(tmp_path: Path) -> Path:
         "capital_allocation": 10000.0,
         "symbols": {
             "AAPL": {
+                "strategy": "sample_strategy",
                 "providers": {
                     "data": "csv",
                     "execution": "ib"
@@ -56,6 +55,7 @@ def test_trading_session_service_happy_path(mock_services, session_yaml_path):
         data_provider_service=mock_services["data_provider_service"],
         execution_provider_service=mock_services["execution_provider_service"],
         portfolio_service=mock_services["portfolio_service"],
+        strategy_service=mock_services["strategy_service"],
     )
 
     session = service.get("test_session")

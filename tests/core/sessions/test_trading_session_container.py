@@ -19,6 +19,7 @@ def mock_container():
     container.data_provider_service.override(MockCSVDataProvider())
     container.execution_provider_service.override(MockIBExecutionProvider())
     container.portfolio_service.override(MockPortfolio())
+    container.strategy_service.override(MockPortfolio())  # Using MockPortfolio as a placeholder
 
     yield container
     container.unwire()

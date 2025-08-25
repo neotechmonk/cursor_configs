@@ -5,10 +5,10 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-
-from core.data_provider.providers.yahoo import YahooFinanceConfig, YahooFinanceProvider
 from core.feed.config import PricefeedTimeframeConfig
 from src.core.feed.error import ResampleStrategy, SymbolError, TimeframeError
+
+from core.data_provider.providers.yahoo import YahooFinanceConfig, YahooFinanceProvider
 from src.core.time import CustomTimeframe
 
 pytest.skip("Need refactoring to match the CSV provider", allow_module_level=True)

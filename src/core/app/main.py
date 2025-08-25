@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
+
 from rich import box
-from rich.console import Console
 from rich.columns import Columns
+from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.traceback import install

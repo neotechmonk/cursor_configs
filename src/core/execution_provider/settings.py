@@ -8,7 +8,6 @@ from pydantic_settings import BaseSettings
 from core.execution_provider.protocol import ExecutionProviderProtocol
 
 
-
 class ExecutionProviderMetadata(BaseModel):
     model_config = ConfigDict(validate_assignment=True, extra="allow")
     raw_config: Type[BaseModel]

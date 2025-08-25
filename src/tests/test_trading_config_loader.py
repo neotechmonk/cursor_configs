@@ -3,8 +3,8 @@
 from unittest.mock import patch
 
 import pytest
-
 from core.price_feeds import YahooFinanceProvider
+
 from core.protocols import Timeframe
 from loaders.trading_config_loader import TradingConfigLoader
 

@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 import yaml
-from dependency_injector.errors import Error as DIError
-
 from core.feed.container import PriceFeedsContainer
 from core.feed.providers.csv_file import CSVPriceFeedProvider
+from dependency_injector.errors import Error as DIError
+
 from util.yaml_config_loader import load_yaml_config
 
 # =============================================================================

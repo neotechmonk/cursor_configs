@@ -28,5 +28,15 @@
         "provider_class": "core.data_provider.providers.yahoo.YahooFinanceProvider"
       }
     }
+  },
+  "execution_provider": {
+    "config_dir": "configs/providers/execution",
+    "providers": {
+      "file": {
+        "raw_config": "core.execution_provider.providers.file.RawFileExecutionProviderConfig",
+        "target_config": "core.execution_provider.providers.file.FileExecutionProviderConfig",
+        "provider_class": "core.execution_provider.providers.file.FileExecutionProvider"
+      }
+    }
   }
 }

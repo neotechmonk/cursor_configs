@@ -105,19 +105,19 @@ def provider_context():
 
 class SymbolConfigModel(BaseModel):
     """Symbol configuration model."""
-        model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-        symbol: str
+    symbol: str
     providers: dict[Literal['data', 'execution'], Union[DataProvider, ExecutionProvider]]
-        timeframe: str
+    timeframe: str
     enabled: bool
         
     @field_validator('providers', mode='before')
-        @classmethod
+    @classmethod
     def validate_provider(cls, v, info):
         """Convert string provider names to actual provider instances using context."""
         if isinstance(v, dict):
-                context = info.context or {}
+            context = info.context or {}
             
             for provider_type, provider_name in v.items():
                 if isinstance(provider_name, str):
@@ -418,11 +418,11 @@ def coordinating_container() -> TradingSessionCoordinatingContainer:
 # Updated SymbolConfigModelV2 to use DI-based coordinating container
 class SymbolConfigModelV2(BaseModel):
     """Symbol configuration model with DI-based coordinating container."""
-        model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-        symbol: str
+    symbol: str
     providers: dict[Literal['data', 'execution'], Union[DataProvider, ExecutionProvider]]
-        timeframe: str
+    timeframe: str
     enabled: bool
     
     @field_validator('providers', mode='before')
@@ -452,8 +452,8 @@ class SymbolConfigModelV2(BaseModel):
                             raise ValueError(f"{provider_type.title()} provider '{provider_name}' not found")
                         v[provider_type] = provider
         
-            return v
-    
+        return v
+
 # Updated tests to use DI-based coordinating container
 def test_di_coordinating_container_validation(coordinating_container):
     """Test that DI-based coordinating container properly validates providers."""

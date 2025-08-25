@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
+from core.feed.providers.csv_file import CSVPriceFeedConfig, CSVPriceFeedProvider
+from core.session import SimpleTradingSession
 from pydantic import BaseModel
 
-from core.feed.providers.csv_file import CSVPriceFeedConfig, CSVPriceFeedProvider
 from core.portfolio import SimplePortfolio
 from core.protocols import SymbolConfig
-from core.session import SimpleTradingSession
 from core.time import CustomTimeframe
 
 
