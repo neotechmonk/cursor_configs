@@ -11,6 +11,31 @@ appliesTo:
 - Use **pytest** as the test framework.
 - Run tests with **uv**: `uv run pytest …`.
 
+# Import Path Rule
+
+- If `pytest.ini` or `pyproject.toml` has:
+
+  ```toml
+  [tool.pytest.ini_options]
+  pythonpath = ["src"]
+  ```
+
+  → Then **import modules directly from their package under `src/`**, *not* via `src.`
+
+  ✅ Correct:
+  ```python
+  from loaders.strategy_config_loader import create_new_strategy
+  ```
+
+  ❌ Wrong:
+  ```python
+  from src.loaders.strategy_config_loader import create_new_strategy
+  ```
+
+- If `pythonpath` includes `"."` instead, then top-level imports start from the repo root.  
+- If neither is set, confirm import strategy with the user.
+
+
 # Test Data
 - Reuse small, **consistent examples** across modules (e.g., stock symbols: `AAPL`, `GOOGL`, `SPY`).
 - Place larger fixtures under `tests/data/`.
@@ -27,6 +52,17 @@ appliesTo:
     - `tests/[module]/test_file_func1.py`
     - `tests/[module]/test_file_model5.py`
     - `tests/[module]/test_file_class2.py`
+- By default **do not add `__init__.py`** inside the `tests/` folder or its subfolders.  
+  - pytest (>=6) discovers `test_*.py` files without needing them.  
+  - Keeping tests package-free avoids accidental namespace collisions with `src/`.
+
+- Add `__init__.py` only if:
+  - You want to import helpers or fixtures across subfolders with package-style imports.  
+    ```python
+    from tests.helpers.fixtures import sample_fixture
+    ```
+  - A tool (IDE, debugger, coverage tool) explicitly requires tests to be packages.  
+
 - **Limit** `conftest.py` usage to clearly shared, stable fixtures (traceability first).
 
 # Mock Reuse Policy
