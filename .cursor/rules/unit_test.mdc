@@ -52,7 +52,7 @@ appliesTo:
     - `tests/[module]/test_file_func1.py`
     - `tests/[module]/test_file_model5.py`
     - `tests/[module]/test_file_class2.py`
-- By default **do not add `__init__.py`** inside the `tests/` folder or its subfolders.  
+- By default do not add `__init__.py` inside the `tests/` folder or its subfolders.  
   - pytest (>=6) discovers `test_*.py` files without needing them.  
   - Keeping tests package-free avoids accidental namespace collisions with `src/`.
 
@@ -61,8 +61,9 @@ appliesTo:
     ```python
     from tests.helpers.fixtures import sample_fixture
     ```
-  - A tool (IDE, debugger, coverage tool) explicitly requires tests to be packages.  
-
+  - A tool (IDE, debugger, coverage tool) explicitly requires tests to be packages. 
+   
+- Prefer plain test functions (`def test_...`) over class-based tests; only use `class Test...:` when grouping is needed for shared fixtures or marks.
 - **Limit** `conftest.py` usage to clearly shared, stable fixtures (traceability first).
 
 # Mock Reuse Policy
@@ -109,6 +110,19 @@ appliesTo:
   ```
   Remove skips iteratively as scenarios pass.
 
+# LLM Run Plan • Checklist • Summary
+
+Use external templates for every run/iteration (no inline templates here):
+- PLAN → `.cursor/templates/test_run.md` (PLAN block)
+- CHECKLIST → `.cursor/templates/test_run.md` (CHECKLIST block)
+- SUMMARY → `.cursor/templates/test_run.md` (SUMMARY block)
+
+**Process**
+1. Before changes: open the PLAN template, fill it, and paste into the living run note.
+2. During execution: tick the CHECKLIST in the current iteration.
+3. After execution: revise the SUMMARY for this iteration.
+4. Maintain one living note per branch/PR at `.cursor/run_logs/<branch>-run.md` by appending a new iteration block each run. Do not overwrite previous iterations.
+
 # Running Tests
 - **Iterate locally**:
   - Narrow scope: `uv run pytest tests/[module]/test_file.py::TestClass::test_case`
@@ -130,6 +144,13 @@ appliesTo:
 # After Tests Pass
 - Run linter: `uv run ruff check --fix`
 - Report improvements: coverage gaps, over-coupled fixtures, excessive patching, or test naming clarity vs. `src` responsibilities.
+
+# Test Documentation
+- Use the external template at `.cursor/templates/test_run.md`.
+- Before making changes: copy and create a localised doc. Fill out the section. If you aren't sure, ask for specific details before proceeding. 
+- Keep only one living copy in `.cursor/run_logs/<branch>-run.md`, appending a new iteration block each run.
+- Do not create new template files per run; always base updates on the single template and revise the living run log.
+- Remove content in `<!-- … -->` comments when copying into the living note; use the template again for subsequent runs.
 
 # Avoiding Test Noise (Maintain Signal)
 - **Don’t over-test validation** if downstream logic expects cleaned inputs.
