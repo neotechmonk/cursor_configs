@@ -1,0 +1,105 @@
+---
+title: Testing Guidelines (Python)
+description: Project-wide rules for unit tests, folder structure, mocks, and execution.
+alwaysApply: false
+appliesTo:
+  - python
+---
+
+# Testing Framework
+- Focus on **unit testing** (not performance or integration).
+- Use **pytest** as the test framework.
+- Run tests with **uv**: `uv run pytest …`.
+
+# Test Data
+- Reuse small, **consistent examples** across modules (e.g., stock symbols: `AAPL`, `GOOGL`, `SPY`).
+- Place larger fixtures under `tests/data/`.
+
+# Folder Structure
+- All tests live under the repo root: `tests/`.
+- Mirror `src/` structure: `tests/[module_or_file]`.
+- Common folders:
+  - **Mocks**: `tests/mocks/`
+  - **Test data**: `tests/data/`
+- File mapping:
+  - `src/[module]/file.py` → `tests/[module]/test_file.py`
+  - Split by concern if needed:
+    - `tests/[module]/test_file_func1.py`
+    - `tests/[module]/test_file_model5.py`
+    - `tests/[module]/test_file_class2.py`
+- **Limit** `conftest.py` usage to clearly shared, stable fixtures (traceability first).
+
+# Mock Reuse Policy
+- When a test needs a mock/stub:
+  1. **Prefer** existing mocks in `tests/mocks/[module]/`.
+  2. **If absent**, create one under `tests/mocks/[module]/[mock_name].py` and import it from tests.
+- Use `unittest.mock.MagicMock()` or `patch` with **autospec** for interface safety.
+- If a class/function implements an **Abstract Base Class** or **Protocol**, mock to the **interface**, not to the concrete implementation.
+
+> **Scaffold (example)**  
+> Create `tests/mocks/pricing/price_feed_mock.py`:
+> ```python
+> # tests/mocks/pricing/price_feed_mock.py
+> from typing import Protocol
+> from unittest.mock import MagicMock
+> 
+> class PriceFeedProtocol(Protocol):
+>     def latest(self, symbol: str) -> int: ...
+> 
+> def make_price_feed_mock(latest_return: int = 100) -> PriceFeedProtocol:
+>     m = MagicMock(spec=PriceFeedProtocol)
+>     m.latest.return_value = latest_return
+>     return m
+> ```
+> Usage in a test:
+> ```python
+> # tests/pricing/test_price_service.py
+> from tests.mocks.pricing.price_feed_mock import make_price_feed_mock
+> 
+> def test_price_service_uses_feed():
+>     feed = make_price_feed_mock(latest_return=123)
+>     # ... inject feed ...
+>     # assertions ...
+> ```
+
+# Testing Approach
+- Under “agent mode,” assume `src` is correct **initially**; critique test assembly first.
+- If `src` changes are needed, **confirm with the user** and provide rationale + options.
+- Keep tests scoped to the target module/functionality; **mock dependencies** at boundaries.
+- Start with **happy path** to establish baseline comprehension.
+- When drafting multiple tests at once, mark non-active scenarios with:
+  ```python
+  @pytest.mark.skip("Awaiting pass of previous test")
+  ```
+  Remove skips iteratively as scenarios pass.
+
+# Running Tests
+- **Iterate locally**:
+  - Narrow scope: `uv run pytest tests/[module]/test_file.py::TestClass::test_case`
+  - Module sweep: `uv run pytest tests/[module]/`
+- After a new test passes, re-run module and then project subsets to guard regressions.
+
+## Common Test Execution Patterns
+- **Development cycle**: `uv run pytest tests/[module]/test_file.py -v` (verbose output)
+- **Quick validation**: `uv run pytest tests/[module]/test_file.py::test_specific_function -x` (stop on first failure)
+- **Debug mode**: `uv run pytest tests/[module]/test_file.py --pdb` (drop into debugger on failure)
+- **Coverage check**: `uv run pytest tests/[module]/ --cov=src/[module] --cov-report=term-missing`
+- **Performance check**: `uv run pytest tests/[module]/ --durations=10` (show slowest 10 tests)
+
+# Refactoring Tests
+- Recommend parameterisation (`@pytest.mark.parametrize`) where it reduces duplication.
+- Introduce **sad paths** and **edge cases** incrementally after happy path is green.
+- Consider property-based testing (e.g., **hypothesis**) when invariants are clear and valuable.
+
+# After Tests Pass
+- Run linter: `uv run ruff check --fix`
+- Report improvements: coverage gaps, over-coupled fixtures, excessive patching, or test naming clarity vs. `src` responsibilities.
+
+# Avoiding Test Noise (Maintain Signal)
+- **Don’t over-test validation** if downstream logic expects cleaned inputs.
+- **Test business behaviour** (what), not implementation details (how).
+- **Boundary tests** over exhaustive combinatorics.
+- **Mock at the right boundary** (post-validation interfaces).
+- **Test contracts** (inputs/outputs), avoid peeking at internal state.
+- **Don’t test third-party libs** (e.g., Pydantic’s own validation).
+- **Single responsibility** per test—one behaviour per case.
