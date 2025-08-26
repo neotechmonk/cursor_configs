@@ -111,16 +111,15 @@ appliesTo:
   ```
   Remove skips iteratively as scenarios pass.
 
-# LLM Run Plan • Checklist • Summary
+# Test Documentation
+- Use the external template at `.cursor/templates/test_run.md`.
+-  Before changes: open the PLAN template, fill it, and paste into the living run note.
+- During execution: tick the CHECKLIST in the current iteration.
+- After execution: revise the SUMMARY for this iteration.
+-  Maintain one living note per test suite under `tests\module\test.md`  by appending a new iteration block each run. Do not overwrite previous iterations
+- Remove iteration blocks and checklist after all things in the check list are complete
+- Remove content in `<!-- … -->` comments when copying into the living note; use the template again for subsequent runs.
 
-Use external templates for every test suite : `.cursor/templates/test_run.md`
-
-**Process**
-1. Before changes: open the PLAN template, fill it, and paste into the living run note.
-2. During execution: tick the CHECKLIST in the current iteration.
-3. After execution: revise the SUMMARY for this iteration.
-4. Maintain one living note per test suite under `tests\module\test.md`  by appending a new iteration block each run. Do not overwrite previous iterations
-5. Remove iteration blocks and checklist after all things in the check list are complete
 
 # Running Tests
 - **Iterate locally**:
@@ -143,13 +142,6 @@ Use external templates for every test suite : `.cursor/templates/test_run.md`
 # After Tests Pass
 - Run linter: `uv run ruff check --fix`
 - Report improvements: coverage gaps, over-coupled fixtures, excessive patching, or test naming clarity vs. `src` responsibilities.
-
-# Test Documentation
-- Use the external template at `.cursor/templates/test_run.md`.
-- Before making changes: copy and create a localised doc. Fill out the section. If you aren't sure, ask for specific details before proceeding. 
-- Keep only one living copy in `.cursor/run_logs/<branch>-run.md`, appending a new iteration block each run.
-- Do not create new template files per run; always base updates on the single template and revise the living run log.
-- Remove content in `<!-- … -->` comments when copying into the living note; use the template again for subsequent runs.
 
 # Avoiding Test Noise (Maintain Signal)
 - **Don’t over-test validation** if downstream logic expects cleaned inputs.
