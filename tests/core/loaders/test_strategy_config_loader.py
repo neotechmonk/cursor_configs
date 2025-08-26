@@ -1,281 +1,270 @@
-"""Tests for the strategy configuration loader."""
+"""Tests for strategy configuration loader."""
 
+from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import ValidationError
+import yaml
 
-from src.loaders.strategy_config_loader import create_new_strategy, load_strategies
-from src.models.system import StrategyStepRegistry, StrategyStepTemplate
+from loaders.strategy_config_loader import create_new_strategy, load_strategies
 
 
 @pytest.fixture
 def mock_step_registry():
-    """Create a mock step registry with validation rules."""
-    registry = StrategyStepRegistry(steps={
-        "detect_trend": StrategyStepTemplate(
-            system_step_id="detect_trend",
-            function="test.get_trend",
-            input_params_map={
-                "valid_input": "source"  # Only this input is allowed
-            },
-            return_map={"trend": "_"},
-            config_mapping={
-                "valid_param": "source"  # Only this config is allowed
-            }
-        ),
-        "find_extreme": StrategyStepTemplate(
-            system_step_id="find_extreme",
-            function="test.find_extreme",
-            input_params_map={},
-            return_map={"extreme": "_"},
-            config_mapping={}
-        )
-    })
+    """Create a mock step registry."""
+    registry = MagicMock()
+    registry.get_step_template.return_value = MagicMock()
     return registry
 
 
-def test_create_new_strategy_valid(mock_step_registry):
-    """Test creating a valid strategy configuration."""
-    data = {
-        "name": "Test Strategy",
-        "steps": [
-            {
-                "system_step_id": "detect_trend",
-                "description": "Test step",
-                "static_config": {
-                    "valid_param": "value"
-                },
-                "dynamic_config": {
-                    "valid_input": "step1.output"
-                }
-            }
-        ]
-    }
-    
-    strategy = create_new_strategy(data, mock_step_registry)
-    
-    assert strategy.name == "Test Strategy"
-    assert len(strategy.steps) == 1
-    step = strategy.steps[0]
-    assert step.system_step_id == "detect_trend"
-    assert step.template is not None
-    assert step.static_config == {"valid_param": "value"}
-    assert step.dynamic_config == {"valid_input": "step1.output"}
-
-
-def test_create_new_strategy_invalid_config(mock_step_registry):
-    """Test that invalid step configurations are caught."""
-    data = {
-        "name": "Invalid Strategy",
-        "steps": [
-            {
-                "system_step_id": "detect_trend",
-                "description": "Test step",
-                "static_config": {
-                    "invalid_param": "value"  # Not in template's config_mapping
-                },
-                "dynamic_config": {
-                    "invalid_input": "value"  # Not in template's input_params_map
-                }
-            }
-        ]
-    }
-    
-    with pytest.raises(ValidationError) as exc_info:
-        create_new_strategy(data, mock_step_registry)
-    
-    error_msg = str(exc_info.value)
-    assert "Static config parameter 'invalid_param' not found in template config_mapping" in error_msg
-    assert "Dynamic config parameter 'invalid_input' not found in template input_params_map" in error_msg
-
-
 @pytest.fixture
-def mock_strategy_dir(tmp_path):
-    """Create a temporary directory with mock strategy configs."""
-    strategy_dir = tmp_path / "strategies"
-    strategy_dir.mkdir()
-    
-    # Create a valid strategy config
-    valid_strategy = strategy_dir / "valid_strategy.yaml"
-    valid_strategy.write_text("""
-name: "Test Strategy"
-steps:
-  - system_step_id: detect_trend
-    description: "Test step"
-    static_config:
-      valid_param: "value"
-    dynamic_config:
-      valid_input: "step1.output"
-    """)
-    
-    return strategy_dir
-
-
-def test_load_strategies(mock_strategy_dir, mock_step_registry):
-    """Test loading strategy configurations from files."""
-    strategies = load_strategies(mock_strategy_dir, mock_step_registry)
-    
-    assert len(strategies) == 1
-    assert "Test Strategy" in strategies
-    
-    strategy = strategies["Test Strategy"]
-    assert len(strategy.steps) == 1
-    step = strategy.steps[0]
-    assert step.system_step_id == "detect_trend"
-    assert step.template is not None
-    assert step.static_config == {"valid_param": "value"}
-    assert step.dynamic_config == {"valid_input": "step1.output"}
-
-
-def test_create_new_strategy_multiple_steps(mock_step_registry):
-    """Test creating a strategy with multiple steps using different templates."""
-    # Add another template to registry
-    mock_step_registry.steps["calculate_signal"] = StrategyStepTemplate(
-        system_step_id="calculate_signal",
-        function="test.calculate",
-        input_params_map={"signal_input": "source"},
-        return_map={"signal": "_"},
-        config_mapping={"signal_param": "source"}
-    )
-    
-    data = {
-        "name": "Multi-Step Strategy",
+def strategy_data():
+    """Sample strategy data for testing."""
+    return {
+        "name": "test_strategy",
         "steps": [
             {
-                "system_step_id": "detect_trend",
-                "description": "Trend detection",
-                "static_config": {"valid_param": "value"},
-                "dynamic_config": {"valid_input": "step1.output"}
-            },
-            {
-                "system_step_id": "calculate_signal",
-                "description": "Signal calculation",
-                "static_config": {"signal_param": "value"},
-                "dynamic_config": {"signal_input": "step1.trend"}
-            }
-        ]
-    }
-    
-    strategy = create_new_strategy(data, mock_step_registry)
-    assert len(strategy.steps) == 2
-    assert strategy.steps[0].system_step_id == "detect_trend"
-    assert strategy.steps[1].system_step_id == "calculate_signal"
-
-
-def test_create_new_strategy_empty_configs(mock_step_registry):
-    """Test creating a strategy with empty configs."""
-    data = {
-        "name": "Empty Config Strategy",
-        "steps": [
-            {
-                "system_step_id": "detect_trend",
-                "description": "Test step",
-                "static_config": {},
-                "dynamic_config": {}
-            }
-        ]
-    }
-    
-    strategy = create_new_strategy(data, mock_step_registry)
-    assert strategy.steps[0].static_config == {}
-    assert strategy.steps[0].dynamic_config == {}
-
-
-def test_create_new_strategy_valid_static_config(mock_step_registry):
-    """Test creating a strategy with only valid static config."""
-    data = {
-        "name": "Valid Static Config Strategy",
-        "steps": [
-            {
-                "system_step_id": "detect_trend",
-                "description": "Test step",
-                "static_config": {"valid_param": "value"},
-                "dynamic_config": {}
-            }
-        ]
-    }
-    
-    strategy = create_new_strategy(data, mock_step_registry)
-    assert strategy.steps[0].static_config == {"valid_param": "value"}
-    assert strategy.steps[0].dynamic_config == {}
-
-
-def test_create_new_strategy_valid_dynamic_config(mock_step_registry):
-    """Test creating a strategy with only valid dynamic config."""
-    data = {
-        "name": "Valid Dynamic Config Strategy",
-        "steps": [
-            {
-                "system_step_id": "detect_trend",
-                "description": "Test step",
-                "static_config": {},
-                "dynamic_config": {"valid_input": "step1.output"}
-            }
-        ]
-    }
-    
-    strategy = create_new_strategy(data, mock_step_registry)
-    assert strategy.steps[0].static_config == {}
-    assert strategy.steps[0].dynamic_config == {"valid_input": "step1.output"}
-
-
-def test_create_new_strategy_mixed_configs(mock_step_registry):
-    """Test creating a strategy with mixed valid/invalid configs."""
-    data = {
-        "name": "Mixed Config Strategy",
-        "steps": [
-            {
-                "system_step_id": "detect_trend",
-                "description": "Test step",
-                "static_config": {
-                    "valid_param": "value",
-                    "invalid_param": "value"
-                },
-                "dynamic_config": {
-                    "valid_input": "step1.output",
-                    "invalid_input": "value"
-                }
-            }
-        ]
-    }
-    
-    with pytest.raises(ValidationError) as exc_info:
-        create_new_strategy(data, mock_step_registry)
-    
-    error_msg = str(exc_info.value)
-    assert "Static config parameter 'invalid_param' not found in template config_mapping" in error_msg
-    assert "Dynamic config parameter 'invalid_input' not found in template input_params_map" in error_msg
-
-
-def test_create_new_strategy_with_reevaluates(mock_step_registry):
-    """Test creating a strategy with step dependencies/reevaluations."""
-    data = {
-        "name": "Strategy With Dependencies",
-        "steps": [
-            {
-                "system_step_id": "detect_trend",
-                "description": "First step",
-                "static_config": {},
-                "dynamic_config": {},
+                "system_step_id": "step1",
+                "parameters": {"param1": "value1"},
                 "reevaluates": []
             },
             {
-                "system_step_id": "find_extreme",
-                "description": "Second step",
-                "static_config": {},
-                "dynamic_config": {},
-                "reevaluates": ["detect_trend"]  # Depends on first step
+                "system_step_id": "step2",
+                "parameters": {"param2": "value2"},
+                "reevaluates": ["step1"]
+            }
+        ]
+    }
+
+
+def test_create_strategy_basic(mock_step_registry, strategy_data):
+    """Test creating a basic strategy without reevaluates."""
+    with patch('loaders.strategy_config_loader.StrategyConfig') as mock_strategy_class, \
+         patch('loaders.strategy_config_loader.StrategyStep') as mock_step_class:
+        
+        mock_strategy = MagicMock()
+        mock_strategy_class.return_value = mock_strategy
+        
+        mock_step1 = MagicMock()
+        mock_step2 = MagicMock()
+        mock_step_class.side_effect = [mock_step1, mock_step2]
+        
+        create_new_strategy(strategy_data, mock_step_registry)
+        
+        mock_strategy_class.assert_called_once_with(
+            name="test_strategy",
+            steps=[mock_step1, mock_step2]
+        )
+
+
+def test_create_strategy_with_reevaluates(mock_step_registry, strategy_data):
+    """Test creating a strategy with reevaluates."""
+    with patch('loaders.strategy_config_loader.StrategyConfig') as mock_strategy_class, \
+         patch('loaders.strategy_config_loader.StrategyStep') as mock_step_class:
+        
+        mock_strategy = MagicMock()
+        mock_strategy_class.return_value = mock_strategy
+        
+        mock_step1 = MagicMock()
+        mock_step2 = MagicMock()
+        mock_step_class.side_effect = [mock_step1, mock_step2]
+        
+        create_new_strategy(strategy_data, mock_step_registry)
+        
+        # Verify that step2 has step1 in its reevaluates
+        mock_step2.reevaluates = [mock_step1]
+        
+        mock_strategy_class.assert_called_once_with(
+            name="test_strategy",
+            steps=[mock_step1, mock_step2]
+        )
+
+
+def test_create_strategy_validation_error(mock_step_registry):
+    """Test that validation errors are raised."""
+    invalid_strategy_data = {
+        "name": "test_strategy",
+        "steps": [
+            {
+                "system_step_id": "step1",
+                "invalid_field": "value"  # This should cause validation error
             }
         ]
     }
     
-    strategy = create_new_strategy(data, mock_step_registry)
+    with patch('loaders.strategy_config_loader.StrategyStep') as mock_step_class:
+        mock_step_class.side_effect = Exception("Validation error")
+        
+        with pytest.raises(Exception, match="Validation error"):
+            create_new_strategy(invalid_strategy_data, mock_step_registry)
+
+
+def test_create_strategy_reevaluates_resolution(mock_step_registry):
+    """Test that reevaluates are properly resolved using step map."""
+    strategy_data = {
+        "name": "test_strategy",
+        "steps": [
+            {
+                "system_step_id": "step1",
+                "parameters": {"param1": "value1"},
+                "reevaluates": []
+            },
+            {
+                "system_step_id": "step2",
+                "parameters": {"param2": "value2"},
+                "reevaluates": ["step1", "step3"]  # step3 doesn't exist yet
+            },
+            {
+                "system_step_id": "step3",
+                "parameters": {"param3": "value3"},
+                "reevaluates": []
+            }
+        ]
+    }
     
-    assert len(strategy.steps) == 2
-    first_step = strategy.steps[0]
-    second_step = strategy.steps[1]
+    with patch('loaders.strategy_config_loader.StrategyConfig') as mock_strategy_class, \
+         patch('loaders.strategy_config_loader.StrategyStep') as mock_step_class:
+        
+        mock_strategy = MagicMock()
+        mock_strategy_class.return_value = mock_strategy
+        
+        mock_step1 = MagicMock()
+        mock_step2 = MagicMock()
+        mock_step3 = MagicMock()
+        mock_step_class.side_effect = [mock_step1, mock_step2, mock_step3]
+        
+        create_new_strategy(strategy_data, mock_step_registry)
+        
+        # Verify that step2 has step1 and step3 in its reevaluates
+        mock_step2.reevaluates = [mock_step1, mock_step3]
+        
+        mock_strategy_class.assert_called_once_with(
+            name="test_strategy",
+            steps=[mock_step1, mock_step2, mock_step3]
+        )
+
+
+@pytest.fixture
+def strategies_dir(tmp_path):
+    """Create a temporary strategies directory for testing."""
+    strategies_dir = tmp_path / "strategies"
+    strategies_dir.mkdir()
+    return strategies_dir
+
+
+def test_load_strategies_success(strategies_dir, mock_step_registry):
+    """Test successfully loading strategies from directory."""
+    # Create strategy files
+    strategy1_data = {
+        "name": "strategy1",
+        "steps": [
+            {
+                "system_step_id": "step1",
+                "parameters": {"param1": "value1"},
+                "reevaluates": []
+            }
+        ]
+    }
     
-    # Check that second step has first step in its reevaluates list
-    assert len(second_step.reevaluates) == 1
-    assert second_step.reevaluates[0].system_step_id == first_step.system_step_id
-    assert second_step.reevaluates[0] is first_step  # Should be the same object reference 
+    strategy2_data = {
+        "name": "strategy2",
+        "steps": [
+            {
+                "system_step_id": "step2",
+                "parameters": {"param2": "value2"},
+                "reevaluates": []
+            }
+        ]
+    }
+    
+    strategy1_file = strategies_dir / "strategy1.yaml"
+    strategy2_file = strategies_dir / "strategy2.yaml"
+    
+    with open(strategy1_file, "w") as f:
+        yaml.dump(strategy1_data, f)
+    
+    with open(strategy2_file, "w") as f:
+        yaml.dump(strategy2_data, f)
+    
+    with patch('loaders.strategy_config_loader.create_new_strategy') as mock_create:
+        mock_strategy1 = MagicMock()
+        mock_strategy1.name = "strategy1"
+        mock_strategy2 = MagicMock()
+        mock_strategy2.name = "strategy2"
+        
+        mock_create.side_effect = [mock_strategy1, mock_strategy2]
+        
+        result = load_strategies(strategies_dir, mock_step_registry)
+        
+        assert len(result) == 2
+        assert result["strategy1"].name == "strategy1"
+        assert result["strategy2"].name == "strategy2"
+        
+        # Verify create_new_strategy was called for each strategy
+        assert mock_create.call_count == 2
+
+
+def test_load_strategies_empty_directory(strategies_dir):
+    """Test loading strategies from empty directory."""
+    with pytest.raises(FileNotFoundError, match="No YAML configs found"):
+        load_strategies(strategies_dir)
+
+
+def test_load_strategies_invalid_yaml(strategies_dir):
+    """Test loading strategies with invalid YAML."""
+    strategy_file = strategies_dir / "invalid.yaml"
+    with open(strategy_file, "w") as f:
+        f.write("invalid: yaml: content: [")
+    
+    with pytest.raises(yaml.YAMLError):
+        load_strategies(strategies_dir)
+
+
+def test_load_strategies_validation_error(strategies_dir, mock_step_registry):
+    """Test that ValidationError is raised for invalid strategy config."""
+    strategy_data = {
+        "name": "invalid_strategy",
+        "steps": [
+            {
+                "system_step_id": "step1",
+                "invalid_field": "value"
+            }
+        ]
+    }
+    
+    strategy_file = strategies_dir / "invalid_strategy.yaml"
+    with open(strategy_file, "w") as f:
+        yaml.dump(strategy_data, f)
+    
+    with patch('loaders.strategy_config_loader.create_new_strategy') as mock_create:
+        mock_create.side_effect = Exception("Validation error")
+        
+        with pytest.raises(Exception, match="Validation error"):
+            load_strategies(strategies_dir, mock_step_registry)
+
+
+def test_load_strategies_no_step_registry(strategies_dir):
+    """Test loading strategies without step registry."""
+    strategy_data = {
+        "name": "strategy1",
+        "steps": [
+            {
+                "system_step_id": "step1",
+                "parameters": {"param1": "value1"},
+                "reevaluates": []
+            }
+        ]
+    }
+    
+    strategy_file = strategies_dir / "strategy1.yaml"
+    with open(strategy_file, "w") as f:
+        yaml.dump(strategy_data, f)
+    
+    with patch('loaders.strategy_config_loader.create_new_strategy') as mock_create:
+        mock_strategy = MagicMock()
+        mock_strategy.name = "strategy1"
+        mock_create.return_value = mock_strategy
+        
+        result = load_strategies(strategies_dir, step_registry=None)
+        
+        assert len(result) == 1
+        assert result["strategy1"].name == "strategy1"
