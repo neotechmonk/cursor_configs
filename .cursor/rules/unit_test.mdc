@@ -102,6 +102,7 @@ appliesTo:
 # Testing Approach
 - Under “agent mode,” assume `src` is correct **initially**; critique test assembly first.
 - If `src` changes are needed, **confirm with the user** and provide rationale + options.
+- Review existing unit tests for the module before writing anything
 - Keep tests scoped to the target module/functionality; **mock dependencies** at boundaries.
 - Start with **happy path** to establish baseline comprehension.
 - When drafting multiple tests at once, mark non-active scenarios with:
@@ -112,16 +113,14 @@ appliesTo:
 
 # LLM Run Plan • Checklist • Summary
 
-Use external templates for every run/iteration (no inline templates here):
-- PLAN → `.cursor/templates/test_run.md` (PLAN block)
-- CHECKLIST → `.cursor/templates/test_run.md` (CHECKLIST block)
-- SUMMARY → `.cursor/templates/test_run.md` (SUMMARY block)
+Use external templates for every test suite : `.cursor/templates/test_run.md`
 
 **Process**
 1. Before changes: open the PLAN template, fill it, and paste into the living run note.
 2. During execution: tick the CHECKLIST in the current iteration.
 3. After execution: revise the SUMMARY for this iteration.
-4. Maintain one living note per branch/PR at `.cursor/run_logs/<branch>-run.md` by appending a new iteration block each run. Do not overwrite previous iterations.
+4. Maintain one living note per test suite under `tests\module\test.md`  by appending a new iteration block each run. Do not overwrite previous iterations
+5. Remove iteration blocks and checklist after all things in the check list are complete
 
 # Running Tests
 - **Iterate locally**:

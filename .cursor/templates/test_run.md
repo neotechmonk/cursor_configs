@@ -1,12 +1,34 @@
-LLM Run Plan • Checklist • Summary
+<!-- PLAN_START -->
+<!-- Section authored and revised for the entire module.
+     Revise when new functionality is added to `src`.
+     This section is version-controlled and checked in with filename `test.md`. -->
+**Context:**
+- Files/Modules: <paths>
+- Constraints: <versions/limits> <!-- user-specified -->
 
-# Template Usage Rule
+**Files to touch:**
+- <relative/path1>
+- <relative/path2>
+<!-- PLAN_END -->
 
-For every run or iteration:
+<!-- CHECKLIST_START -->
+<!-- Maintained by LLM to track progress in current iteration.
+     Delete after all items are checked off. -->
+- [x] Plan updated
+- [ ] Implemented code changes (<files>)
+- [ ] Added/updated tests (<tests/...>)
+- [ ] Ran `uv run pytest <scope>` and captured results
+- [ ] Linted with `uv run ruff check --fix`
+- [ ] Summary & next steps updated
+<!-- CHECKLIST_END -->
 
-- Use the external template at `.cursor/templates/test_run.md`.
-- Before making changes: copy the **PLAN** block, fill it, and include it in your iteration log.
-- During execution: update the **CHECKLIST** block to track progress, checking off items as they are completed.
-- After execution: revise the **SUMMARY** block for the current iteration with results and follow‑ups.
-- Keep only one living copy in `.cursor/run_logs/<branch>-run.md`, appending new iteration blocks as work progresses.
-- Do not create new template files for each run; always base updates on the template and revise the living run log.
+<!-- SUMMARY_START -->
+<!-- Revised for each iteration. Replace irrelevant content, don’t append. -->
+**Result:** <pass/fail/mixed>
+**Tests run:** `uv run pytest …` → <numbers>
+**Files changed:** …
+**New/updated mocks:** …
+**Diff highlights:** …
+**Follow-ups/TODO:** …
+**Next iteration proposal:** …
+<!-- SUMMARY_END -->
