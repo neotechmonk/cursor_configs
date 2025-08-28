@@ -20,17 +20,6 @@ appliesTo:
   pythonpath = ["src"]
   ```
 
-  → Then **import modules directly from their package under `src/`**, *not* via `src.`
-
-  ✅ Correct:
-  ```python
-  from loaders.strategy_config_loader import create_new_strategy
-  ```
-
-  ❌ Wrong:
-  ```python
-  from src.loaders.strategy_config_loader import create_new_strategy
-  ```
 
 - If `pythonpath` includes `"."` instead, then top-level imports start from the repo root.  
 - If neither is set, confirm import strategy with the user.
@@ -53,16 +42,13 @@ appliesTo:
     - `tests/[module]/test_file_model5.py`
     - `tests/[module]/test_file_class2.py`
 - By default do not add `__init__.py` inside the `tests/` folder or its subfolders.  
-  - pytest (>=6) discovers `test_*.py` files without needing them.  
-  - Keeping tests package-free avoids accidental namespace collisions with `src/`.
 
 - Add `__init__.py` only if:
   - You want to import helpers or fixtures across subfolders with package-style imports.  
     ```python
     from tests.helpers.fixtures import sample_fixture
     ```
-  - A tool (IDE, debugger, coverage tool) explicitly requires tests to be packages. 
-   
+  
 - Prefer plain test functions (`def test_...`) over class-based tests; only use `class Test...:` when grouping is needed for shared fixtures or marks.
 - **Limit** `conftest.py` usage to clearly shared, stable fixtures (traceability first).
 
@@ -111,7 +97,7 @@ appliesTo:
   ```
   Remove skips iteratively as scenarios pass.
 
-# Test Documentation
+# Test progress Documentation
 - Use the external template at `.cursor/templates/test_run.md`.
 -  Before changes: open the PLAN template, fill it, and paste into the living run note.
 - During execution: tick the CHECKLIST in the current iteration.
