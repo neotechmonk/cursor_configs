@@ -12,11 +12,16 @@ This document outlines comprehensive best practices and coding standards for Pyt
 
 *   **Flat is better than nested (but not always).**  Start with a simple structure and refactor as needed.
 *   **Packages vs. Modules:** Use packages (directories with `__init__.py`) for logical grouping of modules.
-*   **src layout:** Consider using a `src` directory to separate application code from project-level files (setup.py, requirements.txt, etc.). This helps avoid import conflicts and clarifies the project's boundaries.
+*   **src layout:** stored under `[root]\src`
+*   
 *   **Typical Project Structure:**
 
-    
+```    
     project_name/
+    |__ .cursor # read only; no edits
+    │   ├── rules/ # .mdc files
+    │   ├── templates/ # .md files to be duplicated used by rules
+    ├──project_mgmt # plans, feature briefs
     ├── src/
     │   ├── package_name/
     │   │   ├── __init__.py
@@ -24,16 +29,16 @@ This document outlines comprehensive best practices and coding standards for Pyt
     │   │   ├── module2.py
     │   ├── main.py  # Entry point
     ├── tests/
-    │   ├── __init__.py
+    │   ├── conftest.py # sparingly used
     │   ├── test_module1.py
     │   ├── test_module2.py
     ├── docs/
     │   ├── conf.py
     │   ├── index.rst
     ├── .gitignore
-    ├── pyproject.toml or setup.py
+    ├── pyproject.toml 
     ├── README.md
-    ├── requirements.txt or requirements-dev.txt
+```
     
 
 ### 1.2. File Naming Conventions
@@ -41,6 +46,7 @@ This document outlines comprehensive best practices and coding standards for Pyt
 *   **Modules:**  Lowercase, with underscores for readability (e.g., `my_module.py`).
 *   **Packages:** Lowercase (e.g., `my_package`). Avoid underscores unless necessary.
 *   **Tests:** Start with `test_` (e.g., `test_my_module.py`).
+    *   Additional instructions on unit testing here `.cursor/rules/unit_test.mdc`
 
 ### 1.3. Module Organization Best Practices
 
@@ -69,21 +75,26 @@ This document outlines comprehensive best practices and coding standards for Pyt
 ## 2. Common Patterns and Anti-patterns
 
 ### 2.1. Design Patterns
-
+*   **Prioritize Dependency Injection ** Use the frameworks mentioned in the dependency. E.g. `dependecy-injector`
 *   **Singleton:**  Restrict instantiation of a class to one object.
 *   **Factory:**  Create objects without specifying the exact class to be created.
 *   **Observer:**  Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified.
 *   **Strategy:**  Define a family of algorithms, encapsulate each one, and make them interchangeable.
 *   **Decorator:**  Add responsibilities to objects dynamically.
 *   **Context Manager:** Guarantees resources are properly cleaned up (e.g., files are closed).
+*   ** Repository ** Design flexibility for different persistence sources through repository or adapter pattern. E.g. yaml vs DB config storage
 
 ### 2.2. Recommended Approaches for Common Tasks
 
-*   **Data Validation:** Use libraries like `pydantic` or `marshmallow` for data validation and serialization.
+*   **Data Validation:** Use libraries like `pydantic` or `pydantic-settings` 
+    *   Prioritize built-in or extensions for validations over customer validators
+*   **Reduce Boiler plate:** Use libraries like `dataclass`
+*   **Efficient Data structures:** Prefer `slots`, `tuples`, `named tuples`, 
 *   **Configuration Management:** Use libraries like `python-decouple`, `dynaconf` or standard library's `configparser` to manage environment-specific settings.
 *   **Logging:** Use the `logging` module for structured logging. Configure log levels and handlers appropriately.
 *   **Command-Line Interfaces:** Use `argparse`, `click` or `typer` for creating command-line interfaces.
 *   **Asynchronous Programming:** Use `asyncio` for I/O-bound and concurrency problems.
+*   **Guard clauses:** early in the functions or to differentiate safety from logic
 
 ### 2.3. Anti-patterns and Code Smells
 
@@ -91,7 +102,8 @@ This document outlines comprehensive best practices and coding standards for Pyt
 *   **Shotgun Surgery:**  Making small changes to many different classes at once. Indicates poor cohesion.
 *   **Spaghetti Code:**  Unstructured and difficult-to-follow code.  Refactor using well-defined functions and classes.
 *   **Duplicate Code:**  Extract common code into reusable functions or classes (DRY - Don't Repeat Yourself).
-*   **Magic Numbers/Strings:**  Use named constants instead of hardcoded values.
+*   **Avoid nested conditionals:** To improve readability
+*   **Magic Numbers/Strings:**  Use named constants instead of hardcoded values. If beneficial offer the user to address the constants as configurable values
 *   **Nested Callbacks:**  Avoid excessive nesting of callbacks. Use `async/await` or promises for better readability.
 *   **Premature Optimization:** Don't optimize code before identifying bottlenecks.
 
@@ -109,6 +121,7 @@ This document outlines comprehensive best practices and coding standards for Pyt
 *   **`try...except...finally`:** Use `finally` to ensure cleanup code is always executed.
 *   **Context Managers:**  Use context managers (`with open(...) as f:`) for resource management.
 *   **Logging Errors:** Log exceptions with complete traceback information.
+    *   Always sanitize sensitive data
 *   **Raising Exceptions:** Raise exceptions with informative error messages.
 *   **Custom Exceptions:** Create custom exception classes for specific error conditions.
 *   **Avoid using exceptions for control flow.** Exceptions should represent exceptional circumstances.
@@ -120,7 +133,7 @@ This document outlines comprehensive best practices and coding standards for Pyt
 *   **Profiling:**  Use `cProfile` to identify performance bottlenecks.
 *   **Efficient Data Structures:**  Choose the right data structure for the task (e.g., `set` for membership testing, `dict` for lookups).
 *   **List Comprehensions and Generators:**  Use list comprehensions and generator expressions for concise and efficient code.
-*   **Vectorization with NumPy:**  Use NumPy for numerical computations, leveraging vectorized operations.
+*   **Vectorization with NumPy:**  Use NumPy for numerical computations, leveraging vectorized operations. Still honor the APIs of the functions or modules. E.g. if a given function's parameter has pd.dataframe honor that. but feel free to use `numpy` for internal performance reasons.
 *   **Just-In-Time Compilation (JIT):**  Consider using JIT compilers like Numba for performance-critical code.
 *   **Caching:** Implement caching mechanisms using `functools.lru_cache` or external caching libraries like Redis or Memcached.
 *   **String Concatenation:** Use `''.join(iterable)` for efficient string concatenation.
@@ -158,7 +171,7 @@ This document outlines comprehensive best practices and coding standards for Pyt
 
 ### 4.1. Common Vulnerabilities and Prevention
 
-*   **SQL Injection:**  Use parameterized queries or ORMs to prevent SQL injection attacks.
+*   **SQL Injection:**  Use parameterized queries or ORMs or `Templates` to prevent SQL injection attacks.
 *   **Cross-Site Scripting (XSS):** Sanitize user input and escape output to prevent XSS attacks.
 *   **Cross-Site Request Forgery (CSRF):**  Use CSRF tokens to protect against CSRF attacks.
 *   **Command Injection:**  Avoid executing arbitrary commands based on user input. If necessary, sanitize input carefully.
@@ -196,7 +209,6 @@ This document outlines comprehensive best practices and coding standards for Pyt
 *   **Data Masking:** Mask sensitive data when displaying it to users.
 *   **Tokenization:** Replace sensitive data with non-sensitive tokens.
 *   **Data Loss Prevention (DLP):** Implement DLP measures to prevent sensitive data from leaving the organization.
-*   **Regular backups and disaster recovery plans.**
 
 ### 4.5. Secure API Communication
 
@@ -213,10 +225,11 @@ This document outlines comprehensive best practices and coding standards for Pyt
 
 *   **Test Individual Units:** Test individual functions, classes, or modules in isolation.
 *   **Test-Driven Development (TDD):** Write tests before writing code.
-*   **Coverage:**  Aim for high test coverage.
+*   **Coverage:**  Aim for high test coverage for happy path
 *   **Assertion Styles:** Use appropriate assertion methods (e.g., `assertEqual`, `assertTrue`, `assertRaises`).
 *   **Boundary conditions:** Test boundary conditions and edge cases.
 *   **Error conditions:** Test that exceptions are raised when appropriate.
+*   Use additional guidelines in `.cursor/rules/unit_test.mdc` unit tets
 
 ### 5.2. Integration Testing Approaches
 
@@ -265,10 +278,10 @@ This document outlines comprehensive best practices and coding standards for Pyt
 
 ### 6.2. Edge Cases
 
-*   **Floating-Point Arithmetic:** Be aware of the limitations of floating-point arithmetic.
+*   **Floating-Point Arithmetic:** Be aware of the limitations of floating-point arithmetic. Use `int` or `decimal` where possible
 *   **Unicode Handling:** Handle Unicode strings carefully.
 *   **File Encoding:**  Specify file encoding when reading and writing files.
-*   **Time Zones:**  Handle time zones correctly.
+*   **Time Zones:**  Handle time zones correctly and handle datetimes timezone aware where possible
 *   **Resource limits:** Be aware of and handle system resource limits (e.g., file handles, memory).
 
 ### 6.3. Version-Specific Issues
@@ -280,8 +293,8 @@ This document outlines comprehensive best practices and coding standards for Pyt
 
 ### 6.4. Compatibility Concerns
 
-*   **Operating Systems:** Test code on different operating systems (Windows, macOS, Linux).
-*   **Python Implementations:**  Consider compatibility with different Python implementations (CPython, PyPy, Jython).
+<!-- *   **Operating Systems:** Test code on different operating systems (Windows, macOS, Linux). -->
+<!-- *   **Python Implementations:**  Consider compatibility with different Python implementations (CPython, PyPy, Jython). -->
 *   **Database Versions:** Ensure compatibility with different database versions.
 *   **External Libraries:**  Be aware of compatibility issues with external libraries.
 
@@ -289,10 +302,10 @@ This document outlines comprehensive best practices and coding standards for Pyt
 
 *   **`pdb`:**  Use the `pdb` debugger for interactive debugging.
 *   **Logging:**  Use logging to track program execution.
-*   **Print Statements:** Use print statements for simple debugging.
+*   **Print Statements:** Use print statements for simple debugging. But print statements should be removed from finalised code
 *   **Assertions:**  Use assertions to check for expected conditions.
 *   **Profiling:** Use profilers to identify performance bottlenecks.
-*   **Code Analysis Tools:** Use code analysis tools like pylint or flake8 to detect potential problems.
+*   **Code Analysis Tools:** Use `ruff` for code analysis
 *   **Remote debugging:** Use remote debugging tools when debugging code running on remote servers.
 
 ## 7. Tooling and Environment
@@ -300,12 +313,12 @@ This document outlines comprehensive best practices and coding standards for Pyt
 ### 7.1. Recommended Development Tools
 
 *   **IDEs:** PyCharm, VS Code (with Python extension), Sublime Text.
-*   **Virtual Environment Managers:** `venv` (built-in), `virtualenv`, `conda`, `pipenv`.
-*   **Package Managers:** `pip` (default), `conda`, `poetry`.
+*   **Virtual Environment Managers:** `uv` 
+*   **Package Managers:** `uv` over `pip` (default), `conda`, `poetry`. Refer to `.cursor/rules/uv.mdc`  for additional guidelines
 *   **Debuggers:** `pdb`, IDE debuggers.
 *   **Profilers:** `cProfile`, `memory_profiler`.
-*   **Linters:** `pylint`, `flake8`.
-*   **Formatters:** `black`, `autopep8`, `YAPF`.
+*   **Linters:** `ruff` over `pylint`, `flake8`.
+*   **Formatters:** `ruff` over `black`, `autopep8`, `YAPF`.
 *   **Static Analyzers:** `mypy`, `pytype`.
 *    **Notebook environments**: Jupyter Notebook, Jupyter Lab, Google Colab.
 
@@ -313,7 +326,7 @@ This document outlines comprehensive best practices and coding standards for Pyt
 
 *   **`pyproject.toml`:**  Use `pyproject.toml` for build configuration (PEP 518, PEP 621).
 *   **`setup.py`:**  Use `setup.py` for legacy projects (but prefer `pyproject.toml` for new projects).
-*   **Dependency Management:**  Specify dependencies in `requirements.txt` or `pyproject.toml`.
+*   **Dependency Management:**  Specify dependencies in `pyproject.toml` over `requirements.txt` 
 *   **Virtual Environments:**  Use virtual environments to isolate project dependencies.
 *   **Reproducible builds:** Ensure reproducible builds by pinning dependencies.
 
