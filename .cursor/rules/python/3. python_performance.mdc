@@ -1,0 +1,28 @@
+---
+title: Python Performance & Memory
+description: Rules for profiling, optimization, caching, vectorization, and memory management.
+appliesTo:
+  - python
+---
+
+# Profiling
+- Use `cProfile`, `memory_profiler` for evidence based optimizing
+
+
+# Optimization
+- Prefer sets/dicts for lookup
+- Use list comprehensions, generators
+- Vectorize with NumPy 
+- Cache with `functools.lru_cache` or Redis 
+- Avoid premature optimization
+
+# Memory
+- Use `__slots__` to reduce footprint
+- Avoid circular references
+- Use generators for large datasets
+- Choose efficient types
+
+# Lazy Loading
+- `importlib.import_module()` for conditional imports
+- Use generators where possible to a avoid eagerness
+- Load datasets on demand

@@ -1,0 +1,62 @@
+---
+title: Python Testing Standards
+description: Guidelines for unit tests, mocks, structure, execution, documentation, and coverage.
+appliesTo:
+  - python
+---
+
+# Framework
+- Use **pytest**.
+- Run with **uv**: `uv run pytest …`.
+
+# Test Layout
+- All tests live under `tests/`.
+- Mirror `src/` structure.
+- No `__init__.py` unless cross-importing helpers.
+- Common dirs:
+  - `tests/mocks/`
+  - `tests/data/`
+
+# Writing Tests
+- Prefer **plain functions** (`def test_...`).
+  - Use `class Test...:` only if grouping with shared fixtures/marks.
+  - Split themes if needed: `test_module_func1.py`, `test_module_func2.py`.
+- Start with **happy path → edge cases → error conditions**.
+- Type hint tests.
+  - If a concrete implementation adheres to a contract, use a **Protocol** for typing.
+- Scope:
+  - **Unit:** isolate functions/classes, mock dependencies.
+  - **Integration:** DB/API workflows.
+  - **E2E:** only critical paths.
+
+# Mocks
+- Centralize in `tests/mocks/[module]/`.
+- Mock to **interface/protocol**, not concrete implementation.
+- Use `MagicMock` with `autospec`.
+
+# Execution
+- Iterate locally with narrow scope:
+  - `uv run pytest tests/[module]/test_file.py::test_func -v`
+- Use markers (`@pytest.mark.skip`) for staged rollout.
+- Coverage with:
+  - `uv run pytest tests/[module]/ --cov=src/[module] --cov-report=term-missing`
+- Use parameterization (`@pytest.mark.parametrize`) to reduce duplication.
+
+# Documentation
+- **Planning:**  
+  - Open `.cursor/templates/test_run.md`, fill in PLAN, paste into `tests/[module]/test.md`.
+- **During runs:**  
+  - Tick CHECKLIST items in `test.md` as tests pass.  
+  - Keep iterations **append-only** (don’t overwrite previous runs).
+- **After runs:**  
+  - Summarize results under SUMMARY in `test.md`.  
+  - Remove iteration blocks + checklists once complete.  
+  - Keep a single **living note per module** (`tests/[module]/test.md`).
+
+# After Passing
+- Run linter: `uv run ruff check --fix`.
+- Report:
+  - Coverage gaps,
+  - Fixture overuse,
+  - Excessive patching,
+  - Test naming clarity vs. `src` responsibilities.
