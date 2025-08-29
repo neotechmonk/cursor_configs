@@ -1,0 +1,20 @@
+# Test Local Rule
+
+This is a test rule created locally to demonstrate Git Subtree functionality.
+
+## Purpose
+- Show how to add new rules locally
+- Demonstrate the subtree workflow
+- Test the integration
+
+## Usage
+This rule can be used to test the Cursor rules system.
+
+## Notes
+- Created locally in the project
+- Will be committed to this project's git history
+- Can be pushed back to the rules repo using subtree push
+description:
+globs:
+alwaysApply: false
+---
