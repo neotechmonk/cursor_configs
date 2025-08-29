@@ -1,84 +1,82 @@
----
-title: Proof of Concept (PoC) Rule
-description: How to plan, execute, and exit a PoC with clear guardrails, timeboxes, and a path-to-prod decision.
-appliesTo:
-  - python
----
 
-# 1) Purpose & When to Choose a PoC
-- **Goal:** Validate feasibility of a narrow capability under realistic constraints to inform a go/no-go decision.
+# Purpose & When to Choose a PoC
+- **Goal:** Validate feasibility of a narrow capability under realistic constraints to inform a go/no-go decision
 - **Spike vs PoC vs Prototype vs MVP**
-  - **Spike:** Research-only, short notes or throwaway code; no demo required.
-  - **PoC:** Feasibility demo + learnings + decision; limited scope/time.
-  - **Prototype:** User-facing flow exploration; focus on UX feel; may be throwaway.
-  - **MVP:** Production-grade minimal product; meets reliability/security standards.
+  - **Spike:** Research-only, short notes or throwaway code; no demo required
+  - **PoC:** Feasibility demo + learnings + decision; limited scope/time
+  - **Prototype:** User-facing flow exploration; focus on UX feel; may be throwaway
+  - **MVP:** Production-grade minimal product; meets reliability/security standards
 - Agent to interview the user for missing information before designing/building
   - Purpose
   - Integration need with existing code base
   - Whether to honor existing architectural/design patterns/boundary contracts from early on
-  - 
 
-# 2) Non-Negotiable Guardrails
-- **Timebox:** Declare up front (e.g., 3–10 working days). No silent extensions.
+# Non-Negotiable Guardrails
+- **Timebox:** Declare up front (e.g., 3–10 working days). No silent extensions
 - **Data:** Ask for, generate or scrape data from the internet
-- **Secrets:** No secrets in code or logs. Use env vars/secret managers only.
-- **Cost control:** Local development > cloud experiment. 
-- **Isolation:** Run in an isolated environment/tenant; never touch prod.
-- **Traceability:** Ticket/issue link in README; decisions recorded (ADR/DECISIONS.md).
+- **Secrets:** No secrets in code or logs. Use env vars/secret managers only
+- **Cost control:** Local development > cloud experiment
+- **Isolation:** Run in an isolated environment/tenant; never touch prod
+- **Traceability:** Ticket/issue link in README; decisions recorded (ADR/DECISIONS.md)
 
-# 3) Scope & Success Criteria
+# Scope & Success Criteria
 - **Problem statement:** What decision will this PoC inform?
-- **Hypotheses:** List 1–3 falsifiable statements.
-- **Acceptance/exit criteria:** Functional + minimal performance/latency target + demo script.
-- **Kill criteria:** Pre-agreed conditions to stop early (e.g., fails X metric, blocked dependency, budget hit).
-- **Assumptions/constraints:** Note hard limits (APIs, rate limits, data size, SLA).
+- **Hypotheses:** List 1–3 falsifiable statements
+- **Acceptance/exit criteria:** Functional + minimal performance/latency target + demo script
+- **Kill criteria:** Pre-agreed conditions to stop early (e.g., fails X metric, blocked dependency, budget hit)
+- **Assumptions/constraints:** Note hard limits (APIs, rate limits, data size, SLA)
 
-# 4) Data & Environment
-- **Datasets:** Source, size, sanitisation method, retention policy.
-- **Access approvals:** Record who approved real data (if any), date/time.
-- **Environment:** `experiments/` or dedicated sandbox; teardown instructions mandatory.
-- **Observability:** Basic logging + counters/timers around the main path.
+# Data & Environment
+- **Datasets:** Source, size, sanitisation method, retention policy
+- **Access approvals:** Record who approved real data (if any), date/time
+- **Environment:** `experiments/` or dedicated sandbox; teardown instructions mandatory
+- **Observability:** Basic logging + counters/timers around the main path
 
-# 5) Architecture & Code Organisation
+# Architecture & Code Organisation
 - **Location:** 
-  - create a dedicated git worktree. E.g experiment/name
-  - never merge into `main` or feature branches
-  - use `src` in place
-  - non code artefacts under `experiments/poc_<name>/` (keeps other project docs clean)
-- **Seams-for-future:** Ports/adapters, dependency injection, clear interfaces.
+  - Create a dedicated git worktree. E.g experiment/name
+  - Never merge into `main` or feature branches
+  - Use `src` in place
+  - Non code artefacts under `experiments/poc_<name>/` (keeps other project docs clean)
+- **Seams-for-future:** Ports/adapters, dependency injection, clear interfaces
 - **Path-to-prod flag:** Document whether this PoC code is:
-  - **Throwaway:** Prioritise speed; minimal tests.
-  - **Path-to-prod:** Follow standard code quality + testing + security rules from other .mdc files.
-- **Dependencies:** Pin versions (lockfile). Avoid heavyweight stacks unless central to the hypothesis.
+  - **Throwaway:** Prioritise speed; minimal tests
+  - **Path-to-prod:** Follow standard code quality + testing + security rules from other .mdc files
+- **Dependencies:** Pin versions (lockfile). Avoid heavyweight stacks unless central to the hypothesis
 
-# 6) Testing Expectations (Right-Sized)
+# Testing Expectations
 - **Minimum for all PoCs:** 
-  - One smoke test for the happy path.
-  - Mock/stub external services; no flaky network dependencies.
-- **If path-to-prod:** Apply full **Python Testing Standards** (unit coverage, structure, mocks policy, CI execution).
-- **Determinism:** Tests must run offline/repeatably (fixed seeds, fixture data).
+  - One smoke test for the happy path
+  - Mock/stub external services; no flaky network dependencies
+- **If path-to-prod:** Apply full **Python Testing Standards** (unit coverage, structure, mocks policy, CI execution)
+- **Determinism:** Tests must run offline/repeatably (fixed seeds, fixture data)
 
-# 7) Documentation (Tiny, but Complete)
+# Documentation
 Include in `experiments/poc_<name>/`:
-- **README.md:** purpose, hypotheses, setup/run, demo steps, success metrics.
-- **DECISIONS.md (ADR):** key options considered, decision, rationale, date.
-- **LEARNINGS.md:** what worked/failed, surprises, follow-ups.
-- **SECURITY.md:** data handling, access, secrets, OSS licences.
-- **COST.md:** estimates vs actuals; teardown checklist.
-- Link to tickets/issues and any diagrams.
+- **README.md:** purpose, hypotheses, setup/run, demo steps, success metrics
+- **DECISIONS.md (ADR):** key options considered, decision, rationale, date
+- **LEARNINGS.md:** what worked/failed, surprises, follow-ups
+- **SECURITY.md:** data handling, access, secrets, OSS licences
+- **COST.md:** estimates vs actuals; teardown checklist
+- Link to tickets/issues and any diagrams
 
-# 8) Stage Gates & Exit
-- **Kick-off:** Guardrails agreed (timebox, budget, data policy, kill criteria).
-- **Mid-point review:** Check burn-rate vs goals; invoke kill criteria if needed.
+# Stage Gates & Exit
+- **Kick-off:** Guardrails agreed (timebox, budget, data policy, kill criteria)
+- **Mid-point review:** Check burn-rate vs goals; invoke kill criteria if needed
 - **Demo & Decision:** Record outcome:
-  - **Stop:** Archive results; close spend; doc learnings.
-  - **Iterate:** Tighten hypotheses/timebox; update kill criteria.
-  - **Productise:** Create hardening plan (tests, security review, scaling, observability, SLOs), backlog issues, and timeline.
+  - **Stop:** Archive results; close spend; doc learnings
+  - **Iterate:** Tighten hypotheses/timebox; update kill criteria
+  - **Productise:** Create hardening plan (tests, security review, scaling, observability, SLOs), backlog issues, and timeline
 
-
-# 9) Checklist (copy into README)
+# Checklist
 - [ ] Problem, hypotheses, acceptance + kill criteria defined
 - [ ] Timebox, budget, environment isolation agreed
+- [ ] Synthetic/anonymised data (or approved real data)
+- [ ] Secrets safe; deps scanned; OSS licences noted
+- [ ] Minimal tests in place; deterministic run
+- [ ] README/DECISIONS/LEARNINGS/SECURITY/COST created
+- [ ] Mid-point review done
+- [ ] Demo delivered; decision recorded; teardown complete
 - [ ] Synthetic/anonymised data (or approved real data)
 - [ ] Secrets safe; deps scanned; OSS licences noted
 - [ ] Minimal tests in place; deterministic run
