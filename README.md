@@ -684,4 +684,76 @@ The system uses YAML configuration files in the `configs/` directory:
 
 ## Development
 
+### Git Subtree for Rules Management
+
+This project uses **Git Subtree** to manage Cursor rules from a separate repository. This approach allows us to:
+
+1. **Get all existing rules** from the rules repo into this project
+2. **Add new rules locally** in this project
+3. **Keep everything synchronized** between both repositories
+4. **Work naturally** without complex submodule workflows
+
+#### Why Git Subtree Instead of Submodules?
+
+**Git Submodules limitations:**
+- Rules repo appears as "read-only" in the parent project
+- Cannot easily add new rules locally
+- Requires complex workflow: edit in submodule → commit to submodule → update parent
+- Team members need to understand submodule commands
+
+**Git Subtree advantages:**
+- Rules become part of this project's file structure
+- Can edit rules directly in this project
+- Simple git workflow - no special commands needed
+- Easy to push local changes back to rules repo
+
+#### Subtree Workflow
+
+**Initial Setup:**
+```bash
+# Add Cursor rules repo as subtree
+git subtree add --prefix=.cursor https://github.com/neotechmonk/cursor_configs.git main --squash
+
+# This merges all existing Cursor rules into your project
+# Rules are now available in .cursor/ directory (standard Cursor IDE structure)
+```
+
+**Adding New Rules Locally:**
+```bash
+# Edit Cursor rules directly in your project
+# (modify files in .cursor/ directory)
+
+# Commit your new rules
+git add .cursor/
+git commit -m "Add new custom Cursor rules"
+
+# Push back to Cursor rules repo
+git subtree push --prefix=.cursor https://github.com/neotechmonk/cursor_configs.git main
+```
+
+**Keeping in Sync:**
+```bash
+# Pull latest Cursor rules from rules repo
+git subtree pull --prefix=.cursor https://github.com/neotechmonk/cursor_configs.git main --squash
+
+# Push your local changes back
+git subtree push --prefix=.cursor https://github.com/neotechmonk/cursor_configs.git main
+```
+
+**Daily Workflow:**
+1. **Edit Cursor rules locally** - Work directly in `.cursor/` directory
+2. **Commit changes** - Use normal git commands
+3. **Push to Cursor rules repo** - When ready to share your rules
+4. **Pull updates** - Get latest Cursor rules from the team
+
+#### Benefits for This Project
+
+- **Seamless Integration**: Cursor rules feel like part of the project
+- **Easy Collaboration**: Team can work on Cursor rules locally and share via the rules repo
+- **Version Control**: All Cursor rule changes are tracked in git history
+- **No Special Commands**: Works with standard git workflow
+- **Flexible Workflow**: Can work offline and sync later
+- **Cursor-Specific**: Directly manages your Cursor IDE configuration rules
+- **Standard Structure**: Follows the standard `.cursor/` directory structure that Cursor IDE expects
+
 [Development guidelines will go here]
