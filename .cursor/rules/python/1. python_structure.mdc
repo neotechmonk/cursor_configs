@@ -1,0 +1,36 @@
+---
+title: Python Security & Config Management
+description: Secure coding rules covering input validation, secrets, authentication, authorization, and API communication.
+appliesTo:
+  - python
+---
+
+# Input Validation
+- Validate external inputs early on the edges
+- Whitelist values
+- Regex for formats
+- Validate types and lengths
+- Sanitize dangerous characters
+
+# Common Vulnerabilities
+- Avoid `pickle` on untrusted input
+- Prevent SQL injection (use parameterized queries)
+- Prevent DoS (rate limiting, validation)
+- Escape output to avoid XSS
+- Avoid command/path injection
+
+# Authentication & Authorization
+- Hash passwords with bcrypt/Argon2
+- MFA recommended
+- Use RBAC or ABAC
+- Principle of least privilege
+
+# Secrets
+- Never hardcode
+- Use env vars/config managers (`dynaconf`, `pydantic-settings`)
+
+# API Communication
+- Always use HTTPS
+- OAuth2 or API keys
+- Rate limiting
+- Web Application Firewall where relevant

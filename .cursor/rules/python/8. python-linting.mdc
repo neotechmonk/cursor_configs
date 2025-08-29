@@ -1,0 +1,19 @@
+---
+title: Python Linting & Code Quality
+description: Code style enforcement, linting tools, and formatting standards.
+appliesTo:
+  - python
+---
+
+# Style Guidelines
+- **PEP 8:** Adhere to PEP 8 style guidelines.
+- **Consistent Style:** Maintain a consistent code style throughout the project.
+
+# Linting Tools
+- **Linters:** Use linters to enforce code style and detect potential problems.
+
+# Formatting
+- **Formatters:** Use formatters to automatically format code according to PEP 8.
+
+# Quality Assurance
+- **Pre-commit Hooks:** Use pre-commit hooks to run linters and formatters before committing code.
