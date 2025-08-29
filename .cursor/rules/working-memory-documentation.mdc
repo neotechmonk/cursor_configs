@@ -1,0 +1,162 @@
+# Working Memory Documentation Rule
+# Standards for documenting working memory during agent interactions
+
+<rule>
+name: working_memory_documentation
+description: Rules for documenting working memory and agent interactions
+filters:
+  - type: file_extension
+    pattern: "\\.(md|mdc)$"
+  - type: content
+    pattern: "(working memory|agent interaction|memory update)"
+actions:
+  - type: suggest
+    message: |
+      Working Memory Documentation Rules:
+
+      1. Memory Capture Structure:
+         a) Interaction Context:
+            - User query/request
+            - Agent analysis
+            - Decision points
+            - Actions taken
+            - Outcomes/results
+
+         b) Memory Types to Document:
+            - Project-specific knowledge
+            - User preferences
+            - Technical decisions
+            - Problem solutions
+            - Workflow patterns
+
+      2. Documentation Format:
+         a) Memory Entry Template:
+            ```
+            ## Memory Entry [YYYY-MM-DD HH:MM]
+            
+            **Work Item Type**: [FEATURE|BUG|REFACTOR|DOCS|TEST|PERFORMANCE|SECURITY|etc.]
+            **Priority**: [HIGH|MEDIUM|LOW]
+            **Context**: Brief description of the interaction
+            **Query**: User's original request
+            **Analysis**: Agent's understanding and approach
+            **Actions**: Specific steps taken
+            **Outcome**: Results and learnings
+            **Components**: Affected files/modules/systems
+            **Tags**: Relevant categories for future reference
+            **Related**: Links to related work items or documentation
+            ```
+
+         b) Memory File Structure:
+            - Location: /docs/working-memory/agent-interactions.md
+            - Chronological order (newest first)
+            - Searchable tags and keywords
+            - Cross-references to related tasks
+            - Categorized by work item type for easy filtering
+
+      3. Memory Update Triggers:
+         a) When to Update:
+            - New project context discovered
+            - User preference identified
+            - Technical decision made
+            - Problem solved
+            - Workflow established
+
+         b) Update Frequency:
+            - After each significant interaction
+            - When new patterns emerge
+            - Before starting complex tasks
+            - After completing major work
+
+      4. Memory Retrieval:
+         a) Search Patterns by Work Item Type:
+            - **FEATURE**: Search for feature-related solutions and patterns
+            - **BUG**: Find similar bug fixes and troubleshooting approaches
+            - **REFACTOR**: Locate refactoring patterns and best practices
+            - **DOCS**: Find documentation examples and templates
+            - **TEST**: Retrieve testing strategies and test patterns
+            - **PERFORMANCE**: Access performance optimization knowledge
+            - **SECURITY**: Find security-related solutions and patterns
+            - **DEPLOYMENT**: Locate deployment and CI/CD knowledge
+
+         b) Search Patterns by Category:
+            - By project component (frontend, backend, database, etc.)
+            - By user preference (coding style, tool preferences, etc.)
+            - By technical domain (authentication, API design, etc.)
+            - By problem type (error handling, optimization, etc.)
+            - By priority level (HIGH, MEDIUM, LOW)
+            - By date range (recent, historical, etc.)
+            - By affected components (specific files, modules, systems)
+
+         c) Memory Application:
+            - Reference previous solutions for similar work items
+            - Apply known preferences and patterns
+            - Avoid repeating mistakes from past work
+            - Build on past learnings and successful approaches
+            - Cross-reference related work items and solutions
+
+      5. Memory Maintenance:
+         a) Regular Review:
+            - Weekly memory relevance check
+            - Monthly pattern analysis
+            - Quarterly cleanup of outdated entries
+            - Archive completed project memories
+
+         b) Quality Standards:
+            - Clear, actionable information
+            - Specific examples and context
+            - Accurate timestamps
+            - Relevant tags and categories
+
+      Remember:
+      - Document memories immediately after interactions
+      - Use consistent formatting and structure
+      - Tag memories for easy retrieval
+      - Regular maintenance and cleanup
+      - Focus on actionable, reusable knowledge
+
+examples:
+  - input: |
+      # Memory entry example
+      ## Memory Entry [2024-03-20 14:30]
+      
+      **Work Item Type**: FEATURE
+      **Priority**: MEDIUM
+      **Context**: User prefers using adapters and transformers over custom functions
+      **Query**: "How should I implement this feature?"
+      **Analysis**: User values maintainable, standard solutions over custom code
+      **Actions**: Suggested using existing library adapters
+      **Outcome**: User confirmed preference for standard approaches
+      **Components**: src/core/adapters/, src/core/transformers/
+      **Tags**: #user-preferences #coding-style #maintainability #adapters
+      **Related**: docs/patterns/adapter-pattern.md
+
+  - input: |
+      # Memory retrieval examples by work item type
+      # Search for feature-related solutions
+      grep -r "Work Item Type.*FEATURE" docs/working-memory/
+      
+      # Search for bug fixes in authentication
+      grep -r "Work Item Type.*BUG.*auth" docs/working-memory/
+      
+      # Search for high-priority performance issues
+      grep -r "Priority.*HIGH.*PERFORMANCE" docs/working-memory/
+      
+      # Search by component
+      grep -r "Components.*database" docs/working-memory/
+      
+      # Search by tags
+      grep -r "#authentication" docs/working-memory/
+
+metadata:
+  priority: high
+  version: 1.0
+  tags:
+    - working-memory
+    - documentation
+    - agent-interactions
+    - knowledge-management
+</rule>
+description:
+globs:
+alwaysApply: false
+---
