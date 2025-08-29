@@ -1,0 +1,27 @@
+---
+title: Python Tooling & CI/CD
+description: Tooling rules for packaging, linting, typing, deployment, and CI/CD.
+appliesTo:
+  - python
+---
+
+# Tooling
+- Use uv instead of pip and venv. 
+  - Build config: `pyproject.toml`
+  - use `uv add [package]` or `uv remove [package]` as opposed editing `pyproject.toml` directly or `requirements.txt`
+  - always create a virtual environment under  `[root]\.venv` 
+- Lint/format: `ruff`
+- Typing: `mypy`
+- Notebook envs: Jupyter
+
+# Deployment
+- Deploy in virtual envs
+- Use Docker/containerization in which case venv is not needed
+- IaC for infra (TPulumi, etc.)
+- Process managers: `systemd`
+
+# CI/CD
+- Run lint + tests on every commit
+- Automated deployments
+- Pin dependencies for reproducibility
+- Include coverage reports
