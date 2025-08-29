@@ -1,0 +1,25 @@
+---
+title: Python Anti-Patterns & Common Mistakes
+description: Common Python anti-patterns, pitfalls, and mistakes to avoid.
+appliesTo:
+  - python
+---
+
+# Function & Argument Issues
+- **Mutable Default Arguments:** Avoid using mutable default arguments in function definitions.
+- **Scope of Variables:** Be aware of variable scope in nested functions.
+
+# Comparison & Identity
+- **`==` vs. `is`:** Use `==` for value comparison and `is` for object identity comparison.
+
+# Exception Handling
+- **`try...except` Blocks:** Placing too much code inside try blocks. Keep try blocks as small as possible.
+- **Ignoring Exceptions:** Swallowing exceptions without handling or logging them.
+
+# Code Structure
+- **Incorrect Indentation:** Indentation errors are a common source of bugs.
+- **Not Using Virtual Environments:** Not using virtual environments can lead to dependency conflicts.
+- Avoid god classes, spaghetti code, shotgun surgery
+- No magic numbers/strings
+- Minimize deep nesting; prefer guard clauses
+- DRY principle
