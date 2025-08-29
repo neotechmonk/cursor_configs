@@ -123,7 +123,62 @@ actions:
               end
               ```
 
-      4. Documentation Template:
+      4. Execution Phase:
+         a) Preparation:
+            - Create working memory structure
+            - Set up working environment
+            - Backup current state
+            - Notify stakeholders if needed
+
+         b) Implementation:
+            - Follow planned steps
+            - Make incremental changes
+            - Test each change
+            - Document progress
+
+         c) Quality Assurance:
+            - Run tests and checks
+            - Validate functionality
+            - Review code quality
+            - Check for side effects
+
+      5. Documentation & Memory Phase:
+         a) Working Memory Setup:
+            - Create task directory: `mkdir -p docs/working-memory/open/{task-id}`
+            - Initialize plan.md with problem analysis and solution design
+            - Create updates.md for progress tracking
+            - Follow working-memory-documentation.mdc format
+
+         b) Progress Documentation:
+            - Update status in updates.md
+            - Document decisions made
+            - Record solutions implemented
+            - Note lessons learned
+
+         c) Knowledge Sharing:
+            - Create/update guides
+            - Share insights with team
+            - Update templates if needed
+            - Archive completed work
+
+      6. Follow-up & Maintenance Phase:
+         a) Validation:
+            - Confirm user satisfaction
+            - Verify requirements met
+            - Check for additional needs
+            - Plan next steps if needed
+
+         b) Maintenance:
+            - Schedule future reviews
+            - Monitor for issues
+            - Plan improvements
+            - Update workflows
+
+         c) Exception Handling:
+            - When stuck: Re-examine problem, research alternatives, ask questions
+            - When blocked: Document blocker, propose alternatives, request resources
+
+      7. Documentation Template:
          ```markdown
          ## Problem Analysis
 
@@ -215,6 +270,18 @@ actions:
       - Keep documentation current
       - Use specialized methodologies when applicable
       - Reference specific debugging rules for different types of issues
+
+      ## Complete Workflow Summary
+      
+      **Phase 1**: Problem Analysis → Understand issue, analyze impact, review context
+      **Phase 2**: Solution Design → Brainstorm solutions, evaluate options, validate approach  
+      **Phase 3**: Implementation Planning → Break down tasks, manage risks, plan testing
+      **Phase 4**: Execution → Implement incrementally, test each change, ensure quality
+      **Phase 5**: Documentation & Memory → Set up working memory, document progress, share knowledge
+      **Phase 6**: Follow-up & Maintenance → Validate results, monitor issues, plan improvements
+      
+      **File Creation**: Each phase creates specific documentation in `/docs/working-memory/open/{task-id}/`
+      **Memory Integration**: Follows working-memory-documentation.mdc format and memory-management.mdc structure
 
 examples:
   - input: |
