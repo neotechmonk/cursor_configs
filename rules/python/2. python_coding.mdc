@@ -1,9 +1,3 @@
----
-title: Python Coding Practices & Patterns
-description: Everyday coding rules, design patterns, anti-patterns, error handling, and state management.
-appliesTo:
-  - python
----
 
 # Design Patterns
 - Strategy, Factory, Observer, Decorator, Context Manager
@@ -27,6 +21,22 @@ appliesTo:
 - Explicit state over globals
 - `contextvars` for async state
 
+# Import Clarity
+- **Avoid __init__.py re-exports** for main classes/functions
+- **Use direct imports** to make source locations clear
+- **__init__.py should only contain:**
+  - Package documentation
+  - Version information  
+  - Essential package-level constants
+  - NOT re-exporting main classes
+- **Import paths should be explicit:**
+  - `from core.sessions.session import TradingSession` ✅
+  - `from core.sessions import TradingSession` ❌ (unclear source)
+- **Benefits:**
+  - Clear source locations for developers
+  - Easier debugging and maintenance
+  - No hidden import magic
+  - Follows "Explicit is better than implicit" principle
 
 # Anti-patterns
 Refer to @`.cursor\rules\xx. python-anti-patterns.mdc`
