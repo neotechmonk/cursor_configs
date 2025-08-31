@@ -9,13 +9,104 @@ appliesTo:
 - Use **pytest**.
 - Run with **uv**: `uv run pytest …`.
 
-# Test Layout
+# Folder structure
 - All tests live under `tests/`.
+- Types
+  - Unit `tests/module/unit/sub_module?/test_xx.py`
+  - Integration `tests/module/integration/test_xx.py`
+  - System `tests/system/test_xx.py`
 - Mirror `src/` structure.
 - No `__init__.py` unless cross-importing helpers.
 - Common dirs:
-  - `tests/mocks/`
-  - `tests/data/`
+  - `tests/mocks/[module]`
+  - `tests/data/[module]/valid/`
+  - `tests/data/[module]/invalid/*`
+  
+## Markers
+- Add to `pyproject.toml` (preferable) or `pytest.ini`:
+
+```toml
+[tool.pytest.ini_options]
+markers = [
+    "unit: fast, isolated tests (no filesystem/network)",
+    "integration: integration tests with real wiring (minimal I/O)",
+    "system: end-to-end/smoke/performance tests"
+]
+```
+
+# Test Types
+Scope definitions (crisp + enforceable)
+
+## Unit (fast, pure, tiny)
+Purpose: Prove a function/class behaves correctly in isolation.
+- I/O: none (no disk, no net, no sleep); use fakes/in-mem doubles
+- Dependencies: mocked/stubbed to interfaces (protocols)
+- Data size: minimal; use inlined literals or tiny fixtures
+- Runtime: sub-second per test; whole unit suite ≤2–3 min
+- Common targets (your codebase):
+  - SessionTransformer logic
+  - Cache policies (MemoryCache.get/put/invalidate)
+  - Helpers: validators, parsers, mappers (e.g., YAML→model field mapping)
+- Eg
+  ```python
+  @pytest.mark.unit
+  def test_transformer_maps_symbol_fields():
+      raw = {"symbols": [{"symbol": "AAPL", "timeframe": "1m"}]}
+      out = SessionTransformer()(raw)
+      assert out.symbols[0].symbol == "AAPL"
+  ```
+
+## Integration (real wiring, minimal externalities)
+
+Purpose: Prove modules work together (adapters+transformers+services) using real objects and tiny deterministic inputs.
+- I/O: allowed if local & tiny (e.g., read a small YAML under tests/data)
+- Dependencies: real internal components; mock only true externals (network, clock if nondeterministic)
+- Data size: tiny "golden" files (e.g., alpha.yaml)
+- Runtime: seconds per test; integration pack ≤5–8 min
+- Common targets (your codebase):
+  - TradingSessionService.get() reads YAML via YamlSessionAdapter, transforms, builds session
+  - Equivalence: dict-adapter vs YAML-adapter produce same resolved model
+  - Cache read-through semantics (first build vs subsequent get)
+- E.g.
+  ```python
+  @pytest.mark.integration
+  def test_session_get_builds_from_yaml(tmp_path):
+      (tmp_path/"alpha.yaml").write_text(
+          "name: alpha\nproviders:{data:stub,execution:stub}\n"
+          "symbols:[{symbol:AAPL,timeframe:'1m'}]\n"
+      )
+      svc = TradingSessionService(sessions_dir=tmp_path, ...)
+      s = svc.get("alpha")
+      assert s.name == "alpha"
+      assert s.symbols
+  ```
+
+## System (E2E smoke, resilience, perf)
+
+Purpose: Prove critical user journeys work across the app boundary.
+- I/O: yes (orchestration-level), but controlled and fast; external deps stubbed at boundary if needed
+- Dependencies: "real enough" stack with boundary doubles (e.g., provider stub HTTP server or in-proc fake)
+- Data size: representative but small (e.g., 10k bars perf cap)
+- Runtime: kept short; smoke ≤1–2 min, perf capped & tagged @slow
+- Common targets (your codebase):
+  - Boot a session → process a few ticks → emit order intent → update portfolio → clean shutdown
+  - Resilience: provider restart; idempotent shutdown; recovery of state
+  - Guardrail perf: "process N bars under T sec" on CI boxes
+- Example (smoke):
+  ```python
+  @pytest.mark.system
+  def test_end_to_end_smoke(fake_provider, fake_execution):
+      s = boot_minimal_session(provider=fake_provider, execution=fake_execution)
+      s.tick()  # drives strategy
+      assert fake_execution.last_intent is not None
+      s.shutdown()
+  ```
+
+## Test Types : Quick decision tree
+- Does it touch filesystem/network/time/process env?
+- No → Unit
+- Yes, but only within your app's modules (real wiring, tiny files, external I/O mocked) → Integration
+- Yes, crosses multiple modules/endpoints and exercises a user workflow end-to-end → System
 
 # Writing Tests
 - Prefer **plain functions** (`def test_...`).
@@ -47,11 +138,40 @@ appliesTo:
   - Open `.cursor/templates/test_run.md`, fill in PLAN, paste into `tests/[module]/test.md`.
 - **During runs:**  
   - Tick CHECKLIST items in `test.md` as tests pass.  
-  - Keep iterations **append-only** (don’t overwrite previous runs).
+  - Keep iterations **append-only** (don't overwrite previous runs).
 - **After runs:**  
   - Summarize results under SUMMARY in `test.md`.  
   - Remove iteration blocks + checklists once complete.  
   - Keep a single **living note per module** (`tests/[module]/test.md`).
+
+# Anti-patterns to Avoid
+- Unit tests that:
+  - Write files or use sleep()
+  - Have excessive mocking
+  - Mix concerns across test levels
+- Integration tests that:
+  - Mock the module under test
+  - Have unclear boundaries
+- System tests that:
+  - Assert on implementation details
+  - Test too many internals
+- Fixtures that:
+  - Create complex dependency graphs
+  - Perform I/O in unit test scope
+  - Hide important setup in conftest.py
+
+# Time Budget Guidelines
+- Unit Tests:
+  - Individual: < 10ms per test
+  - Suite Total: ≤ 2-3 minutes
+- Integration Tests:  
+  - Individual: ≤ 1-3 seconds
+  - Suite Total: ≤ 5-8 minutes
+- System Tests:
+  - Smoke Suite: ≤ 60-120 seconds total
+- Slow Tests:
+  - Mark with @pytest.mark.slow
+  - Exclude from PR validation runs
 
 # After Passing
 - Run linter: `uv run ruff check --fix`.
