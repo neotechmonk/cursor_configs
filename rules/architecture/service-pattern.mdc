@@ -1,0 +1,169 @@
+# Service Pattern
+
+## When to Use
+
+- Business logic orchestration - coordinate complex operations across multiple components
+- Transaction management - handle operations that span multiple repositories or external services
+- API boundary definition - provide clean interfaces for business capabilities
+- Dependency coordination - manage interactions between strategies, adapters, and repositories
+- Business workflow encapsulation - contain complex business processes in one place
+- Testing isolation - separate business logic from infrastructure concerns
+- Service layer architecture - create clear boundaries between business and technical layers
+
+## When NOT to Use
+
+- Simple CRUD operations - use repository pattern directly instead
+- Data transformation only - use transformer pattern instead
+- Single component operations - use the component directly
+- Infrastructure concerns - use dedicated infrastructure services instead
+- UI logic - keep presentation separate from business logic
+- High-frequency operations - service layer adds overhead for simple calls
+- Early development - don't abstract until you have clear business workflows
+
+## Pattern Combinations
+
+- **Strategy** - Service coordinates strategy selection and execution
+- **Adapter** - Service uses adapters for external system integration
+- **Bridge** - Service works with bridge abstractions for implementations
+- **Repository** - Service orchestrates data operations through repositories
+- **Factory** - Service uses factories to create domain objects
+- **Observer** - Service publishes events and manages subscriptions
+- **Command** - Service executes commands and manages command lifecycle
+
+## Structure
+
+- keep services separate from domain models and infrastructure
+- E.g. 
+  - `payment_service.py` orchestrates payment processing using payment adapters and strategies
+  - `trading_service.py` manages trading sessions using session repositories and trading strategies
+  - `user_service.py` handles user operations through user repositories and validation strategies
+    ```python
+    src/
+    ├── core/
+    │   ├── domain/
+    │   │   ├── payment.py          # Payment domain model
+    │   │   └── user.py             # User domain model
+    │   └── services/
+    │       ├── payment_service.py  # Payment business logic
+    │       └── user_service.py     # User business logic
+    ├── adapters/
+    │   └── payment/                # Payment provider adapters
+    │       ├── stripe_adapter.py
+    │       └── paypal_adapter.py
+    └── repositories/
+        └── user_repository.py      # User data access
+    ```
+
+## Usage Example
+
+```python
+# payment_service.py - Business logic orchestration
+class PaymentService:
+    def __init__(self, payment_adapter: PaymentInterface, 
+                 user_repository: UserRepository,
+                 notification_service: NotificationService):
+        self.payment = payment_adapter
+        self.users = user_repository
+        self.notifications = notification_service
+    
+    def process_payment(self, user_id: str, amount: float, currency: str) -> dict:
+        # Business logic workflow
+        user = self.users.get_by_id(user_id)
+        if not user:
+            raise UserNotFoundError(f"User {user_id} not found")
+        
+        if not user.can_make_payment(amount):
+            raise InsufficientFundsError("Insufficient funds")
+        
+        # Process payment through adapter
+        payment_result = self.payment.process_payment(amount, currency)
+        
+        # Update user balance
+        user.update_balance(-amount)
+        self.users.save(user)
+        
+        # Send notification
+        self.notifications.send_payment_confirmation(user, payment_result)
+        
+        return payment_result
+    
+    def get_payment_history(self, user_id: str) -> list:
+        user = self.users.get_by_id(user_id)
+        if not user:
+            raise UserNotFoundError(f"User {user_id} not found")
+        
+        return self.payment.get_payment_history(user.payment_account_id)
+
+# user_service.py - User business operations
+class UserService:
+    def __init__(self, user_repository: UserRepository,
+                 password_service: PasswordService,
+                 email_service: EmailService):
+        self.users = user_repository
+        self.password = password_service
+        self.email = email_service
+    
+    def create_user(self, email: str, password: str, name: str) -> User:
+        # Business validation
+        if self.users.exists_by_email(email):
+            raise UserAlreadyExistsError("Email already registered")
+        
+        if not self.password.is_valid(password):
+            raise InvalidPasswordError("Password does not meet requirements")
+        
+        # Create user with hashed password
+        hashed_password = self.password.hash(password)
+        user = User(email=email, password_hash=hashed_password, name=name)
+        
+        # Save and send welcome email
+        saved_user = self.users.save(user)
+        self.email.send_welcome_email(saved_user)
+        
+        return saved_user
+    
+    def authenticate_user(self, email: str, password: str) -> User:
+        user = self.users.get_by_email(email)
+        if not user:
+            raise AuthenticationError("Invalid credentials")
+        
+        if not self.password.verify(password, user.password_hash):
+            raise AuthenticationError("Invalid credentials")
+        
+        return user
+
+# Usage
+payment_service = PaymentService(stripe_adapter, user_repo, notification_service)
+user_service = UserService(user_repo, password_service, email_service)
+
+# Business operations through services
+try:
+    payment_result = payment_service.process_payment("user123", 100.0, "USD")
+    print(f"Payment processed: {payment_result}")
+except InsufficientFundsError:
+    print("Insufficient funds for payment")
+
+new_user = user_service.create_user("john@example.com", "securepass123", "John Doe")
+```
+
+## Key Principles
+
+1. **Single Responsibility**: Each service handles one business domain
+2. **Dependency Injection**: Services receive dependencies through constructor injection
+3. **Business Logic Focus**: Services contain business rules, not technical implementation
+4. **Transaction Boundaries**: Services manage operations that span multiple components
+5. **Error Handling**: Services handle business-specific errors and exceptions
+6. **Testability**: Services can be easily tested with mocked dependencies
+7. **Interface Contracts**: Services define clear contracts for business operations
+
+## Benefits
+
+- **Centralized Business Logic**: All business rules are in one place
+- **Easier Testing**: Business logic can be tested independently
+- **Better Separation of Concerns**: Business logic is separate from technical concerns
+- **Reusability**: Services can be used by different parts of the application
+- **Maintainability**: Changes to business logic are localized to services
+- **Clear API Boundaries**: Services provide clean interfaces for business capabilities
+description:
+globs:
+alwaysApply: true
+---
