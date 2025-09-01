@@ -1,0 +1,138 @@
+## When to Use
+
+- Integration with 3rd party packages - wrap external APIs to match your interface
+- Legacy system integration - adapt old systems to work with new code
+- Interface mismatch - when client expects different interface than what's available
+- Inter system communication - translate between different system interfaces
+- Inter module communication - adapt interfaces between different modules
+- Data format conversion - transform data structures between different formats
+- API versioning - adapt between different API versions
+- Testing with mocks - create test doubles that match expected interfaces
+
+## When NOT to Use
+
+- Simple interface changes - use inheritance or composition instead
+- Performance-critical code - adapter adds indirection overhead
+- Single interface - overkill if only one interface exists
+- Tight coupling - when you can modify the source interface directly
+- Complex transformations - use transformer pattern instead
+- High-frequency operations - abstraction layer adds overhead
+- Memory-constrained systems - extra objects and indirection
+- Early development - don't know what interfaces you'll need yet
+- Simple data passing - use direct method calls instead
+
+## Pattern Combinations
+
+- **Bridge** - Adapter interface + Bridge implementation
+- **Facade** - Simplifies complex subsystem + Adapter interface conversion
+- **Strategy** - Algorithm selection + Adapter interface matching
+- **Factory** - Creates appropriate adapter + Adapter interface creation
+- **Dependency Injection** - Injects adapter + Adapter interface resolution
+- **Decorator** - Adds behavior + Adapter interface enhancement
+- **Proxy** - Controls access + Adapter interface translation
+
+## Structure
+- keep adapters separate from other code
+- E.g. 
+  - `payment_interface.py` defines the expected interface
+  - `stripe_adapter.py` and `paypal_adapter.py` adapt external APIs to match the interface
+  - `payment_service.py` as the client works with the unified interface
+    ```python
+    src/
+    ├── core/
+    │   ├── domain/
+    │   │   └── payment_interface.py  # Expected payment interface
+    │   └── services/
+    │       └── payment_service.py    # Business logic using interface
+    └── adapters/
+        └── payment/                  # Adapter implementations
+            ├── stripe_adapter.py     # Stripe API adapter
+            └── paypal_adapter.py     # PayPal API adapter
+    ```
+
+## Usage Example
+
+```python
+# payment_interface.py - Target interface
+class PaymentInterface:
+    def process_payment(self, amount: float, currency: str) -> dict:
+        raise NotImplementedError
+    
+    def get_payment_status(self, payment_id: str) -> str:
+        raise NotImplementedError
+
+# stripe_adapter.py - Adapter for Stripe API
+class StripeAdapter(PaymentInterface):
+    def __init__(self, stripe_client):
+        self.stripe = stripe_client
+    
+    def process_payment(self, amount: float, currency: str) -> dict:
+        # Adapt Stripe's API to our interface
+        stripe_payment = self.stripe.PaymentIntent.create(
+            amount=int(amount * 100),  # Stripe uses cents
+            currency=currency.lower()
+        )
+        return {
+            'payment_id': stripe_payment.id,
+            'status': stripe_payment.status,
+            'amount': amount,
+            'currency': currency
+        }
+    
+    def get_payment_status(self, payment_id: str) -> str:
+        payment = self.stripe.PaymentIntent.retrieve(payment_id)
+        return payment.status
+
+# paypal_adapter.py - Adapter for PayPal API
+class PayPalAdapter(PaymentInterface):
+    def __init__(self, paypal_client):
+        self.paypal = paypal_client
+    
+    def process_payment(self, amount: float, currency: str) -> dict:
+        # Adapt PayPal's API to our interface
+        paypal_payment = self.paypal.payment.create({
+            'intent': 'sale',
+            'payer': {'payment_method': 'paypal'},
+            'transactions': [{
+                'amount': {'total': str(amount), 'currency': currency.upper()}
+            }]
+        })
+        return {
+            'payment_id': paypal_payment.id,
+            'status': paypal_payment.state,
+            'amount': amount,
+            'currency': currency
+        }
+    
+    def get_payment_status(self, payment_id: str) -> str:
+        payment = self.paypal.payment.get(payment_id)
+        return payment.state
+
+# payment_service.py - Client using unified interface
+class PaymentService:
+    def __init__(self, payment_adapter: PaymentInterface):
+        self.payment = payment_adapter
+    
+    def charge(self, amount: float, currency: str):
+        return self.payment.process_payment(amount, currency)
+    
+    def check_status(self, payment_id: str):
+        return self.payment.get_payment_status(payment_id)
+
+# Usage
+stripe_adapter = StripeAdapter(stripe_client)
+paypal_adapter = PayPalAdapter(paypal_client)
+
+# Same interface, different implementations
+stripe_service = PaymentService(stripe_adapter)
+paypal_service = PaymentService(paypal_adapter)
+
+# Both work identically from client perspective
+stripe_result = stripe_service.charge(100.0, 'USD')
+paypal_result = paypal_service.charge(100.0, 'USD')
+```
+---
+description: Adapter pattern - convert interface of one class into another interface clients expect
+globs:
+alwaysApply: true
+---
