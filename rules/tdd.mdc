@@ -1,0 +1,17 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+1.	You are not allowed to write any production code unless it is to make a failing unit test pass.
+2.	You are not allowed to write any more of a unit test than is sufficient to fail (compilation failure is also considered failing).
+3.	You are not allowed to write any more production code than is sufficient to pass the one failing unit test.
+4.	You are not allowed to write a test that verifies more than one behaviour; multiple assertions are permitted only if they describe the same behaviour.
+5.	You are not allowed to write a unit test that runs slowly; tests must run fast enough to be executed frequently.
+6.	You are not allowed to let a unit test depend on external systems (database, file system, network) unless it is explicitly an integration/system test.
+7.	You are not allowed to skip refactoring once the test is green; duplication and unclear code must be removed.
+8.	You are not allowed to name a test in a way that hides its intent; test names must clearly describe the behaviour under test.
+9.	You are not allowed to write a test that can fail for more than one unrelated reason; split it into separate tests.
+10.	You are not allowed to over-prepare test fixtures; only initialise the state necessary for the behaviour under test.
+11.	You are not allowed to assert internal implementation details; only externally visible behaviour may be tested.
+12.	You are not allowed to keep a test that is flaky; all tests must be reliable so that a green suite always means confidence.
