@@ -119,11 +119,161 @@ Purpose: Prove critical user journeys work across the app boundary.
   - **Unit:** isolate functions/classes, mock dependencies.
   - **Integration:** DB/API workflows.
   - **E2E:** only critical paths.
+  
+## Test Naming Conventions
+
+### Pattern: `test_[method]_[scenario]_[expected_result]`
+- **Method**: The function/method being tested
+- **Scenario**: The specific condition or input
+- **Expected Result**: What should happen
+
+**Good Examples:**
+```python
+def test_calculate_tax_with_standard_rate_returns_correct_amount()
+def test_validate_email_with_invalid_format_raises_exception()
+def test_process_order_with_insufficient_inventory_returns_error()
+def test_get_user_by_id_with_nonexistent_id_returns_none()
+```
+
+**Bad Examples:**
+```python
+def test_calculator()  # Too vague
+def test_add()  # Missing scenario
+def test_works()  # Doesn't describe behavior
+def test_calculate_tax_1()  # Meaningless number
+```
 
 # Mocks
 - Centralize in `tests/mocks/[module]/`.
-- Mock to **interface/protocol**, not concrete implementation.
-- Use `MagicMock` with `autospec`.
+- Mock to `interface/protocol/abstract class` where possible and not concrete implementations.
+- Use `pytest-mock`(preferable) or `unittest.mock` with `autospec` where possible
+
+## Mocking Strategies
+
+### Basic Mocking
+```python
+# Mock external dependencies
+@pytest.fixture
+def mock_database():
+    with patch('module.database') as mock_db:
+        mock_db.get_user.return_value = User(id=1, name="Test")
+        yield mock_db
+
+def test_user_service_gets_user_from_database(mock_database):
+    service = UserService(mock_database)
+    user = service.get_user(1)
+    assert user.name == "Test"
+    mock_database.get_user.assert_called_once_with(1)
+```
+
+### Advanced Mocking Patterns
+
+#### 1. Context Manager Mocking
+```python
+def test_file_processing():
+    with patch('builtins.open', mock_open(read_data='test data')) as mock_file:
+        result = process_file('test.txt')
+        mock_file.assert_called_once_with('test.txt', 'r')
+        assert result == 'processed: test data'
+```
+
+#### 2. Side Effects and Exceptions
+```python
+def test_handles_database_error():
+    mock_db = MagicMock()
+    mock_db.get_user.side_effect = DatabaseError("Connection failed")
+    
+    with pytest.raises(ServiceError, match="Database unavailable"):
+        service.get_user(1)
+```
+
+#### 3. Async Mocking
+```python
+@pytest.fixture
+async def mock_async_client():
+    mock_client = AsyncMock()
+    mock_client.fetch_data.return_value = {"status": "success"}
+    return mock_client
+
+@pytest.mark.asyncio
+async def test_async_service(mock_async_client):
+    service = AsyncService(mock_async_client)
+    result = await service.process_data()
+    assert result["status"] == "success"
+```
+
+#### 4. Property Mocking
+```python
+def test_configuration_property():
+    with patch.object(Config, 'api_key', new_callable=PropertyMock) as mock_key:
+        mock_key.return_value = 'test-key'
+        config = Config()
+        assert config.api_key == 'test-key'
+```
+
+#### 5. Partial Mocking
+```python
+def test_partial_mock():
+    with patch.object(ExternalService, 'expensive_operation') as mock_expensive:
+        mock_expensive.return_value = 'cached_result'
+        
+        service = Service()
+        result = service.process_with_cache()
+        assert result == 'cached_result'
+```
+
+#### 6. Mock Chaining
+```python
+def test_mock_chaining():
+    mock_client = MagicMock()
+    mock_client.api.users.get.return_value = {"id": 1, "name": "Test"}
+    
+    service = APIService(mock_client)
+    user = service.get_user(1)
+    assert user["name"] == "Test"
+```
+
+#### 7. Call Tracking
+```python
+def test_call_tracking():
+    mock_logger = MagicMock()
+    
+    with patch('module.logger', mock_logger):
+        service = Service()
+        service.process_item("test")
+        
+        # Verify specific calls
+        mock_logger.info.assert_called_with("Processing item: test")
+        assert mock_logger.info.call_count == 1
+```
+
+#### 8. Mock Validation
+```python
+def test_mock_validation():
+    mock_validator = MagicMock()
+    mock_validator.validate.return_value = True
+    
+    service = Service(validator=mock_validator)
+    result = service.process_data("valid_data")
+    
+    # Verify mock was called correctly
+    mock_validator.validate.assert_called_once_with("valid_data")
+    assert result is not None
+```
+
+### Mock Best Practices
+- Use `spec` or `autospec` to catch interface changes
+- Mock at the boundary of your system
+- Prefer dependency injection over patching
+- Use `side_effect` for complex behaviors
+- Verify mock interactions with `assert_called_with`
+- Clean up mocks in teardown if needed
+
+### Mock Anti Pattern
+- The class or function under test
+- Simple data structures (lists, dicts, primitives)
+- Pure functions (mathematical operations, validators)
+- Value objects (immutable data containers)
 
 # Execution
 - Iterate locally with narrow scope:
@@ -133,16 +283,16 @@ Purpose: Prove critical user journeys work across the app boundary.
   - `uv run pytest tests/[module]/ --cov=src/[module] --cov-report=term-missing`
 - Use parameterization (`@pytest.mark.parametrize`) to reduce duplication.
 
-# Documentation
-- **Planning:**  
-  - Open `.cursor/templates/test_run.md`, fill in PLAN, paste into `tests/[module]/test.md`.
-- **During runs:**  
-  - Tick CHECKLIST items in `test.md` as tests pass.  
-  - Keep iterations **append-only** (don't overwrite previous runs).
-- **After runs:**  
-  - Summarize results under SUMMARY in `test.md`.  
-  - Remove iteration blocks + checklists once complete.  
-  - Keep a single **living note per module** (`tests/[module]/test.md`).
+<!-- # Documentation -->
+<!-- - **Planning:**   -->
+<!--   - Open `.cursor/templates/test_run.md`, fill in PLAN, paste into `tests/[module]/test.md`. -->
+<!-- - **During runs:**   -->
+<!--   - Tick CHECKLIST items in `test.md` as tests pass.   -->
+<!--   - Keep iterations **append-only** (don't overwrite previous runs). -->
+<!-- - **After runs:**   -->
+<!--   - Summarize results under SUMMARY in `test.md`.   -->
+<!--   - Remove iteration blocks + checklists once complete.   -->
+<!--   - Keep a single **living note per module** (`tests/[module]/test.md`). -->
 
 # Anti-patterns to Avoid
 - Unit tests that:
