@@ -5,8 +5,12 @@ alwaysApply: true
 ---
 
 # Related Rules 
-- General testing - [python_testing.mdc](../python/5.%20python_testing.mdc)
-  
+- [Git Guidelines](../git/git.mdc)
+- [Problem Solving](../problem-solving.mdc)
+- [Python Testing](../python/5.%20python_testing.mdc)
+- [Architectural](../architecture/*) - DON'T use until the final round of refactor
+- [General Python Rules](../python/*) - Preferable but NOT important in the early stage of RGR <br> if rules conflict, this rules takes precedence
+
 # TDD Documentation folder structure
   ```
     docs/
@@ -109,32 +113,38 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 
 ## 1️⃣ 1st Pass - Per acceptance criteria - Get started
 ### 🔴 RED: 
-- **Plan:** User stories and AC are ready in `stories.md`. Capture ACs as tests in `tdd-plan.md`
+- **Check with user**: Check with the user if User stories and AC are NOT ready in `stories.md`. 
+- **Plan:**  Capture ACs as tests in `tdd-plan.md`
 - **Test:** One failing happy path test, succinct docstring
 - **Mock:** Local minimal mock within the test function 
   
 ### 🟢 GREEN:
+- **Check with user**: N/A
 - **Code:** Minimal implementation to make the test pass. ok to have messy code
 - **Test:** Verify passing test 
 
 ### 🔵 REFACTOR
+- **Check with user**: N/A
 - **Code:** Check logical flow and reorganize. Implement inversion of control
 - **Test:** Verify passing test  
-- Docs: Start if unfinished stories, transfer ACs to `tdd-plan.md`
+- **Docs:** Start if unfinished stories, transfer ACs to `tdd-plan.md`
 
 
 ## Pass 2: Error Handling & Validation
 ### 🔴 RED: 
+- **Check with user**: Advise user if you aren't sure. Otherwise implement domain centric best practices.
 - **Test**: Failing test for **external failures** (network, database, file system, API calls)
 - **Test**: Failing test for **invalid inputs** (malformed data, wrong types, missing required fields)
 - **Mock**: Mock external dependencies that can fail, simulate error conditions
 
 ### 🟢 GREEN:
+- **Check with user**: N/A
 - **Code**: Add error handling, input validation, and exception management
 - **Code**: Maintain existing functionality while adding robustness
 - **Test:** Verify all tests pass
   
 ### 🔵 REFACTOR
+- **Check with user**: N/A
 - **Code:** Extract error handling logic, add domain-specific exceptions
 - **Code:** Add guard clauses and input validation at boundaries
 - **Test:** Verify passing test 
@@ -142,24 +152,28 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 
 ## Pass 3: Edge Cases & Boundary Conditions
 ### 🔴 RED:
+- **Check with user**: Advise user if you aren't sure. Otherwise implement domain centric best practices.
 - **Test**: Failing test for **boundary values** (min/max limits, empty collections, null/None)
 - **Test**: Failing test for **extreme scenarios** (large datasets, concurrent access, resource limits)
 - **Test**: Failing test for **business edge cases** (zero amounts, single items, maximum capacity)
 
 ### 🟢 GREEN:
+- **Check with user**: N/A
 - **Code**: Handle edge cases with minimal, focused code
 - **Code**: Preserve all existing behavior while adding edge case support
 - **Test:** Verify passing test
   
 ### 🔵 REFACTOR
+- **Check with user**: N/A
 - **Code:** Consolidate logic, add comprehensive docs. Follow pythonic idioms here don't over do for e.g. ValidationError, ValueError and TypeError
 <br> Add guard clauses and invert control where possible
 - **Test:** Verify passing test
 
 ## Pass 4: Code in Context
 Focus: Ensure previously iterated code is coherent with the rest of the module/functional grouping
-
+<br> This is also the time to cautiously and contextually apply the design patterns under 
 ### 🔴 RED:
+- **Check with user**: Advise user if you aren't sure. Otherwise implement domain centric best practices.
 - **Test**: Fragmented tests are consolidated 
 <br> Unrelated tests are spit up 
 <br> Mocks are consolidated baed on the merge/split of tests. Where duplicates exists at the test level, these are consolidated as  test file level `@pytest.fixtures` 
@@ -172,11 +186,11 @@ Focus: Ensure previously iterated code is coherent with the rest of the module/f
 - **Test:** Verify passing test
   
 ### 🔵 REFACTOR
-- **Code:** Refactor to match module conventions and architectural patterns
+- **Code:** Refactor to match module conventions and critically evaluate application of these [architectural patterns](../architecture/adapter-pattern.mdc)
+- **Check with user**: Advise the rationale for refactoring choice and seek permission before implementing further
 - **Code:** Consolidate similar functionality, remove duplication across module
 - **Code:** Ensure consistent error handling and logging patterns throughout module
 - **Test:** Verify passing test
-
 
 
 ## Common TDD Anti-Patterns
