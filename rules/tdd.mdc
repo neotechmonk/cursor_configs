@@ -1,17 +1,300 @@
 ---
-description:
+description: Test-Driven Development (TDD) rules and practices for writing reliable, maintainable code
 globs:
 alwaysApply: true
 ---
-1.	You are not allowed to write any production code unless it is to make a failing unit test pass.
-2.	You are not allowed to write any more of a unit test than is sufficient to fail (compilation failure is also considered failing).
-3.	You are not allowed to write any more production code than is sufficient to pass the one failing unit test.
-4.	You are not allowed to write a test that verifies more than one behaviour; multiple assertions are permitted only if they describe the same behaviour.
-5.	You are not allowed to write a unit test that runs slowly; tests must run fast enough to be executed frequently.
-6.	You are not allowed to let a unit test depend on external systems (database, file system, network) unless it is explicitly an integration/system test.
-7.	You are not allowed to skip refactoring once the test is green; duplication and unclear code must be removed.
-8.	You are not allowed to name a test in a way that hides its intent; test names must clearly describe the behaviour under test.
-9.	You are not allowed to write a test that can fail for more than one unrelated reason; split it into separate tests.
-10.	You are not allowed to over-prepare test fixtures; only initialise the state necessary for the behaviour under test.
-11.	You are not allowed to assert internal implementation details; only externally visible behaviour may be tested.
-12.	You are not allowed to keep a test that is flaky; all tests must be reliable so that a green suite always means confidence.
+
+# The TDD Cycle
+## Docs
+  ```
+    docs/
+    ├── feature/
+    │   ├── stories.md        # User stories in business language
+    │   └── tdd-plan.md       # Plan of tests to be executed. Track Implementation and Backlog
+    └── src/
+        └── module/
+            └── readme.md     # Module specific documentation
+  ```
+
+
+## Workflow
+1. Ensure user stories are in `stories.md` before beginning. Each story should have acceptance criteria (AC). 
+    Insist this user creates this and iteratively finalise before moving to the next step
+
+2. Each acceptance criteria should have a test in  `tdd-plan.md`
+        E.g.
+        [ ] Trading Session should be able to submit an place an order through an Execution Provider #from `stories.md`
+            [ ] Given Trading Session's Strategy has determined a valid trade, a new order could be placed #functional requirement
+            [ ] Order management system uses the existing `src/core/execution_provider` to submit the order to the broker #is design direction        
+        Get confirmation from the user before implementing the test. User may add additional tests that were not captured at the use of story level
+
+3. Start with integration test and iterate through RGR process:
+   3.a Write failing integration test
+   3.b Implement minimal code to pass
+   3.c Refactor while keeping test green
+
+4. Move onto unit tests and iterate through RGR process:
+   4.a Write failing unit test
+   4.b Implement minimal code to pass
+   4.c Refactor while keeping test green
+
+5. Document test results and get approval:
+   5.a Summarize passing tests to user
+   5.b Get permission to proceed to next step
+
+6. Update documentation:
+   6.a `stories.md` - Mark implemented stories as complete
+   6.b `tdd-plan.md` - Check off acceptance criteria and document test modules
+   6.c `README.MD` - Update relevant sections with new functionality
+
+7. Git commit each passing test's cycle along the way
+8. Add the full hash against the specific AC in `tdd-plan.md` 
+
+## Core TDD Rules
+• You are not allowed to write any production code unless it is to make a failing unit test pass.
+• unless the module under test is an island (util, poc, first module), start by implementing an integration test so that we the contract first
+• You are not allowed to write any more of a unit test than is sufficient to fail (compilation failure is also considered failing).
+• You are not allowed to write any more production code than is sufficient to pass the one failing unit test. Do not add methods, classes, or functionality that the current test does not require.
+    - always implement the user asks or suggest if request
+    - only implement after adding to backlog of tests for a given functionality 
+- Micro commit each green phase
+• You are not allowed to write a test that verifies more than one behaviour; multiple assertions are permitted only if they describe the same behaviour.
+• You are not allowed to let a unit test depend on external systems (database, file system, network) unless it is explicitly an integration/system test.
+• You are not allowed to skip refactoring once the test is green; duplication and unclear code must be removed.
+• You are not allowed to name a test in a way that hides its intent; test names must clearly describe the behaviour under test.
+• You are not allowed to write a test that can fail for more than one unrelated reason; split it into separate tests.
+• You are not allowed to over-prepare test fixtures; only initialise the state necessary for the behaviour under test.
+• You are not allowed to assert internal implementation details; only externally visible behaviour may be tested.
+• You are not allowed to keep a test that is flaky; all tests must be reliable so that a green suite always means confidence.
+• When external modules have interface issues or inconsistencies, resist changing them. Instead, create a STUB/FAKE in the current module you're working on and move forward. This keeps your module isolated and allows external modules to be refactored independently later.
+
+
+## The Three Phases
+
+### 🔴 RED Phase: Write a Failing Test
+- Write the **smallest possible test** that describes the desired behavior
+- The test should **fail for the right reason** (not compilation errors)
+- Focus on **one specific behavior** at a time
+- Use **descriptive test names** that explain the expected outcome
+- **Run the test** to confirm it fails
+
+**Example:**
+```python
+def test_calculator_adds_two_positive_numbers():
+    calc = Calculator()
+    result = calc.add(2, 3)
+    assert result == 5
+```
+
+### 🟢 GREEN Phase: Make It Pass
+- Write the **minimum code** to make the test pass
+- **Don't worry about code quality** yet - just make it work
+- **Don't add extra features** - only what the test requires
+- **Run the test** to confirm it passes
+
+**Example:**
+```python
+class Calculator:
+    def add(self, a, b):
+        return a + b  # Minimal implementation
+```
+
+### 🔵 REFACTOR Phase: Improve the Code
+- **Keep all tests passing** while improving code quality
+- Remove **duplication** and **unclear code**
+- Improve **naming** and **structure**
+- Apply **design patterns** and **best practices**
+- **Run tests frequently** to ensure nothing breaks
+
+**Example:**
+```python
+class Calculator:
+    def add(self, a: int, b: int) -> int:
+        """Add two numbers and return the result."""
+        return a + b
+```
+
+## Test Naming Conventions
+
+### Pattern: `test_[method]_[scenario]_[expected_result]`
+- **Method**: The function/method being tested
+- **Scenario**: The specific condition or input
+- **Expected Result**: What should happen
+
+**Good Examples:**
+```python
+def test_calculate_tax_with_standard_rate_returns_correct_amount()
+def test_validate_email_with_invalid_format_raises_exception()
+def test_process_order_with_insufficient_inventory_returns_error()
+def test_get_user_by_id_with_nonexistent_id_returns_none()
+```
+
+**Bad Examples:**
+```python
+def test_calculator()  # Too vague
+def test_add()  # Missing scenario
+def test_works()  # Doesn't describe behavior
+def test_calculate_tax_1()  # Meaningless number
+```
+
+## TDD-Specific Mocking Guidelines
+
+### When to Mock in TDD
+- **External dependencies** (APIs, databases, file systems)
+- **Slow operations** (network calls, heavy computations)
+- **Non-deterministic behavior** (random numbers, timestamps)
+- **Side effects** (logging, notifications, state changes)
+
+### Mocking Strategy
+```python
+# Mock external dependencies
+@pytest.fixture
+def mock_database():
+    with patch('module.database') as mock_db:
+        mock_db.get_user.return_value = User(id=1, name="Test")
+        yield mock_db
+
+def test_user_service_gets_user_from_database(mock_database):
+    service = UserService(mock_database)
+    user = service.get_user(1)
+    assert user.name == "Test"
+    mock_database.get_user.assert_called_once_with(1)
+```
+
+### Don't Mock
+- **The class under test**
+- **Simple data structures** (lists, dicts, primitives)
+- **Pure functions** (mathematical operations, validators)
+- **Value objects** (immutable data containers)
+
+## Refactoring Within TDD
+
+### Safe Refactoring Techniques
+1. **Extract Method**: Break large methods into smaller ones
+2. **Extract Variable**: Replace complex expressions with named variables
+3. **Rename**: Improve variable, method, and class names
+4. **Move Method**: Relocate methods to more appropriate classes
+5. **Introduce Parameter**: Make hardcoded values configurable
+
+### Refactoring Checklist
+- [ ] All tests still pass
+- [ ] No new functionality added
+- [ ] Code is more readable
+- [ ] Duplication is eliminated
+- [ ] Responsibilities are clear
+
+## Common TDD Anti-Patterns
+
+### ❌ Test After Development (TAD)
+- Writing tests after production code
+- **Solution**: Always write tests first
+
+### ❌ Testing Implementation Details
+```python
+# Bad: Testing internal state
+def test_calculator_has_internal_counter():
+    calc = Calculator()
+    assert calc._counter == 0  # Testing private attribute
+
+# Good: Testing behavior
+def test_calculator_tracks_operation_count():
+    calc = Calculator()
+    calc.add(1, 2)
+    assert calc.get_operation_count() == 1
+```
+
+### ❌ Over-Mocking
+```python
+# Bad: Mocking everything
+def test_user_service(mock_database, mock_logger, mock_validator, mock_encryptor):
+    # Too many mocks make tests brittle
+
+# Good: Mock only external dependencies
+def test_user_service_creates_user(mock_database):
+    service = UserService(mock_database)
+    # Test focuses on behavior, not implementation
+```
+
+### ❌ Testing Multiple Behaviors
+```python
+# Bad: Testing multiple things
+def test_user_validation():
+    user = User("", "invalid-email", -1)
+    assert not user.is_valid_name()
+    assert not user.is_valid_email()
+    assert not user.is_valid_age()
+
+# Good: One behavior per test
+def test_user_with_empty_name_is_invalid():
+    user = User("", "test@example.com", 25)
+    assert not user.is_valid_name()
+
+def test_user_with_invalid_email_is_invalid():
+    user = User("John", "invalid-email", 25)
+    assert not user.is_valid_email()
+```
+
+## Integration with Test Documentation
+
+### Using the Test Run Template
+When following TDD, use the existing test documentation workflow:
+
+1. **Planning Phase**: Fill out the PLAN section in `test_run.md`
+2. **Red Phase**: Document the failing test in CHECKLIST
+3. **Green Phase**: Update CHECKLIST as tests pass
+4. **Refactor Phase**: Document refactoring decisions in SUMMARY
+5. **Completion**: Update SUMMARY with final results
+
+### Example TDD Session Documentation
+```markdown
+**Context:**
+- Files/Modules: src/core/calculator.py
+- Constraints: Python 3.11+, pytest
+
+**Files to touch:**
+- src/core/calculator.py
+- tests/core/unit/test_calculator.py
+
+- [x] Plan updated
+- [x] Implemented code changes (calculator.py)
+- [x] Added/updated tests (test_calculator.py)
+- [x] Ran `uv run pytest tests/core/unit/test_calculator.py` and captured results
+- [x] Linted with `uv run ruff check --fix`
+- [x] Summary & next steps updated
+
+**Result:** pass
+**Tests run:** `uv run pytest tests/core/unit/test_calculator.py` → 3 passed
+**Files changed:** calculator.py, test_calculator.py
+**New/updated mocks:** None (pure functions)
+**Diff highlights:** Added Calculator class with add method, 3 test cases covering positive/negative/zero inputs
+**Follow-ups/TODO:** Add subtract, multiply, divide methods using same TDD approach
+**Next iteration proposal:** Implement subtract method following Red-Green-Refactor cycle
+```
+
+## TDD Workflow Integration
+
+### With Existing Python Testing Standards
+- Use **pytest** framework as specified in `python_testing.mdc`
+- Follow **unit test** guidelines for fast, isolated tests
+- Apply **markers** (`@pytest.mark.unit`) for TDD tests
+- Use **uv** for test execution: `uv run pytest tests/core/unit/test_*.py`
+
+### With Problem-Solving Approach
+- **Problem Analysis**: Define the behavior you want to implement
+- **Solution Design**: Write the test that describes the desired behavior
+- **Implementation**: Follow Red-Green-Refactor cycle
+- **Documentation**: Use test_run.md template for tracking progress
+
+## TDD Success Metrics
+
+### Code Quality Indicators
+- **Test Coverage**: Aim for 90%+ on new code
+- **Test Speed**: Unit tests run in <10ms each
+- **Test Reliability**: No flaky tests in the suite
+- **Code Clarity**: Tests serve as living documentation
+
+### Process Indicators
+- **Red Phase**: Tests fail for the right reason
+- **Green Phase**: Minimal code to pass tests
+- **Refactor Phase**: Code improves without breaking tests
+- **Cycle Time**: Complete Red-Green-Refactor in <5 minutes per behavior
