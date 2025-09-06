@@ -28,17 +28,12 @@ alwaysApply: true
             [ ] Order management system uses the existing `src/core/execution_provider` to submit the order to the broker #is design direction        
         Get confirmation from the user before implementing the test. User may add additional tests that were not captured at the use of story level
 
-3. Start with integration test and iterate through RGR process:
-   3.a Write failing integration test
-   3.b Implement minimal code to pass
-   3.c Refactor while keeping test green
+3. Start with integration test and iterate through RGR process (refer to 'The Three Phases'):
+   Integration validates contracts, unless working on isolated modules
 
-4. Move onto unit tests and iterate through RGR process:
-   4.a Write failing unit test
-   4.b Implement minimal code to pass
-   4.c Refactor while keeping test green
+4. Move onto unit tests and iterate through RGR process (refer to 'The Three Phases')
 
-5. Document test results and get approval:
+5. Document test results and get approval 
    5.a Summarize passing tests to user
    5.b Get permission to proceed to next step
 
@@ -48,16 +43,19 @@ alwaysApply: true
    6.c `README.MD` - Update relevant sections with new functionality
 
 7. Git commit each passing test's cycle along the way
-8. Add the full hash against the specific AC in `tdd-plan.md` 
+8. Add the full hash against the specific AC in `tdd-plan.md`
+9. Once all tests in `tdd-plan.md` are complete:
+   a. Suggest additional logical test cases based on implemented functionality
+   b. For each suggested test, get user confirmation to either:
+      - Implement immediately 
+      - Discard for now
+      - Add to backlog for near-term implementation
+   c. Document decisions in `tdd-plan.md` under appropriate sections
 
 ## Core TDD Rules
-• You are not allowed to write any production code unless it is to make a failing unit test pass.
-• unless the module under test is an island (util, poc, first module), start by implementing an integration test so that we the contract first
+• 
 • You are not allowed to write any more of a unit test than is sufficient to fail (compilation failure is also considered failing).
 • You are not allowed to write any more production code than is sufficient to pass the one failing unit test. Do not add methods, classes, or functionality that the current test does not require.
-    - always implement the user asks or suggest if request
-    - only implement after adding to backlog of tests for a given functionality 
-- Micro commit each green phase
 • You are not allowed to write a test that verifies more than one behaviour; multiple assertions are permitted only if they describe the same behaviour.
 • You are not allowed to let a unit test depend on external systems (database, file system, network) unless it is explicitly an integration/system test.
 • You are not allowed to skip refactoring once the test is green; duplication and unclear code must be removed.
