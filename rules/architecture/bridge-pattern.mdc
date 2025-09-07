@@ -1,0 +1,75 @@
+
+## When to Use
+
+- Multiple implementations - several concrete implementations of the same abstraction
+- Runtime switching - need to change implementation at runtime
+- Avoid inheritance explosion - prevents deep inheritance hierarchies
+- Platform independence - separate platform-specific code from business logic
+- Testing flexibility - easier to mock implementations for testing
+
+## When NOT to Use
+
+- Single implementation - overkill, use concrete class directly
+- Simple inheritance - regular inheritance is simpler
+- Interface conversion - use adapter pattern instead
+- Hiding complexity - use facade pattern instead
+- Creating families - use abstract factory pattern instead
+- High-frequency operations - abstraction layer adds overhead
+- Memory-constrained systems - extra objects and indirection
+- Early development - don't know what implementations you'll need yet
+- Simple CRUD operations - use concrete classes directly
+
+## Pattern Combinations
+
+- **Strategy** - Bridge structure + algorithm selection
+- **Factory** - Creates right implementation + Bridge abstraction
+- **Dependency Injection** - Injects implementation + Bridge separation
+- **Template Method** - Common workflow in the abstract class + Bridge details
+- **Observer** - Event notifications + Bridge implementations
+- **Command** - Wraps implementations + Bridge execution
+
+## Structure
+- keep adapters separate from other code
+- E.g. 
+  - `payment.py` is the abstract class implemented through `stripe_payment.py` and `paypal_payment.py` 
+  - `payment_service.py` as the client interacts with the abstract class and not the implementations directly
+    ```python
+    src/
+    ├── core/
+    │   ├── domain/
+    │   │   └── payment.py          # Payment abstraction/interface
+    │   └── services/
+    │       └── payment_service.py  # Business logic using abstraction
+    └── implementations/
+        └── payment/                # Bridge implementations
+            ├── stripe_payment.py   # Concrete Stripe implementation
+            └── paypal_payment.py   # Concrete PayPal implementation
+    ```
+
+## Usage Example
+
+```python
+# payment.py - Abstraction
+class Payment:
+    def process_payment(self, amount: float) -> bool:
+        raise NotImplementedError
+
+# stripe_payment.py - Implementation
+class StripePayment(Payment):
+    def process_payment(self, amount: float) -> bool:
+        # Stripe-specific logic
+        return True
+
+# payment_service.py - Client
+class PaymentService:
+    def __init__(self, payment: Payment):
+        self.payment = payment
+    
+    def charge(self, amount: float):
+        return self.payment.process_payment(amount)
+
+# Usage
+stripe = StripePayment() # in real life this would be injected/composed
+service = PaymentService(stripe)
+service.charge(100.0)
+```

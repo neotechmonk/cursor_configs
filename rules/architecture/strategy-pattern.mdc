@@ -1,0 +1,96 @@
+---
+description: Strategy Pattern - Behavioral design pattern for selecting algorithms at runtime
+globs: ["**/*.py"]
+alwaysApply: true
+---
+
+# Strategy Pattern
+
+## When to Use
+
+- Algorithm selection - need to choose between different algorithms at runtime
+- Behavior variation - objects that can behave differently based on context
+- Avoid conditional statements - replace complex if/else chains with strategy objects
+- Testing flexibility - easier to test different behaviors in isolation
+- Open/Closed Principle - add new behaviors without modifying existing code
+- Configuration-driven behavior - load strategies from configuration files
+- Performance optimization - switch algorithms based on data size or context
+
+## When NOT to Use
+
+- Single algorithm - overkill, use concrete implementation directly
+- Simple conditional logic - if/else is simpler for basic cases
+- Static behavior - if behavior never changes, don't abstract it
+- High-frequency switching - object creation overhead for simple cases
+- Memory-constrained systems - extra objects for each strategy
+- Early development - don't know what behaviors you'll need yet
+
+## Pattern Combinations
+- Factory - Creates strategy and handles selection
+- Dependency Injection - Injects and switches strategies
+- Template Method - Common workflow with strategy steps
+- Command - Wraps and executes strategies
+- State - Handles state changes and strategy behavior
+- Chain of Responsibility - Selects and executes strategies
+
+## Structure
+- keep strategies separate from client code
+- E.g. 
+  - `sorting.py` defines the strategy interface implemented through `bubble_sort.py`, `quick_sort.py`, and `merge_sort.py`
+  - `sorting_service.py` as the client uses the strategy interface and can switch implementations at runtime
+    ```python
+    src/
+    ├── core/
+    │   ├── domain/
+    │   │   └── sorting.py          # Sorting strategy interface
+    │   └── services/
+    │       └── sorting_service.py  # Client using strategies
+    └── strategies/
+        └── sorting/                # Strategy implementations
+            ├── bubble_sort.py      # Bubble sort strategy
+            ├── quick_sort.py       # Quick sort strategy
+            └── merge_sort.py       # Merge sort strategy
+    ```
+
+## Usage Example
+
+```python
+# sorting.py - Strategy interface
+class SortingStrategy:
+    def sort(self, data: list) -> list:
+        raise NotImplementedError
+
+# bubble_sort.py - Concrete strategy
+class BubbleSort(SortingStrategy):
+    def sort(self, data: list) -> list:
+        # Bubble sort implementation
+        return sorted(data.copy())
+
+# quick_sort.py - Concrete strategy
+class QuickSort(SortingStrategy):
+    def sort(self, data: list) -> list:
+        # Quick sort implementation
+        return sorted(data.copy())
+
+# sorting_service.py - Context/Client
+class SortingService:
+    def __init__(self, strategy: SortingStrategy):
+        self.strategy = strategy
+    
+    def set_strategy(self, strategy: SortingStrategy):
+        self.strategy = strategy
+    
+    def sort_data(self, data: list) -> list:
+        return self.strategy.sort(data)
+
+# Usage
+service = SortingService(BubbleSort())
+result1 = service.sort_data([3, 1, 4, 1, 5])
+
+service.set_strategy(QuickSort())
+result2 = service.sort_data([3, 1, 4, 1, 5])
+```
+description:
+globs:
+alwaysApply: true
+---

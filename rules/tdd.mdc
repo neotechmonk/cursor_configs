@@ -1,0 +1,244 @@
+---
+description: Test-Driven Development (TDD) rules and practices for writing reliable, maintainable code
+globs:
+alwaysApply: true
+---
+
+# Related Rules 
+- [Git Guidelines](../git/git.mdc)
+- [Problem Solving](../problem-solving.mdc)
+- [Python Testing](../python/5.%20python_testing.mdc)
+- [Architectural](../architecture/*) - DON'T use until the final round of refactor
+- [General Python Rules](../python/*) - Preferable but NOT important in the early stage of RGR <br> if rules conflict, this rules takes precedence
+
+# TDD Documentation folder structure
+  ```
+    docs/
+    ├── feature/
+    │   ├── stories.md        # User stories in business language
+    │   └── tdd-plan.md       # Plan of tests to be executed. Track Implementation and Backlog
+    └── src/
+        └── module/
+            └── readme.md     # Module specific documentation
+  ```
+
+
+# TDD Workflow
+Follow the meta workflow TDD approach is taken to build. It describes the meta workflow beyond just RGR
+1. Ensure user stories are in `stories.md` before beginning. 
+   - Each story should have acceptance criteria (AC).
+   - Insist this user creates this and iteratively finalise before moving to the next step
+
+2. Each acceptance criteria should have a test in `tdd-plan.md` 
+   <br> Example:
+     ```
+     [ ] Trading Session should be able to submit an place an order through an Execution Provider #from `stories.md`
+         [ ] Given Trading Session's Strategy has determined a valid trade, a new order could be placed #functional requirement
+         [ ] Order management system uses the existing `src/core/execution_provider` to submit the order to the broker #is design direction
+     ```
+   - Get confirmation from the user before implementing the test. User may add additional tests that were not captured at the use of story level
+
+3. Start with integration test and iterate through RGR process (refer to 'The Three Phases')
+   - Integration validates contracts, unless working on isolated modules
+
+4. Move onto unit tests and iterate through RGR process (refer to 'The Three Phases')
+
+5. Document test results and get approval
+   - Summarize passing tests to user
+   - Get permission to proceed to next step
+
+6. Update documentation
+   - `stories.md` - Mark implemented stories as complete
+   - `tdd-plan.md` - Check off acceptance criteria and document test modules
+   - `README.MD` - Update relevant sections with new functionality
+
+7. Git commit each passing test's cycle along the way
+8. Add the full hash against the specific AC in `tdd-plan.md`
+9.  Once all tests in `tdd-plan.md` are complete
+    - Suggest additional logical test cases based on implemented functionality
+    - For each suggested test, get user confirmation to either:
+      - Implement immediately
+      - Discard for now
+      - Add to backlog for near-term implementation
+
+
+
+# Rules
+## Core TDD Rules
+-  Write only enough test code to cause a failure of the functionality
+   - no additional methods or classes beyond what's needed
+   - gaps in functionality should be exposed through failing tests or during refactoring
+
+-  You are not allowed to write a test that verifies more than one behavior
+    - multiple assertions are permitted only if they describe the same behavior.
+
+-  You are not allowed to let a unit test depend on external systems (database, file system, network) unless it is explicitly an integration/system test.
+-  You are not allowed to skip refactoring once the test is green; duplication and unclear code must be removed.
+-  You are not allowed to name a test in a way that hides its intent; test names must clearly describe the behaviour under test.
+-  You are not allowed to write a test that can fail for more than one unrelated reason; split it into separate tests.
+-  You are not allowed to over-prepare test fixtures; only initialise the state necessary for the behaviour under test.
+-  You are not allowed to assert internal implementation details; only externally visible behaviour may be tested.
+-  You are not allowed to keep a test that is flaky; all tests must be reliable so that a green suite always means confidence.
+-  When external modules have issues, create a STUB/FAKE in your module rather than modifying them. This maintains isolation and enables independent refactoring later.
+
+
+##  Integration test rules
+  - Tests existing contracts to external and systems modules
+  - Module under test shouldn't use knowledge of other modules or systems - always use adapters/ports/bridges
+  - If insufficient functionality of other modules is identified, create a clearly identified fake representation in the module under development - external modules are refactored manually
+
+## Unit test rules
+  - Tests individual components in isolation from dependencies
+  - Dependencies should be mocked or stubbed using test doubles
+  - Focus on testing a single unit of functionality at a time
+  - If complex setup is needed, extract common test fixtures (# TODO move to refactor)
+
+
+## Refactoring Within TDD
+
+### Safe Refactoring Techniques
+1. **Extract Method**: Break large methods into smaller ones
+2. **Extract Variable**: Replace complex expressions with named variables
+3. **Rename**: Improve variable, method, and class names
+4. **Move Method**: Relocate methods to more appropriate classes
+5. **Introduce Parameter**: Make hardcoded values configurable or injected as dependencies 
+
+# RED-GREEN-REFACTOR Cycle
+
+## Core Rules
+- Iterate through multiple passes of RED, GREEN, REFACTOR
+- First pass focuses on validating the core happy path flow
+- Subsequent passes focus on clean code, guardrails, error handling and awareness of broader or adjacent functions
+
+
+## 1️⃣ 1st Pass - Per acceptance criteria - Get started
+### 🔴 RED: 
+- **Check with user**: Check with the user if User stories and AC are NOT ready in `stories.md`. 
+- **Plan:**  Capture ACs as tests in `tdd-plan.md`
+- **Test:** One failing happy path test, succinct docstring
+- **Mock:** Local minimal mock within the test function 
+  
+### 🟢 GREEN:
+- **Check with user**: N/A
+- **Code:** Minimal implementation to make the test pass. ok to have messy code
+- **Test:** Verify passing test 
+
+### 🔵 REFACTOR
+- **Check with user**: N/A
+- **Code:** Check logical flow and reorganize. Implement inversion of control
+- **Test:** Verify passing test  
+- **Docs:** Start if unfinished stories, transfer ACs to `tdd-plan.md`
+
+
+## Pass 2: Error Handling & Validation
+### 🔴 RED: 
+- **Check with user**: Advise user if you aren't sure. Otherwise implement domain centric best practices.
+- **Test**: Failing test for **external failures** (network, database, file system, API calls)
+- **Test**: Failing test for **invalid inputs** (malformed data, wrong types, missing required fields)
+- **Mock**: Mock external dependencies that can fail, simulate error conditions
+
+### 🟢 GREEN:
+- **Check with user**: N/A
+- **Code**: Add error handling, input validation, and exception management
+- **Code**: Maintain existing functionality while adding robustness
+- **Test:** Verify all tests pass
+  
+### 🔵 REFACTOR
+- **Check with user**: N/A
+- **Code:** Extract error handling logic, add domain-specific exceptions
+- **Code:** Add guard clauses and input validation at boundaries
+- **Test:** Verify passing test 
+
+
+## Pass 3: Edge Cases & Boundary Conditions
+### 🔴 RED:
+- **Check with user**: Advise user if you aren't sure. Otherwise implement domain centric best practices.
+- **Test**: Failing test for **boundary values** (min/max limits, empty collections, null/None)
+- **Test**: Failing test for **extreme scenarios** (large datasets, concurrent access, resource limits)
+- **Test**: Failing test for **business edge cases** (zero amounts, single items, maximum capacity)
+
+### 🟢 GREEN:
+- **Check with user**: N/A
+- **Code**: Handle edge cases with minimal, focused code
+- **Code**: Preserve all existing behavior while adding edge case support
+- **Test:** Verify passing test
+  
+### 🔵 REFACTOR
+- **Check with user**: N/A
+- **Code:** Consolidate logic, add comprehensive docs. Follow pythonic idioms here don't over do for e.g. ValidationError, ValueError and TypeError
+<br> Add guard clauses and invert control where possible
+- **Test:** Verify passing test
+
+## Pass 4: Code in Context
+Focus: Ensure previously iterated code is coherent with the rest of the module/functional grouping
+<br> This is also the time to cautiously and contextually apply the design patterns under 
+### 🔴 RED:
+- **Check with user**: Advise user if you aren't sure. Otherwise implement domain centric best practices.
+- **Test**: Fragmented tests are consolidated 
+<br> Unrelated tests are spit up 
+<br> Mocks are consolidated baed on the merge/split of tests. Where duplicates exists at the test level, these are consolidated as  test file level `@pytest.fixtures` 
+<br> 
+
+### 🟢 GREEN:
+- **Code**: Integrate with existing module structure and patterns
+- **Code**: Align naming conventions, error handling, and logging with module standards
+- **Code**: Ensure proper module boundaries and dependency management
+- **Test:** Verify passing test
+  
+### 🔵 REFACTOR
+- **Code:** Refactor to match module conventions and critically evaluate application of these [architectural patterns](../architecture/adapter-pattern.mdc)
+- **Check with user**: Advise the rationale for refactoring choice and seek permission before implementing further
+- **Code:** Consolidate similar functionality, remove duplication across module
+- **Code:** Ensure consistent error handling and logging patterns throughout module
+- **Test:** Verify passing test
+
+
+## Common TDD Anti-Patterns
+### ❌ Test After Development (TAD)
+- Writing tests after production code
+- **Solution**: Always write tests first
+
+### ❌ Testing Implementation Details
+```python
+# Bad: Testing internal state
+def test_calculator_has_internal_counter():
+    calc = Calculator()
+    assert calc._counter == 0  # Testing private attribute
+
+# Good: Testing behavior
+def test_calculator_tracks_operation_count():
+    calc = Calculator()
+    calc.add(1, 2)
+    assert calc.get_operation_count() == 1
+```
+
+### ❌ Over-Mocking
+```python
+# Bad: Mocking everything
+def test_user_service(mock_database, mock_logger, mock_validator, mock_encryptor):
+    # Too many mocks make tests brittle
+
+# Good: Mock only external dependencies
+def test_user_service_creates_user(mock_database):
+    service = UserService(mock_database)
+    # Test focuses on behavior, not implementation
+```
+
+### ❌ Testing Multiple Behaviors
+```python
+# Bad: Testing multiple things
+def test_user_validation():
+    user = User("", "invalid-email", -1)
+    assert not user.is_valid_name()
+    assert not user.is_valid_email()
+    assert not user.is_valid_age()
+
+# Good: One behavior per test
+def test_user_with_empty_name_is_invalid():
+    user = User("", "test@example.com", 25)
+    assert not user.is_valid_name()
+
+def test_user_with_invalid_email_is_invalid():
+    user = User("John", "invalid-email", 25)
+    assert not user.is_valid_email()
+```

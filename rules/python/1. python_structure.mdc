@@ -1,36 +1,221 @@
 ---
-title: Python Security & Config Management
 description: Secure coding rules covering input validation, secrets, authentication, authorization, and API communication.
 appliesTo:
   - python
 ---
 
-# Input Validation
-- Validate external inputs early on the edges
-- Whitelist values
-- Regex for formats
-- Validate types and lengths
-- Sanitize dangerous characters
 
-# Common Vulnerabilities
-- Avoid `pickle` on untrusted input
-- Prevent SQL injection (use parameterized queries)
-- Prevent DoS (rate limiting, validation)
-- Escape output to avoid XSS
-- Avoid command/path injection
 
-# Authentication & Authorization
-- Hash passwords with bcrypt/Argon2
-- MFA recommended
-- Use RBAC or ABAC
-- Principle of least privilege
+# Python Project Structure
 
-# Secrets
-- Never hardcode
-- Use env vars/config managers (`dynaconf`, `pydantic-settings`)
+## Core Directory Structure
 
-# API Communication
-- Always use HTTPS
-- OAuth2 or API keys
-- Rate limiting
-- Web Application Firewall where relevant
+Python projects SHOULD follow this organizational structure, but directories and files should only be created when actually needed:
+
+```
+project_root/
+├── src/                    # Source code directory (REQUIRED)
+├── tests/                  # Test files directory (REQUIRED)
+├── config/                 # Configuration files (when needed)
+├── docs/                   # Project documentation (when needed)
+├── scripts/                # Utility and build scripts (when needed)
+├── data/                   # Data files and datasets (when needed)
+├── assets/                 # Static assets (when needed)
+├── pyproject.toml         # Project configuration (REQUIRED)
+├── README.md              # Project overview (REQUIRED)
+└── .gitignore             # Git ignore patterns (REQUIRED)
+```
+
+
+## Flexible Organization Principles
+
+**Don't create empty directories just to follow this structure.** Instead:
+
+1. **Start minimal** with just the required directories
+2. **Add directories as your project grows** and actually needs them
+3. **Use this structure as a guide** for where to place new files when you do need them
+4. **Keep it simple** - don't over-engineer the structure
+
+## Directory Guidelines (When Used)
+
+### src/ (Always Required)
+- **MUST** contain all application source code
+- **MUST** have an `__init__.py` file to make it a Python package
+- **SHOULD** organize modules logically (e.g., by feature or domain)
+- **MUST NOT** contain test files, configuration, or documentation
+- **SHOULD** contain _MODULE_NAME.md with module-specific architecture and domain information. Keep documentation minimal and focused on module-specific details
+### tests/ (Always Required)
+- **MUST** contain all test files and test utilities
+Refer to @`5. python_testing.mdc` for additional info
+
+### config/ (When Needed)
+- **SHOULD** contain configuration files if you have them
+- **SHOULD** include environment-specific configs (dev, staging, prod) if applicable
+- **MUST NOT** contain sensitive information (use environment variables)
+- **SHOULD** use YAML, JSON, or TOML format for structured configs
+
+### docs/ (When Needed)
+- **SHOULD** contain project documentation if you have it
+- **SHOULD** include API docs, user guides, and developer docs if applicable
+- **SHOULD** use Markdown format for consistency
+
+### scripts/ (When Needed)
+- **SHOULD** contain build, deployment, and utility scripts if you have them
+- **SHOULD** be executable and well-documented
+- **MUST NOT** contain business logic (that belongs in `src/`)
+
+### data/ (When Needed)
+- **SHOULD** contain datasets, sample data, and data files if you have them
+- **SHOULD** be organized by data type or source if applicable
+- **MUST NOT** contain large binary files in version control
+
+### assets/ (When Needed)
+- **SHOULD** contain images, CSS, JavaScript, and other static files if you have them
+- **SHOULD** be organized by asset type if applicable
+- **MUST NOT** contain source code or configuration
+
+## File Requirements
+
+### pyproject.toml (Required)
+- **MUST** be present at project root
+- **MUST** contain project metadata, dependencies, and build configuration
+- **SHOULD** use modern Python packaging standards (PEP 621)
+
+### README.md (Required)
+- **MUST** be present at project root
+- **MUST** contain project description, setup instructions, and usage examples
+- **SHOULD** include badges for build status, coverage, etc.
+
+### .gitignore (Required)
+- **MUST** be present at project root
+- **MUST** exclude Python cache files, virtual environments, and build artifacts
+- **SHOULD** exclude IDE-specific files and OS-generated files
+
+## Import Structure Rules
+
+- **MUST** use absolute imports from `src/` root
+- **MUST NOT** use relative imports beyond one level
+- **SHOULD** organize imports: standard library, third-party, local
+- **MUST** have `src/` in Python path for imports to work correctly
+
+## Progressive Structure Development
+
+### Phase 1: Minimal (Start Here)
+```
+my_project/
+├── src/
+│   ├── __init__.py
+│   └── main.py
+├── tests/
+│   ├── __init__.py
+│   └── test_main.py
+├── pyproject.toml
+├── README.md
+└── .gitignore
+```
+
+### Phase 2: Add When Needed
+```
+my_project/
+├── src/
+│   ├── __init__.py
+│   ├── main.py
+│   └── utils.py
+├── tests/
+│   ├── __init__.py
+│   ├── test_main.py
+│   └── test_utils.py
+├── config/              # Added when you need config files
+│   └── settings.yaml
+├── docs/                # Added when you need documentation
+│   └── api.md
+├── pyproject.toml
+├── README.md
+└── .gitignore
+```
+
+## Examples
+
+### Correct: Minimal Structure
+```
+simple_project/
+├── src/
+│   ├── __init__.py
+│   └── app.py
+├── tests/
+│   ├── __init__.py
+│   └── test_app.py
+├── pyproject.toml
+├── README.md
+└── .gitignore
+```
+
+### Correct: Expanded Structure (When Actually Needed)
+```
+complex_project/
+├── src/
+│   ├── __init__.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   └── app.py
+│   └── utils/
+│       ├── __init__.py
+│       └── helpers.py
+├── tests/
+│   ├── __init__.py
+│   ├── test_core/
+│   │   └── test_app.py
+│   └── test_utils/
+│       └── test_helpers.py
+├── config/              # Actually contains config files
+│   ├── dev.yaml
+│   └── prod.yaml
+├── docs/                # Actually contains documentation
+│   ├── api.md
+│   └── setup.md
+├── scripts/             # Actually contains scripts
+│   └── deploy.sh
+├── data/                # Actually contains data files
+│   └── sample.csv
+├── assets/              # Actually contains static assets
+│   └── logo.png
+├── pyproject.toml
+├── README.md
+└── .gitignore
+```
+
+### Incorrect: Empty Boilerplate
+```
+my_project/
+├── src/
+│   ├── __init__.py
+│   └── main.py
+├── tests/
+│   ├── __init__.py
+│   └── test_main.py
+├── config/              # ❌ Empty directory
+├── docs/                # ❌ Empty directory
+├── scripts/             # ❌ Empty directory
+├── data/                # ❌ Empty directory
+├── assets/              # ❌ Empty directory
+├── pyproject.toml
+├── README.md
+└── .gitignore
+```
+
+## Key Principles
+
+1. **Start simple** - Only create what you actually need
+2. **Grow organically** - Add structure as your project requires it
+3. **Don't over-engineer** - Empty directories add no value
+4. **Use this as a guide** - Not a rigid template to copy
+5. **Keep it clean** - Remove directories if they're no longer needed
+
+## Validation
+
+- **MUST** run project structure validation before deployment
+- **SHOULD** use automated tools like `pyproject-validate` or custom pre-commit hooks to verify directory structure compliance
+- **MUST** fail CI/CD pipeline if required structure is not met
+- **SHOULD** warn about empty optional directories (consider removing them)
+
+

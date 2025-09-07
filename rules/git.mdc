@@ -122,6 +122,15 @@ git commit -m "refactor(core): optimize data processing"
 git commit -m "refactor(auth): simplify login flow"
 ```
 
+## 6. Addition
+Only add individuals changed specifically. 
+E.g. 
+```bash 
+git add file1.py file2.py 
+```
+This is a supposed to `git add .`
+
+
 ## 6. Recovery Procedures
 
 ### 6.1 Fix Last Commit
