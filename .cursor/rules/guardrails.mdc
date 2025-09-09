@@ -1,0 +1,65 @@
+---
+alwaysApply: true
+description: Critical guardrails to prevent dangerous system-level changes and maintain project integrity
+---
+
+# Project Guardrails
+
+## 🚨 CRITICAL: Never Perform These Dangerous Activities
+
+### System-Level Changes
+- **NEVER** make OS-level changes (file permissions, system paths, environment variables)
+- **NEVER** modify system Python installations or global packages
+- **NEVER** run commands that require `sudo` or administrator privileges
+- **NEVER** modify system configuration files outside the project directory
+
+### IDE/Editor Configuration
+- **NEVER** modify VS Code settings files (`.vscode/settings.json`, `.vscode/launch.json`)
+- **NEVER** change workspace-specific IDE configurations
+- **NEVER** modify user-level IDE settings
+
+### Package Management
+- **NEVER** use `pip` directly - always use `uv` for package management
+- **NEVER** edit `pyproject.toml` dependencies directly - use `uv add` or `uv remove`
+- **NEVER** create or modify `requirements.txt` files
+- **NEVER** use `pip install` or `pip uninstall` commands
+
+### Project Structure
+- **NEVER** modify files outside the project workspace
+- **NEVER** delete or move core project files without explicit user permission
+- **NEVER** modify `.gitignore` or version control files without confirmation
+
+### Git Safety
+- **ALWAYS** commit current state before deleting any files
+- **ALWAYS** create replacement artifacts before deleting originals
+- **NEVER** delete files without ensuring replacements are in place and tested
+- **ALWAYS** create a baseline commit before major refactoring or deletions
+
+## ✅ Safe Alternatives
+
+### Package Management
+```bash
+# ✅ CORRECT - Use uv for all package operations
+uv add package-name
+uv remove package-name
+uv sync
+uv run python script.py
+
+# ❌ FORBIDDEN - Never use pip
+pip install package-name
+pip uninstall package-name
+```
+
+### Configuration Changes
+- Use `uv` commands to modify dependencies
+- Ask user before making any configuration changes
+- Document all changes in commit messages
+
+
+## Emergency Override
+If absolutely necessary to perform a forbidden action:
+1. **STOP** and ask the user for explicit permission
+2. Explain the risk and alternative approaches
+3. Get written confirmation before proceeding
+4. Document the exception and reasoning
+

@@ -130,10 +130,23 @@ git add file1.py file2.py
 ```
 This is a supposed to `git add .`
 
+## 6.1 Git Safety Workflow
+```bash
+# ✅ CORRECT - Safe deletion workflow
+git add . && git commit -m "baseline: before refactoring X"
+# Create new files/implementations
+git add new-file.py && git commit -m "feat: add new implementation"
+# Test new implementation
+# Only then delete old files
+git rm old-file.py && git commit -m "refactor: replace old-file with new-file"
 
-## 6. Recovery Procedures
+# ❌ FORBIDDEN - Unsafe deletion
+git rm important-file.py  # Without baseline or replacement
+```
 
-### 6.1 Fix Last Commit
+## 7. Recovery Procedures
+
+### 7.1 Fix Last Commit
 ```bash
 # Amend commit message
 git commit --amend -m "type(scope): corrected message"
@@ -143,7 +156,7 @@ git add forgotten-file
 git commit --amend --no-edit
 ```
 
-### 6.2 Split Failed Commit
+### 7.2 Split Failed Commit
 ```bash
 # Reset last commit
 git reset HEAD~1
