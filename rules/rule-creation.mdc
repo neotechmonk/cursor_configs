@@ -3,7 +3,7 @@ description: Enforces the location and naming conventions for all other .mdc fil
 globs: 
 ---
 # Cursor Rules Location
-# Enforces the location and naming conventions for all other .mdc files.  This is the MOST IMPORTANT rule.
+# Enforces the location and naming conventions for all other .cursorrules files.  This is the MOST IMPORTANT rule.
 <rule>
 name: cursor_rules_location
 description: Standards for placing Cursor rule files in the correct directory

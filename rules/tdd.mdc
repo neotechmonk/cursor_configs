@@ -101,7 +101,8 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 2. **Extract Variable**: Replace complex expressions with named variables
 3. **Rename**: Improve variable, method, and class names
 4. **Move Method**: Relocate methods to more appropriate classes
-5. **Introduce Parameter**: Make hardcoded values configurable or injected as dependencies 
+5. **Introduce Parameter**: Make hardcoded values configurable or injected as dependencies
+6. **Create new files** first  before deleting redundant ones to reduce risk of loss of work.
 
 # RED-GREEN-REFACTOR Cycle
 
