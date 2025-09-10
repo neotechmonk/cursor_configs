@@ -193,6 +193,23 @@ Focus: Ensure previously iterated code is coherent with the rest of the module/f
 - **Code:** Ensure consistent error handling and logging patterns throughout module
 - **Test:** Verify passing test
 
+## Pass n: Code quality
+
+### 🔴 RED:
+- **Check with user**: N/A
+- **Test** : ruff
+- **Test** `uv run pytest`
+
+
+### 🟢 GREEN:
+- **Check with user**: Use any other source code other than the module under development needs changing
+- **Code**: Fix linting issues 
+- **Code**: Fix failing tests
+- **Test:** Verify passing test
+  
+### 🔵 REFACTOR
+- **Test:** Verify passing test
+  
 
 ## Common TDD Anti-Patterns
 ### ❌ Test After Development (TAD)
