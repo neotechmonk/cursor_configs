@@ -10,7 +10,7 @@ alwaysApply: true
 - [Python Testing](../python/5.%20python_testing.mdc)
 - [Architectural](../architecture/*) - DON'T use until the final round of refactor
 - [General Python Rules](../python/*) - Preferable but NOT important in the early stage of RGR <br> if rules conflict, this rules takes precedence
-- [User Story template](./../templates/stories-acceptance-criteria.md)
+
 # TDD Documentation folder structure
   ```
     docs/
@@ -25,7 +25,7 @@ alwaysApply: true
 
 # TDD Workflow
 Follow the meta workflow TDD approach is taken to build. It describes the meta workflow beyond just RGR
-1. Ensure user stories are in `stories.md` before beginning. Use [User Story template] as guide 
+1. Ensure user stories are in `stories.md` before beginning. 
    - Each story should have acceptance criteria (AC).
    - Insist this user creates this and iteratively finalise before moving to the next step
 
@@ -101,7 +101,8 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 2. **Extract Variable**: Replace complex expressions with named variables
 3. **Rename**: Improve variable, method, and class names
 4. **Move Method**: Relocate methods to more appropriate classes
-5. **Introduce Parameter**: Make hardcoded values configurable or injected as dependencies 
+5. **Introduce Parameter**: Make hardcoded values configurable or injected as dependencies
+6. **Create new files** first  before deleting redundant ones to reduce risk of loss of work.
 
 # RED-GREEN-REFACTOR Cycle
 
@@ -192,6 +193,23 @@ Focus: Ensure previously iterated code is coherent with the rest of the module/f
 - **Code:** Ensure consistent error handling and logging patterns throughout module
 - **Test:** Verify passing test
 
+## Pass n: Code quality
+
+### 🔴 RED:
+- **Check with user**: N/A
+- **Test** : ruff
+- **Test** `uv run pytest`
+
+
+### 🟢 GREEN:
+- **Check with user**: Use any other source code other than the module under development needs changing
+- **Code**: Fix linting issues 
+- **Code**: Fix failing tests
+- **Test:** Verify passing test
+  
+### 🔵 REFACTOR
+- **Test:** Verify passing test
+  
 
 ## Common TDD Anti-Patterns
 ### ❌ Test After Development (TAD)
