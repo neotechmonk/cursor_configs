@@ -10,7 +10,7 @@ alwaysApply: true
 - [Python Testing](../python/5.%20python_testing.mdc)
 - [Architectural](../architecture/*) - DON'T use until the final round of refactor
 - [General Python Rules](../python/*) - Preferable but NOT important in the early stage of RGR <br> if rules conflict, this rules takes precedence
-
+- [User Story template](./../templates/stories-acceptance-criteria.md)
 # TDD Documentation folder structure
   ```
     docs/
@@ -25,7 +25,7 @@ alwaysApply: true
 
 # TDD Workflow
 Follow the meta workflow TDD approach is taken to build. It describes the meta workflow beyond just RGR
-1. Ensure user stories are in `stories.md` before beginning. 
+1. Ensure user stories are in `stories.md` before beginning. Use [User Story template] as guide 
    - Each story should have acceptance criteria (AC).
    - Insist this user creates this and iteratively finalise before moving to the next step
 
@@ -45,6 +45,9 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 
 5. Document test results and get approval
    - Summarize passing tests to user
+   - **MANDATORY**: Update `tdd-plan.md` to tick off completed tests [x]
+   - **MANDATORY**: Add git commit hash for each completed AC
+   -  If documentation is incomplete, STOP and update before proceeding
    - Get permission to proceed to next step
 
 6. Update documentation
@@ -53,8 +56,8 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
    - `README.MD` - Update relevant sections with new functionality
 
 7. Git commit each passing test's cycle along the way
-8. Add the full hash against the specific AC in `tdd-plan.md`
-9.  Once all tests in `tdd-plan.md` are complete
+
+8.  Once all tests in `tdd-plan.md` are complete
     - Suggest additional logical test cases based on implemented functionality
     - For each suggested test, get user confirmation to either:
       - Implement immediately
@@ -128,7 +131,7 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 - **Check with user**: N/A
 - **Code:** Check logical flow and reorganize. Implement inversion of control
 - **Test:** Verify passing test  
-- **Docs:** Start if unfinished stories, transfer ACs to `tdd-plan.md`
+- **Docs:** **MANDATORY** - Update `tdd-plan.md` with [x] and commit hash
 
 
 ## Pass 2: Error Handling & Validation
@@ -148,7 +151,8 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 - **Check with user**: N/A
 - **Code:** Extract error handling logic, add domain-specific exceptions
 - **Code:** Add guard clauses and input validation at boundaries
-- **Test:** Verify passing test 
+- **Test:** Verify passing test
+- **Docs:** **MANDATORY** - Update `tdd-plan.md` with [x] and commit hash 
 
 
 ## Pass 3: Edge Cases & Boundary Conditions
@@ -169,6 +173,7 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 - **Code:** Consolidate logic, add comprehensive docs. Follow pythonic idioms here don't over do for e.g. ValidationError, ValueError and TypeError
 <br> Add guard clauses and invert control where possible
 - **Test:** Verify passing test
+- **Docs:** **MANDATORY** - Update `tdd-plan.md` with [x] and commit hash
 
 ## Pass 4: Code in Context
 Focus: Ensure previously iterated code is coherent with the rest of the module/functional grouping
@@ -192,6 +197,7 @@ Focus: Ensure previously iterated code is coherent with the rest of the module/f
 - **Code:** Consolidate similar functionality, remove duplication across module
 - **Code:** Ensure consistent error handling and logging patterns throughout module
 - **Test:** Verify passing test
+- **Docs:** **MANDATORY** - Update `tdd-plan.md` with [x] and commit hash
 
 ## Pass n: Code quality
 
@@ -260,3 +266,11 @@ def test_user_with_invalid_email_is_invalid():
     user = User("John", "invalid-email", 25)
     assert not user.is_valid_email()
 ```
+
+## Quality Gates
+Before starting a new story, verify:
+- [ ] All completed tests marked [x] in `tdd-plan.md`
+- [ ] All completed ACs have git commit hashes
+- [ ] All completed stories marked in `stories.md`
+- [ ] All tests passing
+- [ ] Documentation is current and accurate
