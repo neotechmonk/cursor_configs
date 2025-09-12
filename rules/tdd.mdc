@@ -10,7 +10,7 @@ alwaysApply: true
 - [Python Testing](../python/5.%20python_testing.mdc)
 - [Architectural](../architecture/*) - DON'T use until the final round of refactor
 - [General Python Rules](../python/*) - Preferable but NOT important in the early stage of RGR <br> if rules conflict, this rules takes precedence
-
+- [User Story template](./../templates/stories-acceptance-criteria.md)
 # TDD Documentation folder structure
   ```
     docs/
@@ -25,7 +25,7 @@ alwaysApply: true
 
 # TDD Workflow
 Follow the meta workflow TDD approach is taken to build. It describes the meta workflow beyond just RGR
-1. Ensure user stories are in `stories.md` before beginning. 
+1. Ensure user stories are in `stories.md` before beginning. Use [User Story template] as guide 
    - Each story should have acceptance criteria (AC).
    - Insist this user creates this and iteratively finalise before moving to the next step
 
