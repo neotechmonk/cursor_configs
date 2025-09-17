@@ -57,7 +57,8 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 
 7. Git commit each passing test's cycle along the way
 
-8.  Once all tests in `tdd-plan.md` are complete
+8. Add the full hash against the specific AC in `tdd-plan.md`
+9.  Once all tests in `tdd-plan.md` are complete
     - Suggest additional logical test cases based on implemented functionality
     - For each suggested test, get user confirmation to either:
       - Implement immediately
@@ -152,7 +153,7 @@ Follow the meta workflow TDD approach is taken to build. It describes the meta w
 - **Code:** Extract error handling logic, add domain-specific exceptions
 - **Code:** Add guard clauses and input validation at boundaries
 - **Test:** Verify passing test
-- **Docs:** **MANDATORY** - Update `tdd-plan.md` with [x] and commit hash 
+- **Docs:** **MANDATORY** - Update `tdd-plan.md` with [x] and commit hash
 
 
 ## Pass 3: Edge Cases & Boundary Conditions
