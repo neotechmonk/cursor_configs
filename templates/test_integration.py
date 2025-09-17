@@ -1,3 +1,4 @@
+# ruff: noqa
 """Integration test template with user story tracking.
 
 This template follows the Integration Scope Focus documentation pattern
@@ -189,7 +190,7 @@ def system_under_test(
     """Create the system under test with all dependencies.
     
     Returns both the service and any mocks that need verification.
-    ""
+    """
     service = YourService(mock_external_dependency, test_config)
     return service, mock_external_dependency
 
@@ -258,7 +259,7 @@ def test_method_with_invalid_input_returns_error(
 @pytest.mark.integration
 def test_method_with_dependency_failure_handles_gracefully(
     system_under_test: Tuple[YourService, MagicMock]
-) -> None:
+) -> None:...
 
 
 # ============================================================================

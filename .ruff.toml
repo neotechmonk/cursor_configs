@@ -1,0 +1,14 @@
+# Ruff configuration for cursor_configs project
+
+# Exclude template files from linting
+# These files contain placeholder code and broken references for demonstration purposes
+exclude = [
+    "templates/test_integration.py",
+    "templates/*.py",
+]
+
+# Optional: You can also exclude other template files if needed
+# exclude = [
+#     "templates/test_integration.py",
+#     "templates/*.py",  # All Python template files
+# ]
