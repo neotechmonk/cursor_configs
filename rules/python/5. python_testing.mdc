@@ -119,6 +119,30 @@ Purpose: Prove critical user journeys work across the app boundary.
   - **Unit:** isolate functions/classes, mock dependencies.
   - **Integration:** DB/API workflows.
   - **E2E:** only critical paths.
+
+## Test Documentation with User Stories
+
+### User Story Tracking in Test Docstrings
+Every test should reference the user stories and acceptance criteria it validates.
+
+### Documentation Standards
+- **Integration Focus**: Emphasize what modules/systems are being tested together
+- **User Story References**: Include relevant US and AC numbers
+- **Succinct**: Don't repeat what naming conventions already convey
+- **Business Context**: Highlight what breaks if the test fails
+
+### Integration Test Template
+For comprehensive integration test examples, patterns, and documentation standards, see:
+**`.cursor/templates/test_integration.py`**
+
+This template provides:
+- Integration test structure and naming conventions
+- User story integration patterns
+- Module boundary testing examples
+- Data flow validation patterns
+- Error propagation testing
+- Contract compliance verification
+- Test coverage examples (good vs bad patterns)
   
 ## Test Naming Conventions
 
